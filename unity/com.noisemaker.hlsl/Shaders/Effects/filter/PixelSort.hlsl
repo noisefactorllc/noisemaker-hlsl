@@ -185,9 +185,13 @@ float4 NMFrag_luminance(NMVaryings i) : SV_Target
 }
 
 // =============================================================================
-// Pass 3: findBrightest — brightest pixel x per row.
-//   loop i in [0, width): lum = load(lumTex,(i,y)).r; track max -> brightestX
-//   return (brightestX / (width - 1), maxLum, 0, 1)
+// Pass 3: findBrightest — approximate brightest pixel x per row.
+//   GOLDEN (GLSL findBrightest.glsl): SPARSE 32-sample scan, NOT the WGSL exact
+//   full-width loop. The approximate brightestX drives the per-row rotation
+//   alignment in gatherSorted, so it MUST match the GLSL sampling pattern (the
+//   exact-scan WGSL produces a different brightestX -> shifted streaks).
+//   for s in [0,32): sampleX=(s*width)/32; lum=load(lumTex,(sampleX,y)).r;
+//     track max -> brightestX. return (brightestX/(width-1), maxLum, 0, 1).
 // =============================================================================
 float4 NMFrag_findBrightest(NMVaryings i) : SV_Target
 {
@@ -198,17 +202,19 @@ float4 NMFrag_findBrightest(NMVaryings i) : SV_Target
     int y = coord.y;
     int width = size.x;
 
-    // Find brightest pixel in this row
+    // Sparse sampling to find approximate brightest pixel (GLSL golden).
+    const int NUM_SAMPLES = 32;
     float maxLum = -1.0;
     int brightestX = 0;
 
-    for (int idx = 0; idx < width; idx = idx + 1)
+    for (int s = 0; s < NUM_SAMPLES; s = s + 1)
     {
-        float lum = lumTex.Load(int3(idx, y, 0)).r;
+        int sampleX = (s * width) / NUM_SAMPLES;
+        float lum = lumTex.Load(int3(sampleX, y, 0)).r;
         if (lum > maxLum)
         {
             maxLum = lum;
-            brightestX = idx;
+            brightestX = sampleX;
         }
     }
 

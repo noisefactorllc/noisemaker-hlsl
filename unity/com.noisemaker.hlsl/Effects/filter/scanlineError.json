@@ -2,7 +2,11 @@
   "name": "Scanline Error",
   "namespace": "filter",
   "func": "scanlineError",
-  "tags": ["distort", "glitch"],
+  "starter": false,
+  "tags": [
+    "distort",
+    "glitch"
+  ],
   "description": "Scanline glitch effect/VHS tape artifacts",
   "paramAliases": {},
   "globals": {
@@ -20,32 +24,28 @@
       "default": 0,
       "uniform": "timeOffset",
       "min": -10,
-      "max": 10,
-      "step": 0.01
+      "max": 10
     },
     "distortion": {
       "type": "float",
       "default": 1,
       "uniform": "distortion",
       "min": 0,
-      "max": 3,
-      "step": 0.01
+      "max": 3
     },
     "noise": {
       "type": "float",
       "default": 1,
       "uniform": "noise",
       "min": 0,
-      "max": 3,
-      "step": 0.01
+      "max": 3
     },
     "speed": {
       "type": "float",
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 5,
-      "step": 0.1
+      "max": 5
     }
   },
   "passes": [
@@ -55,9 +55,6 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "speed": "speed",
         "timeOffset": "timeOffset",
@@ -65,14 +62,11 @@
         "noise": "noise",
         "mode": "mode",
         "time": "time"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

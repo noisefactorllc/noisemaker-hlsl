@@ -2,7 +2,11 @@
   "name": "Coalesce",
   "namespace": "classicNoisedeck",
   "func": "coalesce",
-  "tags": ["blend", "distort"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "distort"
+  ],
   "description": "Coalescing blend effect",
   "paramAliases": {
     "mixAmt": "mix"
@@ -89,19 +93,13 @@
         "inputTex": "inputTex",
         "tex": "tex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "mixAmt": "mix"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

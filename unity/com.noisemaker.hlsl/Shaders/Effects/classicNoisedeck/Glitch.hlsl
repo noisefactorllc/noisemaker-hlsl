@@ -228,12 +228,13 @@ float4 g_glitch(float2 st_in, float aspectRatioV, float timev, float xChonkV, fl
 
     float refractAmt = g * 0.125;
 
-    // WGSL `%` on floats = e1 - e2*trunc(e1/e2) (sign of DIVIDEND, like fmod) —
-    // NOT GLSL mod / nm_mod (sign of divisor). Dividend can be negative here
-    // (st.x near 0, sin(...)*refractAmt in [-0.125,0.125]), so the two differ:
-    // fmod(-0.04,1)=-0.04 vs nm_mod(-0.04,1)=0.96. WGSL source uses `%` -> fmod.
-    st.x = fmod(st.x + sin(xOffset * G_TAU) * refractAmt, 1.0);
-    st.y = fmod(st.y + sin(yOffset * G_TAU) * refractAmt, 1.0);
+    // GLSL golden (glitch.glsl:165-166) uses floor-based mod (sign of divisor).
+    // The dividend can be negative here (st.x near 0, sin(...)*refractAmt in
+    // [-0.125,0.125]); there mod and the WGSL `%`/fmod diverge:
+    // nm_mod(-0.04,1)=0.96 vs fmod(-0.04,1)=-0.04. The parity golden is
+    // WebGL2/GLSL, so match GLSL: use nm_mod.
+    st.x = nm_mod(st.x + sin(xOffset * G_TAU) * refractAmt, 1.0);
+    st.y = nm_mod(st.y + sin(yOffset * G_TAU) * refractAmt, 1.0);
 
     // aberration and lensing
     float2 diff = float2(0.5 - st.x, 0.5 - st.y);

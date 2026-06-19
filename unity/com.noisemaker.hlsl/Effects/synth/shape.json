@@ -2,7 +2,10 @@
   "name": "Shape",
   "namespace": "synth",
   "func": "shape",
-  "tags": ["geometric"],
+  "starter": true,
+  "tags": [
+    "geometric"
+  ],
   "description": "Interference patterns from geometric shapes",
   "paramAliases": {
     "loopAAmp": "speedA",
@@ -131,12 +134,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {},
-      "blend": false
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

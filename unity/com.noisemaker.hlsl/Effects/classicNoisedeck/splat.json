@@ -2,7 +2,10 @@
   "name": "Splat",
   "namespace": "classicNoisedeck",
   "func": "splat",
-  "tags": ["noise"],
+  "starter": false,
+  "tags": [
+    "noise"
+  ],
   "description": "Splatter paint effect",
   "paramAliases": {
     "splatColor": "color",
@@ -46,7 +49,11 @@
     },
     "color": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
+      "default": [
+        1,
+        1,
+        1
+      ],
       "uniform": "color"
     },
     "cutoff": {
@@ -95,7 +102,11 @@
     },
     "speckColor": {
       "type": "color",
-      "default": [0.8, 0.8, 0.8],
+      "default": [
+        0.8,
+        0.8,
+        0.8
+      ],
       "uniform": "speckColor"
     },
     "speckCutoff": {
@@ -120,32 +131,13 @@
       "inputs": {
         "inputTex": "inputTex"
       },
+      "uniforms": {
+        "splatColor": "color"
+      },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "enabled": "enabled",
-        "mode": "mode",
-        "scale": "scale",
-        "seed": "seed",
-        "color": "color",
-        "cutoff": "cutoff",
-        "speed": "speed",
-        "useSpecks": "useSpecks",
-        "speckMode": "speckMode",
-        "speckScale": "speckScale",
-        "speckSeed": "speckSeed",
-        "speckColor": "speckColor",
-        "speckCutoff": "speckCutoff",
-        "speckSpeed": "speckSpeed"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

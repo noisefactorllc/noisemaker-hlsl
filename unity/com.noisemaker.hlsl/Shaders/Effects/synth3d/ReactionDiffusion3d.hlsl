@@ -208,8 +208,11 @@ float4 frag_simulate(NMVaryings i) : SV_Target
 
     // Gray-Scott reaction-diffusion equations
     // lap.x = Lap(B) from .r, lap.y = Lap(A) from .a
-    float newA = clamp(a + (r1 * lap.y - a * b * b + f * (1.0 - a)) * s, 0.0, 1.0);
-    float newB = clamp(b + (r2 * lap.x + a * b * b - (k + f) * b) * s, 0.0, 1.0);
+    // GLSL golden order (simulate.glsl 151-164): compute UNCLAMPED, apply weight blend
+    // to newB, THEN clamp both. Clamping before the blend (as a prior port did) diverges
+    // whenever weight>0 because the blend would mix a pre-clamped value.
+    float newA = a + (r1 * lap.y - a * b * b + f * (1.0 - a)) * s;
+    float newB = b + (r2 * lap.x + a * b * b - (k + f) * b) * s;
 
     // Apply input weight blending from seedTex (inputTex3d)
     if (weight > 0.0)
@@ -219,6 +222,10 @@ float4 frag_simulate(NMVaryings i) : SV_Target
         // Seed influences chemical B (the visible one)
         newB = lerp(newB, seedLum, weight * 0.01);
     }
+
+    // Clamp for numerical stability (GLSL clamps after the blend).
+    newA = clamp(newA, 0.0, 1.0);
+    newB = clamp(newB, 0.0, 1.0);
 
     // .r = B (density for render3d), .a = A (simulation state)
     // .rgb = visualization colors, .a = chemical A

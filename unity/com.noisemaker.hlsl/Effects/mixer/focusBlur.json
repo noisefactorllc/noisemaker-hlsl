@@ -2,8 +2,13 @@
   "name": "Focus Blur",
   "namespace": "mixer",
   "func": "focusBlur",
-  "tags": ["blend", "blur"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "blur"
+  ],
   "description": "Focus blur using luminance depth map",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -50,15 +55,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

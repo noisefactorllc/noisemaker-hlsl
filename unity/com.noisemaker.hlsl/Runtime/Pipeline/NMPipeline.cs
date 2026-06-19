@@ -226,6 +226,9 @@ namespace Noisemaker.Hlsl
             // viewport handling).
             _backend.ScreenWidth = _width;
             _backend.ScreenHeight = _height;
+            // Per-frame normalized time for automation (oscillator) uniform evaluation
+            // (reference/04 §10.4 / §11). Same value passed to Render(time).
+            _backend.NormalizedTime = time;
 
             // 4. seed frameRead/frameWrite from surfaces.
             _surfaces.BeginFrame();
@@ -398,6 +401,19 @@ namespace Noisemaker.Hlsl
 
         // Pooled / non-global texId: map through graph.allocations to phys_N, else
         // use the texId directly (some specs are stored under their own id).
+        //
+        // POOLING ALIAS GUARD (reference parity): the JS liveness allocator
+        // (resources.js) freely reuses a phys_N slot for texIds of DIFFERENT logical
+        // sizes, but the JS WebGL2 runtime NEVER actually collapses to phys_N — it
+        // allocates one real texture per VIRTUAL id at its own logical size
+        // (pipeline.js recreateTextures keys by virtual texId). Our TextureStore pools
+        // by phys_N at the MAX size across aliased virtuals. That is safe ONLY when the
+        // aliased virtuals share dimensions; it BREAKS volume atlases (e.g.
+        // node_0_volumeCache 64x4096 aliased with node_3_out screen 256x256 grows phys
+        // to 256x4096): NM_FragCoord then spans the wrong width and fullscreen samplers
+        // read by normalized UV across the oversized RT, scrambling the atlas. When this
+        // texId's LOGICAL size differs from the pooled physical, fall back to the
+        // reference behavior: a DEDICATED RT keyed by the virtual texId at logical size.
         private RenderTexture ResolvePhysical(string texId)
         {
             if (string.IsNullOrEmpty(texId) || texId == "none") return null;
@@ -405,7 +421,20 @@ namespace Noisemaker.Hlsl
             if (Graph.Allocations.TryGetValue(texId, out phys) && phys != null)
             {
                 RenderTexture rt = _store.Get(phys);
-                if (rt != null) return rt;
+                if (rt != null)
+                {
+                    // If this virtual's own logical size differs from the pooled physical
+                    // RT, the alias is unsafe — use a dedicated logical-sized RT instead.
+                    TextureSpec s;
+                    if (Graph.Textures.TryGetValue(texId, out s) && s != null)
+                    {
+                        int lw = TextureStore.ResolveDimension(s.Width, _width, UniformLookup);
+                        int lh = TextureStore.ResolveDimension(s.Height, _height, UniformLookup);
+                        if (lw != rt.width || lh != rt.height)
+                            return CreateLazyPhysical(texId, texId);
+                    }
+                    return rt;
+                }
                 // lazily create from the texId's spec.
                 return CreateLazyPhysical(phys, texId);
             }

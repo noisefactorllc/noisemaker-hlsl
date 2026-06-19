@@ -114,18 +114,18 @@ float3 shapes3d_hsv2rgb(float3 hsv)
     return rgb + float3(m, m, m);
 }
 
-float3 shapes3d_linearToSrgb(float3 linear)
+float3 shapes3d_linearToSrgb(float3 lin)
 {
     float3 srgb = float3(0.0, 0.0, 0.0);
     // component 0
-    if (linear.r <= 0.0031308) { srgb.r = linear.r * 12.92; }
-    else                        { srgb.r = 1.055 * pow(linear.r, 1.0 / 2.4) - 0.055; }
+    if (lin.r <= 0.0031308) { srgb.r = lin.r * 12.92; }
+    else                     { srgb.r = 1.055 * pow(lin.r, 1.0 / 2.4) - 0.055; }
     // component 1
-    if (linear.g <= 0.0031308) { srgb.g = linear.g * 12.92; }
-    else                        { srgb.g = 1.055 * pow(linear.g, 1.0 / 2.4) - 0.055; }
+    if (lin.g <= 0.0031308) { srgb.g = lin.g * 12.92; }
+    else                     { srgb.g = 1.055 * pow(lin.g, 1.0 / 2.4) - 0.055; }
     // component 2
-    if (linear.b <= 0.0031308) { srgb.b = linear.b * 12.92; }
-    else                        { srgb.b = 1.055 * pow(linear.b, 1.0 / 2.4) - 0.055; }
+    if (lin.b <= 0.0031308) { srgb.b = lin.b * 12.92; }
+    else                     { srgb.b = 1.055 * pow(lin.b, 1.0 / 2.4) - 0.055; }
     return srgb;
 }
 

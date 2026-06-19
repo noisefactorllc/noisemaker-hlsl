@@ -2,7 +2,10 @@
   "name": "BC",
   "namespace": "filter",
   "func": "bc",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Deprecated: use 'adjust' instead. Adjust brightness and/or contrast",
   "paramAliases": {},
   "globals": {
@@ -30,18 +33,10 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "brightness": "brightness",
-        "contrast": "contrast"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "hidden": true,
+  "deprecatedBy": "adjust"
 }

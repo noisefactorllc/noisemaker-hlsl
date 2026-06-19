@@ -2,11 +2,11 @@
 // shaders/src/runtime/expander.js (reference/03) emitting the NORMALIZED schema
 // (GRAPH-JSON-SCHEMA.md): passType / namespace / func / progName / defines / ...
 //
-// FIRST-CUT scope: builtin _read / _write, real 2D effect passes, programs, 2D texture
-// specs, two-pass arg/uniform processing, inputs/outputs mapping, palette expansion,
-// scoped params, last-pass-to-surface fusion, inline-write dedupe, final blit, render
-// surface resolution. Staged (NotImplementedException + TODO(scope)): _read3d/_write3d,
-// subchain markers, 3D/geo/agent lanes, particle pipelines.
+// SCOPE: builtin _read / _write / _read3d / _write3d, real 2D + 3D effect passes,
+// programs, 2D + 3D texture specs (is3D), two-pass arg/uniform processing (incl. the
+// volumeSize inheritance guard), inputs/outputs mapping (2D / 3D / geo / agent lanes),
+// palette expansion, scoped params, last-pass-to-surface fusion, inline-write dedupe,
+// final blit, render surface resolution. Subchain markers + DSL loops implemented.
 //
 // PARITY-CRITICAL behaviors replicated:
 //  - compile-time defines: globals are SORTED by name; suffix is sorted entries joined
@@ -55,6 +55,21 @@ namespace Noisemaker.Hlsl.Compiler
         private int _activeLoopGroupId;       // 0 when not inside an iterated bracket
         private int _activeLoopIterations;    // iteration count for the active bracket
 
+        // PARTICLE PIPELINE (reference/03 §4.4 step 1, §6.1). Set to the nodeId of the
+        // effect that CREATES particle state (textures.global_xyz, i.e. pointsEmit);
+        // particle textures (global_xyz/vel/rgba/points_trail/life_data) are scoped by
+        // this id so multiple particle pipelines in one program don't collide. null when
+        // no particle pipeline is active. Reset per chain.
+        private string _currentParticlePipelineId;
+        private string _currentInputXyz;   // agent-state cursors (reference/03 §4.10)
+        private string _currentInputVel;
+        private string _currentInputRgba;
+        // 3D / geo pipeline cursors (reference/03 §4.1/§4.10; synth3d/filter3d subsystem).
+        // currentInput3d is the live volume virtualTexId (e.g. global_vol0 or a node's
+        // volumeCache); currentInputGeo is the live geometry-buffer virtualTexId. Reset per chain.
+        private string _currentInput3d;
+        private string _currentInputGeo;
+
         private Expander(List<Plan> plans, string render, EffectRegistry reg)
         {
             _plans = plans;
@@ -88,6 +103,10 @@ namespace Noisemaker.Hlsl.Compiler
             SurfaceRef lastInlineWriteTarget = null;
             var pipelineUniforms = new OrderedMap<string, UniformValue>();
             string chainScopeId = "chain_" + planIndex;
+            // A particle pipeline is scoped to its chain (begins with pointsEmit here).
+            _currentParticlePipelineId = null;
+            _currentInputXyz = _currentInputVel = _currentInputRgba = null;
+            _currentInput3d = _currentInputGeo = null;
 
             for (int stepPos = 0; stepPos < plan.Chain.Count; stepPos++)
             {
@@ -102,8 +121,61 @@ namespace Noisemaker.Hlsl.Compiler
                     if (currentInput != null) _textureMap[nodeIdR + "_out"] = currentInput;
                     continue;
                 }
-                if (step.Builtin && (step.Op == "_read3d" || step.Op == "_write3d"))
-                    throw new NotImplementedException("3D builtin '" + step.Op + "' is not implemented in the first-cut Expander (reference/03 §4.1).");
+                // _read3d (reference/03 §4.1; expander.js lines 162-185). Two-arg starter:
+                // sets the 3D + geo cursors from the named vol/geo surfaces (VolRef/GeoRef →
+                // global_<name>; plain name passes through) and registers _out3d/_outGeo so a
+                // step.from can pick them up.
+                if (step.Builtin && step.Op == "_read3d")
+                {
+                    ArgValue tex3d = step.Args.Get("tex3d");
+                    ArgValue geo = step.Args.Get("geo");
+                    if (tex3d != null && tex3d.Kind == ArgKind.Surface)
+                    {
+                        SurfaceRef s = tex3d.Surface;
+                        _currentInput3d = s.Kind == "vol" ? "global_" + s.Name : s.Name;
+                    }
+                    if (geo != null && geo.Kind == ArgKind.Surface)
+                    {
+                        SurfaceRef s = geo.Surface;
+                        _currentInputGeo = s.Kind == "geo" ? "global_" + s.Name : s.Name;
+                    }
+                    string nodeId3 = "node_" + step.Temp;
+                    if (_currentInput3d != null) _textureMap[nodeId3 + "_out3d"] = _currentInput3d;
+                    if (_currentInputGeo != null) _textureMap[nodeId3 + "_outGeo"] = _currentInputGeo;
+                    continue;
+                }
+                // _write3d (reference/03 §4.1; expander.js lines 233-285). Chainable: blits the
+                // live 3D + geo lanes into global_<vol>/global_<geo> (each skipped on name=="none"
+                // or already-equal) and passes all three lanes through.
+                if (step.Builtin && step.Op == "_write3d")
+                {
+                    ArgValue tex3d = step.Args.Get("tex3d");
+                    ArgValue geo = step.Args.Get("geo");
+                    string nodeIdW3 = "node_" + step.Temp;
+                    if (tex3d != null && tex3d.Kind == ArgKind.Surface && tex3d.Surface.Name != "none" && _currentInput3d != null)
+                    {
+                        string targetVol = "global_" + tex3d.Surface.Name;
+                        if (_currentInput3d != targetVol)
+                        {
+                            var blit = NewBlit(nodeIdW3 + "_write3d_vol_blit", _currentInput3d, targetVol, nodeIdW3, step.Temp);
+                            _result.Passes.Add(blit);
+                            EnsureBlitProgram();
+                        }
+                    }
+                    if (geo != null && geo.Kind == ArgKind.Surface && geo.Surface.Name != "none" && _currentInputGeo != null)
+                    {
+                        string targetGeo = "global_" + geo.Surface.Name;
+                        if (_currentInputGeo != targetGeo)
+                        {
+                            var blit = NewBlit(nodeIdW3 + "_write3d_geo_blit", _currentInputGeo, targetGeo, nodeIdW3, step.Temp);
+                            _result.Passes.Add(blit);
+                        }
+                    }
+                    if (currentInput != null) _textureMap[nodeIdW3 + "_out"] = currentInput;
+                    if (_currentInput3d != null) _textureMap[nodeIdW3 + "_out3d"] = _currentInput3d;
+                    if (_currentInputGeo != null) _textureMap[nodeIdW3 + "_outGeo"] = _currentInputGeo;
+                    continue;
+                }
                 if (step.Builtin && step.Op == "_write")
                 {
                     ArgValue tex = step.Args.Get("tex");
@@ -172,9 +244,16 @@ namespace Noisemaker.Hlsl.Compiler
                 string nodeId = "node_" + step.Temp;
                 var scopedParamMap = new OrderedMap<string, string>();
 
+                // §4.4 step 1: particle-pipeline scope detection. An effect that defines
+                // global_xyz state (pointsEmit) STARTS a new particle pipeline; its state
+                // textures (and those of downstream flow/physical/pointsRender in the same
+                // chain) are scoped by this nodeId. Reset the agent-state cursors.
                 if (effectDef.Textures != null && effectDef.Textures.Kind == JsonKind.Object &&
                     effectDef.Textures.Has("global_xyz"))
-                    throw new NotImplementedException("particle-pipeline effects (global_xyz) are not implemented in the first-cut Expander (reference/03 §4.4 step 1).");
+                {
+                    _currentParticlePipelineId = nodeId;
+                    _currentInputXyz = _currentInputVel = _currentInputRgba = null;
+                }
 
                 // --- compile-time defines (reference/03 §4.5) ---
                 var defines = new OrderedMap<string, int>();
@@ -185,9 +264,7 @@ namespace Noisemaker.Hlsl.Compiler
 
                 // --- texture-spec collection 2D (reference/03 §6) ---
                 CollectTextures(effectDef, nodeId, chainScopeId, scopedParamMap);
-                if (effectDef.Textures3d != null && effectDef.Textures3d.Kind == JsonKind.Object &&
-                    HasAny(effectDef.Textures3d))
-                    throw new NotImplementedException("textures3d are not implemented in the first-cut Expander (reference/03 §4.4 step 4).");
+                CollectTextures3d(effectDef, nodeId, chainScopeId);
 
                 // --- resolve input cursor ---
                 if (step.From.HasValue)
@@ -202,10 +279,10 @@ namespace Noisemaker.Hlsl.Compiler
                 // --- args two passes (reference/03 §4.8) ---
                 var colorModeControlled = new HashSet<string>();
                 ArgsFirstPass(effectDef, step, pipelineUniforms, colorModeControlled);
-                ArgsSecondPass(effectDef, step, pipelineUniforms, colorModeControlled, currentInput3dPresent: false);
+                ArgsSecondPass(effectDef, step, pipelineUniforms, colorModeControlled, currentInput3dPresent: _currentInput3d != null);
 
                 // --- per-pass expansion (reference/03 §4.9) ---
-                ExpandPasses(effectDef, step, nodeId, defineSuffix, plan, pipelineUniforms, scopedParamMap,
+                ExpandPasses(effectDef, step, nodeId, defineSuffix, defines, plan, pipelineUniforms, scopedParamMap,
                              stepPos, currentInput, chainScopeId);
 
                 // --- cursor update (reference/03 §4.10, 2D only in scope) ---
@@ -233,9 +310,53 @@ namespace Noisemaker.Hlsl.Compiler
                         currentInput = vtid;
                     }
                 }
-                if (effectDef.OutputTex3d != null || effectDef.OutputGeo != null ||
-                    effectDef.OutputXyz != null || effectDef.OutputVel != null || effectDef.OutputRgba != null)
-                    throw new NotImplementedException("3D / geo / agent output passthrough is not implemented in the first-cut Expander (reference/03 §4.10).");
+                // §4.10: 3D cursor update from this node's pass output (expander.js 1031-1035).
+                // Note: geo has NO `_outGeo` cursor pickup here — currentInputGeo only updates via
+                // the explicit outputGeo declaration below (matches expander.js verbatim).
+                if (_textureMap.TryGetValue(nodeId + "_out3d", out string oTex3d)) _currentInput3d = oTex3d;
+                // §4.10: agent-state cursors update from this node's pass outputs.
+                if (_textureMap.TryGetValue(nodeId + "_outXyz", out string oXyz)) _currentInputXyz = oXyz;
+                if (_textureMap.TryGetValue(nodeId + "_outVel", out string oVel)) _currentInputVel = oVel;
+                if (_textureMap.TryGetValue(nodeId + "_outRgba", out string oRgba)) _currentInputRgba = oRgba;
+                // §4.10: effect-level agent-state passthrough declarations (only when a pass
+                // did not already produce the corresponding _out*).
+                ApplyAgentPassthrough(effectDef.OutputXyz, nodeId + "_outXyz", nodeId, chainScopeId, "inputXyz", ref _currentInputXyz);
+                ApplyAgentPassthrough(effectDef.OutputVel, nodeId + "_outVel", nodeId, chainScopeId, "inputVel", ref _currentInputVel);
+                ApplyAgentPassthrough(effectDef.OutputRgba, nodeId + "_outRgba", nodeId, chainScopeId, "inputRgba", ref _currentInputRgba);
+                // §4.10: effect-level 3D output passthrough (expander.js 1050-1072). Only when a
+                // pass did not already produce _out3d. "inputTex3d" reuses the live 3D cursor;
+                // else global_→chain-scope, else node-local.
+                if (effectDef.OutputTex3d != null && !_textureMap.ContainsKey(nodeId + "_out3d"))
+                {
+                    string internalTex = effectDef.OutputTex3d;
+                    if (internalTex == "inputTex3d")
+                    {
+                        if (_currentInput3d != null) _textureMap[nodeId + "_out3d"] = _currentInput3d;
+                    }
+                    else
+                    {
+                        string vtid = internalTex.StartsWith("global_")
+                            ? ScopeChainTex(internalTex, chainScopeId) : nodeId + "_" + internalTex;
+                        _textureMap[nodeId + "_out3d"] = vtid;
+                        _currentInput3d = vtid;
+                    }
+                }
+                // §4.10: effect-level geo passthrough (expander.js 1074-1089). "inputGeo" reuses
+                // the live geo cursor; else node-scope ONLY (no global_ handling, per reference).
+                if (effectDef.OutputGeo != null)
+                {
+                    string geoTex = effectDef.OutputGeo;
+                    if (geoTex == "inputGeo")
+                    {
+                        if (_currentInputGeo != null) _textureMap[nodeId + "_outGeo"] = _currentInputGeo;
+                    }
+                    else
+                    {
+                        string vgid = nodeId + "_" + geoTex;
+                        _textureMap[nodeId + "_outGeo"] = vgid;
+                        _currentInputGeo = vgid;
+                    }
+                }
             }
 
             // --- final chain output (reference/03 §4.11) ---
@@ -342,21 +463,46 @@ namespace Noisemaker.Hlsl.Compiler
                 string texName = kv.Key;
                 JsonValue specJson = kv.Value;
                 bool isParticle = IsParticleTex(texName);
-                if (isParticle)
-                    throw new NotImplementedException("particle textures are not implemented in the first-cut Expander (reference/03 §6.1).");
+                bool particleScoped = isParticle && _currentParticlePipelineId != null;
 
+                // §6.1 virtualTexId: particle+active → pipeline-scoped; global_ → chain-scoped;
+                // else node-local.
                 string virtualTexId;
-                if (texName.StartsWith("global_")) virtualTexId = texName + "_" + chainScopeId; // chain-scope
+                if (particleScoped) virtualTexId = texName + "_" + _currentParticlePipelineId;
+                else if (texName.StartsWith("global_")) virtualTexId = texName + "_" + chainScopeId;
                 else virtualTexId = nodeId + "_" + texName;
 
                 TextureSpec spec = ParseTextureSpec(specJson);
                 bool hasParamRef = DimReferencesParam(spec.Width) || DimReferencesParam(spec.Height);
-                bool shouldScopeAsChain = texName.StartsWith("global_");
-                if (shouldScopeAsChain || hasParamRef)
+                // §6.3 shouldScopeParams + scope suffix (particle id when the texture is a
+                // particle texture, else the chain scope).
+                bool shouldScopeParams = particleScoped || (!particleScoped && texName.StartsWith("global_")) ||
+                                         (_currentParticlePipelineId != null && !texName.StartsWith("global_")) ||
+                                         hasParamRef;
+                string scopeSuffix = particleScoped ? _currentParticlePipelineId : chainScopeId;
+                if (shouldScopeParams)
                 {
-                    spec.Width = ScopeDimSpec(spec.Width, chainScopeId, scopedParamMap);
-                    spec.Height = ScopeDimSpec(spec.Height, chainScopeId, scopedParamMap);
+                    spec.Width = ScopeDimSpec(spec.Width, scopeSuffix, scopedParamMap);
+                    spec.Height = ScopeDimSpec(spec.Height, scopeSuffix, scopedParamMap);
                 }
+                _result.TextureSpecs.Add(virtualTexId, spec);
+            }
+        }
+
+        // --- 3D texture specs (reference/03 §4.4 step 4 / §6.2) -------------
+        // Same naming convention as 2D: global_ → chain-scoped; else node-local. Each spec is
+        // copied with is3D:true (expander.js lines 498-510). No param-scoping here — the
+        // reference does not scope textures3d dims (matches expander.js verbatim).
+        private void CollectTextures3d(EffectDefinition effectDef, string nodeId, string chainScopeId)
+        {
+            if (effectDef.Textures3d == null || effectDef.Textures3d.Kind != JsonKind.Object) return;
+            foreach (var kv in effectDef.Textures3d.AsObject)
+            {
+                string texName = kv.Key;
+                string virtualTexId = texName.StartsWith("global_")
+                    ? ScopeChainTex(texName, chainScopeId) : nodeId + "_" + texName;
+                TextureSpec spec = ParseTextureSpec(kv.Value);
+                spec.Is3D = true;
                 _result.TextureSpecs.Add(virtualTexId, spec);
             }
         }
@@ -424,6 +570,9 @@ namespace Noisemaker.Hlsl.Compiler
                 if (argName == "_skip") continue;
                 string uniformName = GlobalUniformName(effectDef, argName) ?? argName;
                 if (colorModeControlled.Contains(uniformName)) continue;
+                // §4.8 / §9 hazard 9: inherit upstream volumeSize when this effect reads a 3D
+                // input — skip writing this effect's own volumeSize arg (expander.js 606-608).
+                if (uniformName == "volumeSize" && currentInput3dPresent && pipe.ContainsKey("volumeSize")) continue;
                 UniformValue v = ArgToUniform(arg);
                 if (v != null) pipe.Add(uniformName, v);
             }
@@ -432,11 +581,28 @@ namespace Noisemaker.Hlsl.Compiler
         // --- per-pass expansion (reference/03 §4.9) -------------------------
 
         private void ExpandPasses(EffectDefinition effectDef, Step step, string nodeId, string defineSuffix,
+                                  OrderedMap<string, int> defines,
                                   Plan plan, OrderedMap<string, UniformValue> pipe, OrderedMap<string, string> scopedParamMap,
                                   int stepPos, string currentInput, string chainScopeId)
         {
             if (effectDef.Passes == null || effectDef.Passes.Kind != JsonKind.Array) return;
             List<JsonValue> passDefs = effectDef.Passes.AsArray;
+
+            // define-tagged globals become COMPILE-TIME DEFINES (pass.Defines), not
+            // runtime uniforms. Exclude their keys from THIS effect's pass uniforms
+            // (reference keeps them in the pipeline for DOWNSTREAM passes, but the
+            // defining pass carries them as defines). reference/03 §4.5/§4.9. Without
+            // this, pass.Defines is empty so the backend never SetInt()s the define
+            // (e.g. NOISE_TYPE/LOOP_OFFSET) and the shader uses its fallback default.
+            var defineKeys = new System.Collections.Generic.HashSet<string>();
+            if (effectDef.Globals != null && effectDef.Globals.Kind == JsonKind.Object)
+                foreach (var gk in effectDef.Globals.AsObject)
+                {
+                    if (StrOf(gk.Value, "define") == null) continue;
+                    defineKeys.Add(gk.Key);
+                    string un = StrOf(gk.Value, "uniform");
+                    if (un != null) defineKeys.Add(un);
+                }
             for (int i = 0; i < passDefs.Count; i++)
             {
                 JsonValue passDef = passDefs[i];
@@ -460,6 +626,11 @@ namespace Noisemaker.Hlsl.Compiler
                     LoopGroupId = _activeLoopGroupId,
                     LoopIterations = _activeLoopGroupId != 0 ? _activeLoopIterations : 0
                 };
+                // §4.9 step 3 / §9 hazard 9: a 3D consumer pass inherits the upstream volume's
+                // size — flag it so the backend skips re-applying a stale local volumeSize
+                // (expander.js 666-668). Gated on currentInput3d AND an inherited volumeSize.
+                if (_currentInput3d != null && pipe.ContainsKey("volumeSize"))
+                    pass.InheritsVolumeSize = true;
                 int? drawBuffers = NullableInt(passDef, "drawBuffers");
                 if (drawBuffers.HasValue) pass.DrawBuffers = drawBuffers;
                 int? count = NullableInt(passDef, "count");
@@ -488,8 +659,12 @@ namespace Noisemaker.Hlsl.Compiler
                     passDef.Has("storageBuffers") || passDef.Has("storageTextures"))
                     throw new NotImplementedException("compute/MRT pass fields (entryPoint/workgroups/storage*) are not implemented in the first-cut Expander (reference/03 §2.1).");
 
-                // pass.uniforms = { ...pipelineUniforms }
-                foreach (var u in pipe) pass.Uniforms.Add(u.Key, u.Value);
+                // compile-time defines for this pass (reference/03 §4.5).
+                pass.Defines = new OrderedMap<string, int>();
+                if (defines != null) foreach (var d in defines) pass.Defines.Add(d.Key, d.Value);
+
+                // pass.uniforms = { ...pipelineUniforms }, minus THIS effect's define-globals
+                foreach (var u in pipe) if (!defineKeys.Contains(u.Key)) pass.Uniforms.Add(u.Key, u.Value);
 
                 // defaults fill (reference/03 §4.9 step 5)
                 if (effectDef.Globals != null && effectDef.Globals.Kind == JsonKind.Object)
@@ -498,7 +673,8 @@ namespace Noisemaker.Hlsl.Compiler
                         JsonValue def = kv.Value;
                         string uniform = StrOf(def, "uniform");
                         JsonValue dflt = def.Get("default");
-                        if (uniform != null && dflt != null && dflt.Kind != JsonKind.Null && !pass.Uniforms.ContainsKey(uniform))
+                        if (uniform != null && dflt != null && dflt.Kind != JsonKind.Null
+                            && !pass.Uniforms.ContainsKey(uniform) && !defineKeys.Contains(uniform))
                         {
                             UniformValue val = ResolveDefaultUniform(def, dflt);
                             if (val != null) { pass.Uniforms.Add(uniform, val); pipe.Add(uniform, val); }
@@ -529,6 +705,13 @@ namespace Noisemaker.Hlsl.Compiler
                     if (argName == "_skip") continue;
                     string uniformName = GlobalUniformName(effectDef, argName) ?? argName;
                     if (IsColorModeControlled(effectDef, uniformName)) continue;
+                    // define-tagged globals are COMPILE-TIME defines, never runtime uniforms
+                    // (reference/03 §4.5/§4.9). A define-global with no `uniform` field (e.g.
+                    // noise `type`→NOISE_TYPE, `loopOffset`→LOOP_OFFSET) must NOT leak here.
+                    if (defineKeys.Contains(argName) || defineKeys.Contains(uniformName)) continue;
+                    // §9 hazard 9: inherit upstream volumeSize over this effect's local arg
+                    // when reading a 3D input (expander.js 743-745).
+                    if (uniformName == "volumeSize" && _currentInput3d != null && pipe.ContainsKey("volumeSize")) continue;
                     UniformValue v = ArgToUniform(arg);
                     if (v != null) { pass.Uniforms.Add(uniformName, v); pipe.Add(uniformName, v); }
                 }
@@ -606,9 +789,13 @@ namespace Noisemaker.Hlsl.Compiler
                     (texRef.StartsWith("o") && IntPrefixOk(texRef));
 
                 if (isPipelineInput) { pass.Inputs.Add(uniformName, cur ?? texRef); }
-                else if (texRef == "inputTex3d" || texRef == "inputGeo" || texRef == "inputXyz" ||
-                         texRef == "inputVel" || texRef == "inputRgba")
-                    throw new NotImplementedException("3D/geo/agent pipeline inputs are not implemented in the first-cut Expander (reference/03 §5.1).");
+                // §5.1 step 4: agent-state cursors (particle pipeline).
+                else if (texRef == "inputXyz") pass.Inputs.Add(uniformName, _currentInputXyz ?? texRef);
+                else if (texRef == "inputVel") pass.Inputs.Add(uniformName, _currentInputVel ?? texRef);
+                else if (texRef == "inputRgba") pass.Inputs.Add(uniformName, _currentInputRgba ?? texRef);
+                // §5.1 steps 2-3: 3D / geo pipeline inputs (synth3d/filter3d).
+                else if (texRef == "inputTex3d") pass.Inputs.Add(uniformName, _currentInput3d ?? texRef);
+                else if (texRef == "inputGeo") pass.Inputs.Add(uniformName, _currentInputGeo ?? texRef);
                 else if (texRef == "noise") pass.Inputs.Add(uniformName, "global_noise");
                 else if (texRef == "midiNoteGrid") pass.Inputs.Add(uniformName, "midiNoteGrid");
                 else if (texRef == "feedback" || texRef == "selfTex")
@@ -682,10 +869,20 @@ namespace Noisemaker.Hlsl.Compiler
                     _textureMap[virtualTex] = virtualTex;
                     _textureMap[nodeId + "_out"] = virtualTex;
                 }
-                else if (texRef == "outputTex3d" || texRef == "outputXyz" || texRef == "outputVel" ||
-                         texRef == "outputRgba" || texRef == "inputTex3d" || texRef == "inputGeo" ||
-                         texRef == "inputXyz" || texRef == "inputVel" || texRef == "inputRgba")
-                    throw new NotImplementedException("3D/geo/agent outputs are not implemented in the first-cut Expander (reference/03 §5.2).");
+                // §5.2: agent-state outputs → node-scoped state textures (registered so the
+                // §4.10 cursor update can pick them up).
+                else if (texRef == "outputXyz") { virtualTex = nodeId + "_outXyz"; _textureMap[nodeId + "_outXyz"] = virtualTex; }
+                else if (texRef == "outputVel") { virtualTex = nodeId + "_outVel"; _textureMap[nodeId + "_outVel"] = virtualTex; }
+                else if (texRef == "outputRgba") { virtualTex = nodeId + "_outRgba"; _textureMap[nodeId + "_outRgba"] = virtualTex; }
+                // §5.2: agent-state write-back (read-modify-write the live cursor).
+                else if (texRef == "inputXyz") virtualTex = _currentInputXyz ?? (nodeId + "_inputXyz");
+                else if (texRef == "inputVel") virtualTex = _currentInputVel ?? (nodeId + "_inputVel");
+                else if (texRef == "inputRgba") virtualTex = _currentInputRgba ?? (nodeId + "_inputRgba");
+                // §5.2: 3D output → node-scoped state texture (registered for the §4.10 cursor).
+                else if (texRef == "outputTex3d") { virtualTex = nodeId + "_out3d"; _textureMap[nodeId + "_out3d"] = virtualTex; }
+                // §5.2: 3D / geo write-back (read-modify-write the live cursor).
+                else if (texRef == "inputTex3d") virtualTex = _currentInput3d ?? (nodeId + "_inputTex3d");
+                else if (texRef == "inputGeo") virtualTex = _currentInputGeo ?? (nodeId + "_inputGeo");
                 else if (texRef.StartsWith("global_")) virtualTex = ScopeChainTex(texRef, chainScopeId);
                 else if (texRef.StartsWith("feedback_")) virtualTex = texRef;
                 else virtualTex = nodeId + "_" + texRef;
@@ -809,7 +1006,12 @@ namespace Noisemaker.Hlsl.Compiler
                 case ArgKind.String: return UniformValue.Of(arg.String);
                 case ArgKind.NumberArray: return UniformValue.Of(new List<double>(arg.NumberArray));
                 case ArgKind.Wrapped:
-                    throw new NotImplementedException("wrapped/automation uniform values are not implemented in the first-cut Expander (reference/03 §1.1).");
+                    // Automation config (Oscillator/Midi/Audio). The validator resolves
+                    // osc() to a JsonValue config (reference/02 §6.11); carry it verbatim
+                    // as an Object uniform so the runtime UniformBinder evaluates it
+                    // per-frame (reference/04 §10.4). Midi/Audio remain out of scope.
+                    if (arg.Wrapped is JsonValue jv) return UniformValue.OfObject(jv);
+                    throw new NotImplementedException("non-oscillator automation uniform values are not implemented (reference/03 §1.1).");
                 default: return null;
             }
         }
@@ -866,11 +1068,39 @@ namespace Noisemaker.Hlsl.Compiler
             return name;
         }
 
-        // scopeChainTex (reference/03 §6.2); particle scoping out of scope here.
-        private static string ScopeChainTex(string texName, string chainScopeId)
+        // scopeParticleTex (reference/03 §6.1): a particle texture is scoped by the active
+        // particle-pipeline id; if no pipeline is active it is left unchanged (NOT chain-scoped).
+        private string ScopeParticleTex(string name)
         {
+            if (_currentParticlePipelineId != null && IsParticleTex(name))
+                return name + "_" + _currentParticlePipelineId;
+            return name;
+        }
+
+        // scopeChainTex (reference/03 §6.2): particle scoping takes priority; else global_
+        // textures are chain-scoped; else unchanged.
+        private string ScopeChainTex(string texName, string chainScopeId)
+        {
+            if (IsParticleTex(texName)) return ScopeParticleTex(texName);
             if (texName.StartsWith("global_")) return texName + "_" + chainScopeId;
             return texName;
+        }
+
+        // §4.10 effect-level agent-state passthrough. `decl` is the effect's
+        // outputXyz/Vel/Rgba; `outKey` is `${nodeId}_outXyz` etc. Skips when a pass already
+        // produced outKey. `reuseKeyword` (=='inputXyz'...) reuses the live cursor; global_
+        // is scope-resolved; else node-local.
+        private void ApplyAgentPassthrough(string decl, string outKey, string nodeId, string chainScopeId,
+                                           string reuseKeyword, ref string cursor)
+        {
+            if (decl == null || _textureMap.ContainsKey(outKey)) return;
+            string vtid;
+            if (decl == reuseKeyword) vtid = cursor;
+            else if (decl.StartsWith("global_")) vtid = ScopeChainTex(decl, chainScopeId);
+            else vtid = nodeId + "_" + decl;
+            if (vtid == null) return;
+            _textureMap[outKey] = vtid;
+            cursor = vtid;
         }
 
         private static bool DimReferencesParam(Dim d)

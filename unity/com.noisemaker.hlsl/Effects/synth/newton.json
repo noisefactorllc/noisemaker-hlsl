@@ -2,7 +2,10 @@
   "name": "Newton",
   "namespace": "synth",
   "func": "newton",
-  "tags": ["fractal"],
+  "starter": true,
+  "tags": [
+    "fractal"
+  ],
   "description": "Newton fractal explorer with deep zoom",
   "paramAliases": {},
   "globals": {
@@ -12,12 +15,12 @@
       "uniform": "poi",
       "choices": {
         "manual": 0,
-        "triplePoint3": 1,
+        "hexWeb6": 5,
+        "octoFlower8": 6,
+        "pentaSpiral5": 4,
         "spiralJunction3": 2,
         "starCenter5": 3,
-        "pentaSpiral5": 4,
-        "hexWeb6": 5,
-        "octoFlower8": 6
+        "triplePoint3": 1
       }
     },
     "outputMode": {
@@ -25,9 +28,9 @@
       "default": 2,
       "uniform": "outputMode",
       "choices": {
+        "blended": 2,
         "iteration": 0,
-        "rootIndex": 1,
-        "blended": 2
+        "rootIndex": 1
       }
     },
     "iterations": {
@@ -46,10 +49,10 @@
     },
     "relaxation": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "relaxation",
       "min": 0.5,
-      "max": 2.0
+      "max": 2
     },
     "tolerance": {
       "type": "float",
@@ -60,14 +63,14 @@
     },
     "centerX": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "centerHiX",
       "min": -3,
       "max": 3
     },
     "centerY": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "centerHiY",
       "min": -3,
       "max": 3
@@ -81,10 +84,11 @@
     },
     "zoomSpeed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "zoomSpeed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "zoomDepth": {
       "type": "float",
@@ -95,30 +99,30 @@
     },
     "degreeSpeed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "degreeSpeed",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "degreeRange": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "degreeRange",
-      "min": 0.0,
-      "max": 3.0
+      "min": 0,
+      "max": 3
     },
     "relaxSpeed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "relaxSpeed",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "relaxRange": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "relaxRange",
-      "min": 0.0,
+      "min": 0,
       "max": 0.5
     },
     "invert": {
@@ -134,15 +138,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

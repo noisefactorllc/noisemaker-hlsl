@@ -2,7 +2,11 @@
   "name": "LoopBegin",
   "namespace": "render",
   "func": "loopBegin",
-  "tags": ["util", "sim"],
+  "starter": false,
+  "tags": [
+    "util",
+    "sim"
+  ],
   "description": "Start accumulator loop, read from feedback buffer",
   "paramAliases": {},
   "globals": {
@@ -11,22 +15,14 @@
       "default": 50,
       "uniform": "alpha",
       "min": 0,
-      "max": 100,
-      "ui": { "label": "alpha", "control": "slider" }
+      "max": 100
     },
     "intensity": {
       "type": "float",
       "default": 100,
       "uniform": "intensity",
       "min": 0,
-      "max": 100,
-      "ui": { "label": "intensity", "control": "slider" }
-    }
-  },
-  "uniformLayouts": {
-    "loopBegin": {
-      "alpha": { "slot": 0, "components": "x" },
-      "intensity": { "slot": 0, "components": "y" }
+      "max": 100
     }
   },
   "passes": [
@@ -42,20 +38,5 @@
       }
     }
   ],
-  "is3D": false,
-  "textures": {
-    "global_accum": {
-      "width": "100%",
-      "height": "100%",
-      "format": "rgba16f",
-      "_role": "PERSISTENT feedback accumulator shared by render/loopBegin (reads) and render/loopEnd (writes). Dynamic global surface (scanned from pass inputs; name starts with 'global_'). Created W x H, rgba16f, linear, 4-channel, double-buffered. loopBegin only READS it (the prior loop iteration / prior frame's accumulated state); loopEnd writes the processed chain result back to it. Persists across frames and loop iterations."
-    }
-  },
-  "feedback": {
-    "_comment": "Accumulator-loop bracket start. loopBegin reads the persistent 'global_accum' surface and lighten-blends (component-wise max) it with the current input, mixing by alpha (0..100 -> 0..1) and scaling the accumulator by intensity (0..100 -> 0..1); result alpha = max(inputColor.a, accum.a). Output passes through as outputTex. The DSL sub-chain between loopBegin and loopEnd is EXPANDED by the frontend compiler and ITERATED N times by the runtime (control-flow loop; reference 10). This shader is NOT the loop body and has NO iteration-index uniform. No MRT (single fragColor). global_accum is double-buffered; loopBegin reads its prior 'global_' contents. The write side of the feedback lives in render/loopEnd (program 'copy' -> global_accum).",
-    "persistent": ["global_accum"],
-    "transient": [],
-    "loopBracket": { "role": "begin", "pairedWith": "render/loopEnd", "accumulator": "global_accum" },
-    "mrt": false
-  }
+  "textures": {}
 }

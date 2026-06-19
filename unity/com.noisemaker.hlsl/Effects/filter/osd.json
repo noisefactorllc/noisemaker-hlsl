@@ -2,7 +2,10 @@
   "name": "OSD",
   "namespace": "filter",
   "func": "osd",
-  "tags": ["text"],
+  "starter": false,
+  "tags": [
+    "text"
+  ],
   "description": "On-screen display overlay",
   "paramAliases": {},
   "globals": {
@@ -22,7 +25,7 @@
     },
     "speed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "speed",
       "min": 0,
       "max": 50
@@ -46,22 +49,16 @@
       "inputs": {
         "inputTex": "inputTex"
       },
+      "uniforms": {
+        "alpha": "alpha",
+        "seed": "seed",
+        "speed": "speed",
+        "corner": "corner"
+      },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "alpha": 0.75,
-        "seed": 1,
-        "speed": 0.0,
-        "corner": 3
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

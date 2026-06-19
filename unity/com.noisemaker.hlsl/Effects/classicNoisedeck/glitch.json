@@ -2,9 +2,15 @@
   "name": "Glitch",
   "namespace": "classicNoisedeck",
   "func": "glitch",
-  "tags": ["distort", "glitch"],
+  "starter": false,
+  "tags": [
+    "distort",
+    "glitch"
+  ],
   "description": "Digital glitch effects",
-  "paramAliases": { "aberrationAmt": "aberration" },
+  "paramAliases": {
+    "aberrationAmt": "aberration"
+  },
   "globals": {
     "glitchiness": {
       "type": "float",
@@ -84,26 +90,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "glitchiness": "glitchiness",
-        "aberration": "aberration",
-        "xChonk": "xChonk",
-        "yChonk": "yChonk",
-        "seed": "seed",
-        "scanlinesAmt": "scanlinesAmt",
-        "snowAmt": "snowAmt",
-        "vignetteAmt": "vignetteAmt",
-        "distortion": "distortion",
-        "aspectLens": "aspectLens"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

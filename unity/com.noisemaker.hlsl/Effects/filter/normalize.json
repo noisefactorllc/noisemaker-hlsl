@@ -2,7 +2,10 @@
   "name": "Normalize",
   "namespace": "filter",
   "func": "normalize",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Value normalization",
   "paramAliases": {},
   "globals": {},
@@ -15,8 +18,7 @@
       },
       "outputs": {
         "fragColor": "reduce1"
-      },
-      "uniforms": {}
+      }
     },
     {
       "name": "reduceMinmax",
@@ -26,8 +28,7 @@
       },
       "outputs": {
         "fragColor": "reduce2"
-      },
-      "uniforms": {}
+      }
     },
     {
       "name": "statsFinal",
@@ -37,8 +38,7 @@
       },
       "outputs": {
         "fragColor": "stats"
-      },
-      "uniforms": {}
+      }
     },
     {
       "name": "apply",
@@ -49,8 +49,7 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
   "textures": {
@@ -67,11 +66,6 @@
     "stats": {
       "width": 1,
       "height": 1,
-      "format": "rgba16f"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
       "format": "rgba16f"
     }
   }

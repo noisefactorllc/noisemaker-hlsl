@@ -2,7 +2,10 @@
   "name": "Simple Aberration",
   "namespace": "filter",
   "func": "simpleAberration",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Chromatic aberration",
   "paramAliases": {},
   "globals": {
@@ -21,19 +24,14 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "displacement": "displacement"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nnoise(ridges: true, colorMode: mono)\n.simpleAberration()\n.write(o0)"
 }

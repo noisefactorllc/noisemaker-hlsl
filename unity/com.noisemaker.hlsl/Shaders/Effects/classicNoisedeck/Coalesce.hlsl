@@ -385,8 +385,14 @@ float4 nm_coalesce(float2 st)
         rightUV.x = rightUV.x + cos(leftLen * NM_TAU) * rb;
         rightUV.y = rightUV.y + sin(leftLen * NM_TAU) * rb;
 
-        float4 color1 = inputTex.Sample(sampler_inputTex, leftUV);
-        float4 color2 = tex.Sample(sampler_tex, rightUV);
+        // GLSL golden wraps the refracted UVs with fract() before sampling
+        // (texture(inputTex, fract(leftLocalUV))). leftUV.x = st.x + cos(...)*ra can
+        // exceed [0,1] (here +0.0875 near the right edge); without frac the Clamp
+        // sampler repeats the edge column → horizontal banding instead of the
+        // wrapped sample. For an untiled render leftLocalUV == leftUV, so match GLSL
+        // with frac() here.
+        float4 color1 = inputTex.Sample(sampler_inputTex, frac(leftUV));
+        float4 color2 = tex.Sample(sampler_tex, frac(rightUV));
 
         color = float4(nm_blend_colors(color1, color2, blendMode, mixAmt), max(color1.a, color2.a));
     }

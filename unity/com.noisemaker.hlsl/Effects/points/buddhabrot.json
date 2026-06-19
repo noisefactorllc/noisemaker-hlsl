@@ -2,98 +2,68 @@
   "name": "Buddhabrot",
   "namespace": "points",
   "func": "buddhabrot",
-  "tags": ["fractal", "sim"],
+  "starter": false,
+  "tags": [
+    "fractal",
+    "sim"
+  ],
   "description": "Buddhabrot fractal via progressive orbit accumulation",
   "paramAliases": {},
-  "outputXyz": "global_xyz",
-  "outputVel": "global_vel",
-  "outputRgba": "global_rgba",
   "globals": {
     "stateSize": {
       "type": "int",
       "default": 512,
-      "uniform": "stateSize",
-      "ui": { "control": false }
+      "uniform": "stateSize"
     },
     "mode": {
       "type": "int",
       "default": 0,
       "uniform": "mode",
-      "choices": { "anti": 1, "standard": 0 },
-      "ui": { "label": "mode", "control": "dropdown", "category": "fractal" }
+      "choices": {
+        "anti": 1,
+        "standard": 0
+      }
     },
     "maxIter": {
       "type": "int",
       "default": 200,
       "uniform": "maxIter",
       "min": 20,
-      "max": 2000,
-      "step": 10,
-      "ui": { "label": "max iterations", "control": "slider", "category": "fractal" }
+      "max": 2000
     },
     "minIter": {
       "type": "int",
       "default": 1,
       "uniform": "minIter",
       "min": 1,
-      "max": 1000,
-      "step": 1,
-      "ui": { "label": "min iterations", "control": "slider", "category": "fractal" }
+      "max": 1000
     },
     "centerX": {
       "type": "float",
       "default": -0.5,
       "uniform": "centerX",
       "min": -3,
-      "max": 3,
-      "randChance": 0,
-      "step": 0.01,
-      "ui": { "label": "center x", "control": "slider", "category": "navigation" }
+      "max": 3
     },
     "centerY": {
       "type": "float",
       "default": 0,
       "uniform": "centerY",
       "min": -3,
-      "max": 3,
-      "randChance": 0,
-      "step": 0.01,
-      "ui": { "label": "center y", "control": "slider", "category": "navigation" }
+      "max": 3
     },
     "zoom": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "zoom",
       "min": 0.1,
-      "max": 5,
-      "step": 0.1,
-      "randMin": 0.5,
-      "randMax": 2,
-      "ui": { "label": "zoom", "control": "slider", "category": "navigation" }
-    }
-  },
-  "uniformLayouts": {
-    "agent": {
-      "resolution": { "slot": 0, "components": "xy" },
-      "maxIter": { "slot": 0, "components": "z" },
-      "minIter": { "slot": 0, "components": "w" },
-      "mode": { "slot": 1, "components": "x" },
-      "centerX": { "slot": 1, "components": "y" },
-      "centerY": { "slot": 1, "components": "z" },
-      "zoom": { "slot": 1, "components": "w" }
-    },
-    "zWrite": {
-      "resolution": { "slot": 0, "components": "xy" }
-    },
-    "passthrough": {
-      "resolution": { "slot": 0, "components": "xy" }
+      "max": 5
     }
   },
   "passes": [
     {
       "name": "agent",
       "program": "agent",
-      "drawBuffers": 3,
       "inputs": {
         "xyzTex": "global_xyz",
         "velTex": "global_vel",
@@ -112,7 +82,7 @@
         "outVel": "global_vel",
         "outRGBA": "global_rgba"
       },
-      "_mrt": "drawBuffers:3 — attachment order: outXYZ=color(SV_Target0), outVel=color1(SV_Target1), outRGBA=color2(SV_Target2)."
+      "drawBuffers": 3
     },
     {
       "name": "zWrite",
@@ -138,21 +108,16 @@
   ],
   "textures": {
     "global_zState": {
-      "width": { "param": "stateSize", "paramDefault": 512 },
-      "height": { "param": "stateSize", "paramDefault": 512 },
-      "format": "rgba32float",
-      "_role": "TRANSIENT z-storage (this effect's own 'global_' surface, sized stateSize x stateSize). Written by zWrite (z.xy of each agent's current orbit step), recomputed each frame."
+      "width": {
+        "param": "stateSize",
+        "paramDefault": 512
+      },
+      "height": {
+        "param": "stateSize",
+        "paramDefault": 512
+      },
+      "format": "rgba32float"
     }
   },
-  "feedback": {
-    "_comment": "AGENT-UPDATE middleware of the Common Agent Architecture. The PERSISTENT state textures global_xyz [screenX,screenY,phase,alive], global_vel [c.re,c.im,step,escapeStep], global_rgba [b,b,b,1] are NOT declared here — they are created by the surrounding pointsEmit effect (definition.textures.global_xyz opens the particle pipeline) at stateSize x stateSize, format rgba32f. They survive frame-to-frame: the runtime double-buffers each, ping-pongs within-frame on every write (ref 04 §10.2), and at end-of-frame PERSISTS (no swap) because isStateSurface matches the names xyz/vel/rgba (§10.7). The 'agent' pass is a FULLSCREEN pass over the state texture that READS global_xyz/vel/rgba and WRITES all three via MRT (drawBuffers:3) — a self-referencing read+write per surface, so the runtime ping-pongs them. NO deposit/points-scatter pass exists in this effect; scatter lives in pointsEmit/pointsRender. No '_iteration'/repeat. global_zState is transient (recomputed each frame by zWrite).",
-    "persistent": ["global_xyz", "global_vel", "global_rgba"],
-    "persistentSource": "pointsEmit (not declared in this effect; rgba32f, stateSize x stateSize)",
-    "transient": ["global_zState"],
-    "mrt": true,
-    "mrtPass": "agent",
-    "mrtOutputs": ["outXYZ", "outVel", "outRGBA"],
-    "drawMode": "fullscreen",
-    "scatterPass": "none (handled by pointsRender middleware)"
-  }
+  "defaultProgram": "search points, synth, render\n\nsolid()\n  .pointsEmit(stateSize: 512)\n  .buddhabrot()\n  .pointsRender(intensity: 99)\n  .write(o0)\n\nrender(o0)"
 }

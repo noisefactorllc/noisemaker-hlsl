@@ -469,9 +469,8 @@ Render3dFragmentOutput frag_render3d(NMVaryings i)
     float2 fullRes = (fullResolution.x > 0.0) ? fullResolution : resolution;
     if (fullRes.x < 1.0) { fullRes = float2(1024.0, 1024.0); }
 
-    float2 position = NM_FragCoord(i);  // WGSL @builtin(position).xy (top-left, +0.5)
+    float2 position = NM_FragCoord(i);  // gl_FragCoord.xy analog (+0.5 centered)
     float2 uv = ((position + tileOffset) - 0.5 * fullRes) / fullRes.y;
-    float2 uvFlipped = float2(uv.x, -uv.y);
 
     float camAngle = time * R3D_TAU * (float)orbitSpeed;
     float camDist = 3.5;
@@ -482,7 +481,12 @@ Render3dFragmentOutput frag_render3d(NMVaryings i)
     float3 right = normalize(cross(float3(0.0, 1.0, 0.0), forward));
     float3 up = cross(forward, right);
 
-    float3 rd = normalize(forward + uvFlipped.x * right + uvFlipped.y * up);
+    // GLSL golden uses RAW uv for the view ray (render3d.glsl):
+    //   rd = normalize(forward + uv.x*right + uv.y*up)
+    // The golden's bottom-left gl_FragCoord + final top-down PNG flip is matched
+    // here by the harness's top-left uv origin + native top-down PNG, so NO extra
+    // uv.y flip is added (the prior WGSL-derived -uv.y was wrong against GLSL).
+    float3 rd = normalize(forward + uv.x * right + uv.y * up);
 
     float3 color;
     float3 normal = float3(0.0, 0.0, 1.0);

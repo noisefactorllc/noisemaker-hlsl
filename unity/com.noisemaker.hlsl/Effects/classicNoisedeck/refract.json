@@ -2,7 +2,10 @@
   "name": "Refract",
   "namespace": "classicNoisedeck",
   "func": "refract",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Refraction distortion",
   "paramAliases": {
     "refractDir": "direction",
@@ -82,19 +85,13 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "mixAmt": "mix"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

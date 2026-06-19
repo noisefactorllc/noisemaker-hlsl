@@ -2,19 +2,24 @@
   "name": "Fibers",
   "namespace": "filter",
   "func": "fibers",
-  "tags": ["noise"],
+  "starter": false,
+  "tags": [
+    "noise"
+  ],
   "description": "Chaotic fiber texture overlay",
   "paramAliases": {},
   "globals": {
     "density": {
       "type": "float",
       "default": 0.5,
+      "uniform": "density",
       "min": 0,
       "max": 1
     },
     "seed": {
       "type": "int",
       "default": 1,
+      "uniform": "seed",
       "min": 1,
       "max": 100
     },
@@ -34,11 +39,11 @@
         "inputTex": "inputTex",
         "overlayTex": "overlayTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "alpha": "alpha"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
@@ -48,5 +53,6 @@
       "height": "screen",
       "format": "rgba8"
     }
-  }
+  },
+  "defaultProgram": "search filter, synth\n\nsolid(color: #000000)\n.fibers(density: 1)\n.write(o0)"
 }

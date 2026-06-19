@@ -2,7 +2,10 @@
   "name": "Lighting",
   "namespace": "filter",
   "func": "lighting",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Applies 3D lighting effects",
   "paramAliases": {},
   "globals": {
@@ -10,77 +13,86 @@
       "type": "float",
       "default": 1.5,
       "uniform": "normalStrength",
-      "min": 0.0,
-      "max": 5.0,
-      "step": 0.01
+      "min": 0,
+      "max": 5
     },
     "smoothing": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "smoothing",
-      "min": 1.0,
-      "max": 10.0,
-      "step": 0.1
+      "min": 1,
+      "max": 10
     },
     "diffuseColor": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
+      "default": [
+        1,
+        1,
+        1
+      ],
       "uniform": "diffuseColor"
     },
     "specularColor": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
+      "default": [
+        1,
+        1,
+        1
+      ],
       "uniform": "specularColor"
     },
     "specularIntensity": {
       "type": "float",
       "default": 0.5,
       "uniform": "specularIntensity",
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01
+      "min": 0,
+      "max": 2
     },
     "shininess": {
       "type": "float",
-      "default": 64.0,
+      "default": 64,
       "uniform": "shininess",
-      "min": 8.0,
-      "max": 256.0,
-      "step": 1.0
+      "min": 8,
+      "max": 256
     },
     "ambientColor": {
       "type": "color",
-      "default": [0.2, 0.2, 0.2],
+      "default": [
+        0.2,
+        0.2,
+        0.2
+      ],
       "uniform": "ambientColor"
     },
     "lightDirection": {
       "type": "vec3",
-      "default": [0.5, 0.5, 1.0],
+      "default": [
+        0.5,
+        0.5,
+        1
+      ],
       "uniform": "lightDirection"
     },
     "reflection": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "reflection",
-      "min": 0.0,
-      "max": 100.0,
-      "step": 0.1
+      "min": 0,
+      "max": 100
     },
     "refraction": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "refraction",
-      "min": 0.0,
-      "max": 100.0,
-      "step": 0.1
+      "min": 0,
+      "max": 100
     },
     "aberration": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "aberration",
-      "min": 0.0,
-      "max": 100.0,
-      "step": 0.1
+      "min": 0,
+      "max": 100
     }
   },
   "passes": [
@@ -92,27 +104,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "normalStrength": "normalStrength",
-        "smoothing": "smoothing",
-        "diffuseColor": "diffuseColor",
-        "specularColor": "specularColor",
-        "specularIntensity": "specularIntensity",
-        "shininess": "shininess",
-        "ambientColor": "ambientColor",
-        "lightDirection": "lightDirection",
-        "reflection": "reflection",
-        "refraction": "refraction",
-        "aberration": "aberration"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nnoise(ridges: true)\n.lighting(normalStrength: 2)\n.write(o0)"
 }

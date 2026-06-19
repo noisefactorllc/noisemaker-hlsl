@@ -2,7 +2,10 @@
   "name": "Feedback",
   "namespace": "filter",
   "func": "feedback",
-  "tags": ["sim"],
+  "starter": false,
+  "tags": [
+    "sim"
+  ],
   "description": "Feedback loop with blend modes and transforms",
   "paramAliases": {
     "mixAmt": "mix",
@@ -38,80 +41,79 @@
     "mix": {
       "type": "float",
       "default": 0,
+      "uniform": "mixAmt",
       "min": 0,
-      "max": 100,
-      "randMax": 25,
-      "uniform": "mixAmt"
+      "max": 100
     },
     "scaleAmt": {
       "type": "float",
       "default": 100,
+      "uniform": "scaleAmt",
       "min": 75,
-      "max": 200,
-      "uniform": "scaleAmt"
+      "max": 200
     },
     "rotation": {
       "type": "float",
       "default": 0,
+      "uniform": "rotation",
       "min": -180,
-      "max": 180,
-      "uniform": "rotation"
+      "max": 180
     },
     "refractAAmt": {
       "type": "float",
       "default": 0,
+      "uniform": "refractAAmt",
       "min": 0,
-      "max": 100,
-      "uniform": "refractAAmt"
+      "max": 100
     },
     "refractBAmt": {
       "type": "float",
       "default": 0,
+      "uniform": "refractBAmt",
       "min": 0,
-      "max": 100,
-      "uniform": "refractBAmt"
+      "max": 100
     },
     "refractADir": {
       "type": "float",
       "default": 0,
+      "uniform": "refractADir",
       "min": 0,
-      "max": 360,
-      "uniform": "refractADir"
+      "max": 360
     },
     "refractBDir": {
       "type": "float",
       "default": 0,
+      "uniform": "refractBDir",
       "min": 0,
-      "max": 360,
-      "uniform": "refractBDir"
+      "max": 360
     },
     "hueRotation": {
       "type": "float",
       "default": 0,
+      "uniform": "hueRotation",
       "min": -180,
-      "max": 180,
-      "uniform": "hueRotation"
+      "max": 180
     },
     "intensity": {
       "type": "float",
       "default": 0,
+      "uniform": "intensity",
       "min": -100,
-      "max": 100,
-      "uniform": "intensity"
+      "max": 100
     },
     "aberration": {
       "type": "float",
       "default": 0,
+      "uniform": "aberration",
       "min": 0,
-      "max": 100,
-      "uniform": "aberration"
+      "max": 100
     },
     "distortion": {
       "type": "float",
       "default": 0,
+      "uniform": "distortion",
       "min": -100,
-      "max": 100,
-      "uniform": "distortion"
+      "max": 100
     },
     "resetState": {
       "type": "boolean",
@@ -147,11 +149,6 @@
       "width": "input",
       "height": "input",
       "format": "rgba8unorm"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
     }
   }
 }

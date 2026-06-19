@@ -56,8 +56,9 @@ float nmc_simplex3D(float3 v)
     float2 C = float2(1.0 / 6.0, 1.0 / 3.0);
     float4 D = float4(0.0, 0.5, 1.0, 2.0);
 
-    // Apply seed offset to input
-    float3 vSeeded = v + (float)seed * 0.0001;
+    // Apply seed offset to input (golden GLSL multiplier is 0.1271; the WGSL
+    // this was first ported from used 0.0001, which diverges for nonzero seed)
+    float3 vSeeded = v + (float)seed * 0.1271;
 
     // First corner
     float3 i  = floor(vSeeded + dot(vSeeded, C.yyy));

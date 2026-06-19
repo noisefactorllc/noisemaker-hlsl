@@ -299,12 +299,15 @@ float4 frag_passthrough(NMVaryings i) : SV_Target
 struct PhysDepositVaryings
 {
     float4 positionCS : SV_POSITION;
+    float  pointSize  : PSIZE;       // D3D points topology requires a PSIZE output
+                                     // (reference gl_PointSize = 1.0).
     float4 color      : TEXCOORD0;
 };
 
 PhysDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
 {
     PhysDepositVaryings o;
+    o.pointSize = 1.0;   // reference gl_PointSize = 1.0.
 
     // State size from xyz texture dimensions (inherited from pointsEmit).
     uint tw, th;
@@ -336,9 +339,15 @@ PhysDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
         return o;
     }
 
-    // Convert position (0..1) to clip space (-1..1). No Y flip (golden rule #1).
+    // Convert position (0..1) to clip space (-1..1).
     float2 clipPos = pos.xy * 2.0 - 1.0;
-    o.positionCS = float4(clipPos, 0.0, 1.0);
+    // Y-orientation parity (CRITICAL): the diffuse pass and the agent SENSE pass
+    // read the pheromone field via NM_FragCoord-derived UV (NMVertFullscreen
+    // counter-flips clip.y by _ProjectionParams.x when rendering into an RT). This
+    // custom deposit VS MUST apply the SAME counter-flip so the deposited pheromone
+    // lands where those passes read it; otherwise the field is vertically mirrored
+    // vs the sim that senses+diffuses it, corrupting the steering and the trail.
+    o.positionCS = float4(clipPos.x, clipPos.y * _ProjectionParams.x, 0.0, 1.0);
 
     // Apply deposit amount.
     o.color = float4(col.rgb * deposit, col.a * deposit);

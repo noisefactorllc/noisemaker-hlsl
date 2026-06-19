@@ -2,21 +2,19 @@
   "name": "Reindex",
   "namespace": "filter",
   "func": "reindex",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Palette reindexing",
   "paramAliases": {},
   "globals": {
     "displacement": {
       "type": "float",
       "default": 0.5,
-      "min": 0,
-      "max": 2,
-      "step": 0.01,
       "uniform": "uDisplacement",
-      "ui": {
-        "label": "displacement",
-        "control": "slider"
-      }
+      "min": 0,
+      "max": 2
     }
   },
   "passes": [
@@ -57,18 +55,11 @@
   ],
   "textures": {
     "statsTiles": {
-      "width": "input",
-      "height": "input",
       "format": "rgba16f"
     },
     "global_stats": {
       "width": 1,
       "height": 1,
-      "format": "rgba16f"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
       "format": "rgba16f"
     }
   }

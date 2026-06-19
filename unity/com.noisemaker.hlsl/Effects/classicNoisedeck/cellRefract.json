@@ -2,7 +2,11 @@
   "name": "CellRefract",
   "namespace": "classicNoisedeck",
   "func": "cellRefract",
-  "tags": ["distort", "noise"],
+  "starter": false,
+  "tags": [
+    "distort",
+    "noise"
+  ],
   "description": "Cell-based refraction",
   "paramAliases": {
     "cellSmooth": "smooth",
@@ -30,14 +34,18 @@
       "type": "int",
       "default": 0,
       "uniform": "wrap",
-      "choices": { "mirror": 0, "repeat": 1 }
+      "choices": {
+        "mirror": 0,
+        "repeat": 1
+      }
     },
     "speed": {
       "type": "int",
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "shape": {
       "type": "int",
@@ -124,28 +132,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "refractAmt": "amount",
-        "direction": "direction",
-        "wrap": "wrap",
-        "speed": "speed",
-        "SHAPE": "shape",
-        "scale": "scale",
-        "cellScale": "cellScale",
-        "cellSmooth": "smooth",
-        "variation": "variation",
-        "seed": "seed",
-        "KERNEL": "kernel",
-        "effectWidth": "effectWidth"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

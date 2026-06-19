@@ -2,16 +2,22 @@
   "name": "PrismaticAberration",
   "namespace": "filter",
   "func": "prismaticAberration",
-  "tags": ["color", "lens"],
+  "starter": false,
+  "tags": [
+    "color",
+    "lens"
+  ],
   "description": "Prismatic aberration with hue controls",
-  "paramAliases": { "aberrationAmt": "aberration" },
+  "paramAliases": {
+    "aberrationAmt": "aberration"
+  },
   "globals": {
     "aberration": {
       "type": "float",
       "default": 50,
+      "uniform": "aberrationAmt",
       "min": 0,
-      "max": 100,
-      "uniform": "aberrationAmt"
+      "max": 100
     },
     "modulate": {
       "type": "boolean",
@@ -21,30 +27,30 @@
     "hueRotation": {
       "type": "float",
       "default": 0,
+      "uniform": "hueRotation",
       "min": -180,
-      "max": 180,
-      "uniform": "hueRotation"
+      "max": 180
     },
     "hueRange": {
       "type": "float",
       "default": 0,
+      "uniform": "hueRange",
       "min": 0,
-      "max": 100,
-      "uniform": "hueRange"
+      "max": 100
     },
     "saturation": {
       "type": "float",
       "default": 0,
+      "uniform": "saturation",
       "min": -100,
-      "max": 100,
-      "uniform": "saturation"
+      "max": 100
     },
     "passthru": {
       "type": "float",
       "default": 50,
+      "uniform": "passthru",
       "min": 0,
-      "max": 100,
-      "uniform": "passthru"
+      "max": 100
     }
   },
   "passes": [
@@ -56,22 +62,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "aberrationAmt": 50,
-        "modulate": 0,
-        "hueRotation": 0,
-        "hueRange": 0,
-        "saturation": 0,
-        "passthru": 50
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nnoise(ridges: true, colorMode: mono)\n.prismaticAberration(modulate: true)\n.write(o0)"
 }

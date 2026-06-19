@@ -2,37 +2,43 @@
   "name": "Repeat",
   "namespace": "filter",
   "func": "repeat",
-  "tags": ["tiling", "transform"],
+  "starter": false,
+  "tags": [
+    "tiling",
+    "transform"
+  ],
   "description": "Tiling repeat",
   "paramAliases": {},
   "globals": {
     "x": {
       "type": "float",
       "default": 3,
+      "uniform": "x",
       "min": 1,
       "max": 20,
-      "uniform": "x"
+      "zero": 1
     },
     "y": {
       "type": "float",
       "default": 3,
+      "uniform": "y",
       "min": 1,
       "max": 20,
-      "uniform": "y"
+      "zero": 1
     },
     "offsetX": {
       "type": "float",
       "default": 0,
+      "uniform": "offsetX",
       "min": -1,
-      "max": 1,
-      "uniform": "offsetX"
+      "max": 1
     },
     "offsetY": {
       "type": "float",
       "default": 0,
+      "uniform": "offsetY",
       "min": -1,
-      "max": 1,
-      "uniform": "offsetY"
+      "max": 1
     },
     "wrap": {
       "type": "int",
@@ -54,21 +60,8 @@
       },
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {
-        "x": 3,
-        "y": 3,
-        "offsetX": 0,
-        "offsetY": 0,
-        "wrap": 1
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

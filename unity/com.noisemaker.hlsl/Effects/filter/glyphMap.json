@@ -2,7 +2,11 @@
   "name": "Glyph Map",
   "namespace": "filter",
   "func": "glyphMap",
-  "tags": ["color", "pixel"],
+  "starter": false,
+  "tags": [
+    "color",
+    "pixel"
+  ],
   "description": "ASCII/glyph art conversion using procedural glyphs",
   "paramAliases": {},
   "globals": {
@@ -39,19 +43,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "cellSize": 16,
-        "seed": 1,
-        "colorMode": 1
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

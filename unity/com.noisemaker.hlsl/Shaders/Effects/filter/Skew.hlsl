@@ -74,12 +74,23 @@ float4 nm_skew(
     float angle = rotation * NM_PI / 180.0;
     float c = cos(angle);
     float s = sin(angle);
-    // WGSL: st = vec2<f32>(c * st.x - s * st.y, s * st.x + c * st.y);
-    st = float2(c * st.x - s * st.y, s * st.x + c * st.y);
+    // GLSL golden: st = mat2(c, -s, s, c) * st. GLSL mat2(a,b,c,d) is COLUMN-MAJOR
+    // (col0=(a,b), col1=(c,d)), so mat2(c,-s,s,c) = [[c, s],[-s, c]] and the product
+    // is (c*st.x + s*st.y, -s*st.x + c*st.y) — the OPPOSITE rotation direction from
+    // the WGSL transcription (c*x-s*y, s*x+c*y). At rotation=0 (s=0) both agree, so
+    // the WGSL bug only surfaces for nonzero rotation. Match GLSL (the golden).
+    st = float2(c * st.x + s * st.y, -s * st.x + c * st.y);
 
-    // Skew (no clamping — WGSL canonical)
-    // WGSL: st.x = st.x + st.y * -u.skewAmt;
-    st.x = st.x + st.y * -skewAmt;
+    // Skew. GLSL golden clamps skewAmt to ±(512/fullResolution.y) before applying
+    // (the WGSL transcription omitted this). For a 256-tall full image the bound is
+    // ±2.0, so typical skews pass through unchanged; match GLSL for parity at large
+    // skew / small resolutions.
+    // GLSL: float maxSkew = 512.0 / fullResolution.y;
+    //       float effectiveSkewAmt = clamp(skewAmt, -maxSkew, maxSkew);
+    //       st.x += st.y * -effectiveSkewAmt;
+    float maxSkew = 512.0 / texSize.y;
+    float effectiveSkewAmt = clamp(skewAmt, -maxSkew, maxSkew);
+    st.x = st.x + st.y * -effectiveSkewAmt;
 
     // Undo aspect, uncenter
     st.x = st.x / aspect;

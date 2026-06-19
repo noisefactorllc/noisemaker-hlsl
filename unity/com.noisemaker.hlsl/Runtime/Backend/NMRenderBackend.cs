@@ -193,12 +193,10 @@ namespace Noisemaker.Hlsl
                 // gl.viewport(0,0,targetW,targetH) and binds `resolution` = the OUTPUT RT
                 // size, so gl_FragCoord is target-relative. NM_FragCoord = uv *
                 // _NM_Resolution must therefore use the render-target size, NOT the global
-                // screen size set once per frame by SetEngineGlobals. Full-screen passes
-                // (target == screen) are unaffected (primary dims == screen dims); low-res
-                // state passes (reactionDiffusion/navierStokes/cellularAutomata/mnca render
-                // into ~32x32 feedback textures) otherwise receive an N×-too-large
-                // fragCoord, so per-texel hash seeding (hash(fragCoord+seed) > 0.99) and the
-                // `resolution` macro both diverge — the sim never seeds and stays empty.
+                // screen size set once per frame by SetEngineGlobals. The output RT is now
+                // sized at its OWN logical dims (the resolver no longer collapses
+                // different-sized virtuals into one oversized pooled texture), so
+                // primary.width/height ARE the logical dims.
                 cmd.SetGlobalVector(IdNmResolution,
                     new Vector4(primary.width, primary.height, 0f, 0f));
             }
@@ -217,7 +215,7 @@ namespace Noisemaker.Hlsl
 
             // ---- per-pass uniforms onto reused MPB ----
             _mpb.Clear();
-            _binder.BindPassUniforms(_mpb, pass);
+            _binder.BindPassUniforms(_mpb, pass, NormalizedTime);
 
             // ---- blend (reference/05 §14) ----
             // pass.Blend truthy => additive ONE,ONE (deposit/scatter into float
@@ -256,6 +254,11 @@ namespace Noisemaker.Hlsl
         // RESTORE _NM_Resolution after a viewport (volume-write) pass overrides it.
         public int ScreenWidth { get; set; }
         public int ScreenHeight { get; set; }
+
+        // Per-frame normalized 0..1 render time, set by NMPipeline before executing
+        // passes. Threaded into BindPassUniforms to evaluate per-frame automation
+        // (oscillator) uniforms (reference/04 §10.4 / §11).
+        public float NormalizedTime { get; set; }
 
         // Blit src -> dst using the shared NMBlit shader (chain handoff / present /
         // copyTexture). reference/04: copyTexture is a straight blit.

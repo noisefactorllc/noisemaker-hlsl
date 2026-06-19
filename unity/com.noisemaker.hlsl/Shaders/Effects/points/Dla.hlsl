@@ -358,6 +358,8 @@ DlaAgentOutputs frag_agent(NMVaryings i)
 struct DlaDepositVaryings
 {
     float4 positionCS : SV_POSITION;
+    float  pointSize  : PSIZE;       // D3D points topology requires a PSIZE output
+                                     // (reference gl_PointSize = 1.0).
     float  weight     : TEXCOORD0;
     float3 color      : TEXCOORD1;
 };
@@ -372,6 +374,7 @@ int2 dla_decodeIndex(int index, int2 dims)
 DlaDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
 {
     DlaDepositVaryings o;
+    o.pointSize = 1.0;   // reference gl_PointSize = 1.0.
 
     uint dw, dh;
     xyzTex.GetDimensions(dw, dh);
@@ -407,9 +410,13 @@ DlaDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
     }
 
     // Position from xyz (normalized [0,1]) → clip space.
-    // WGSL/D3D both top-left clip; no Y flip (golden rule #1).
+    // Y-orientation parity (CRITICAL): the grid/copy/render fullscreen passes read
+    // the DLA grid via NM_FragCoord-derived UV (NMVertFullscreen counter-flips
+    // clip.y by _ProjectionParams.x when rendering into an RT). This custom deposit
+    // VS MUST apply the SAME counter-flip so deposited cells land where those passes
+    // read them; otherwise the grid is vertically mirrored vs the aggregation read.
     float2 clip = xyz.xy * 2.0 - 1.0;
-    o.positionCS = float4(clip, 0.0, 1.0);
+    o.positionCS = float4(clip.x, clip.y * _ProjectionParams.x, 0.0, 1.0);
 
     return o;
 }

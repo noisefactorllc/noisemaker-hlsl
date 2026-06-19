@@ -2,7 +2,10 @@
   "name": "Osc2D",
   "namespace": "synth",
   "func": "osc2d",
-  "tags": ["geometric"],
+  "starter": true,
+  "tags": [
+    "geometric"
+  ],
   "description": "2D oscillator pattern",
   "paramAliases": {
     "frequency": "freq"
@@ -11,17 +14,7 @@
     "oscType": {
       "type": "member",
       "default": "oscType.sine",
-      "uniform": "oscType",
-      "enum": "oscType",
-      "choices": {
-        "sine": 0,
-        "linear": 1,
-        "sawtooth": 2,
-        "sawtoothInv": 3,
-        "square": 4,
-        "noise1d": 5,
-        "noise2d": 6
-      }
+      "uniform": "oscType"
     },
     "freq": {
       "type": "int",
@@ -29,22 +22,22 @@
       "uniform": "frequency",
       "min": 1,
       "max": 32,
-      "step": 1
+      "zero": 1
     },
     "speed": {
       "type": "int",
       "default": 4,
       "uniform": "speed",
       "min": 0,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "rotation": {
       "type": "float",
       "default": 0,
       "uniform": "rotation",
       "min": -180,
-      "max": 180,
-      "step": 1
+      "max": 180
     },
     "seed": {
       "type": "int",
@@ -61,15 +54,8 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

@@ -2,7 +2,11 @@
   "name": "Kaleido",
   "namespace": "classicNoisedeck",
   "func": "kaleido",
-  "tags": ["geometric", "transform"],
+  "starter": false,
+  "tags": [
+    "geometric",
+    "transform"
+  ],
   "description": "Kaleidoscope effect",
   "paramAliases": {
     "kaleido": "sides",
@@ -34,6 +38,7 @@
       "default": 10,
       "define": "LOOP_OFFSET",
       "choices": {
+        "Shapes:": null,
         "circle": 10,
         "triangle": 20,
         "diamond": 30,
@@ -46,8 +51,10 @@
         "decagon": 100,
         "hendecagon": 110,
         "dodecagon": 120,
+        "Directional:": null,
         "horizontalScan": 200,
         "verticalScan": 210,
+        "Noise:": null,
         "noiseConstant": 300,
         "noiseLinear": 310,
         "noiseHermite": 320,
@@ -57,6 +64,7 @@
         "noiseBSpline4x4": 360,
         "noiseSimplex": 370,
         "noiseSine": 380,
+        "Misc:": null,
         "rings": 400,
         "sine": 410
       }
@@ -73,7 +81,8 @@
       "default": 5,
       "uniform": "speed",
       "min": -100,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "seed": {
       "type": "int",
@@ -133,26 +142,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "kaleido": "sides",
-        "METRIC": "metric",
-        "LOOP_OFFSET": "loopOffset",
-        "loopScale": "loopScale",
-        "speed": "speed",
-        "seed": "seed",
-        "wrap": "wrap",
-        "DIRECTION": "direction",
-        "KERNEL": "kernel",
-        "effectWidth": "effectWidth"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

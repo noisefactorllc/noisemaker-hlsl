@@ -40,6 +40,7 @@ using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using Noisemaker.Hlsl.Compiler;
 using Noisemaker.Hlsl.Compiler.Graph;
 
 namespace Noisemaker.Hlsl.Editor
@@ -169,6 +170,133 @@ namespace Noisemaker.Hlsl.Editor
                     dst[i] = new Color32(
                         ToByte(src[i].r), ToByte(src[i].g), ToByte(src[i].b), ToByte(src[i].a));
                 }
+                rgba32.SetPixels32(dst);
+                rgba32.Apply(false);
+
+                byte[] png = rgba32.EncodeToPNG();
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPngPath)));
+                File.WriteAllBytes(outPngPath, png);
+
+                UnityEngine.Object.DestroyImmediate(tex);
+                UnityEngine.Object.DestroyImmediate(rgba32);
+            }
+            finally
+            {
+                output.Release();
+                UnityEngine.Object.DestroyImmediate(output);
+            }
+        }
+
+        // ---- Live DSL batch entry (C#-DSL path: compiler frontend + shader) -------
+        // -nmManifest <file>: each non-empty line is "<dslPath>\t<outPng>". Compiles each
+        // DSL via the C# DslCompiler (the SAME frontend the live demo uses), renders the
+        // resulting graph, and writes the PNG. Compile failures log NM-DSL-FAIL and skip.
+        public static void RenderDslBatchFromCommandLine()
+        {
+            string manifest = GetArg("-nmManifest");
+            int size = ParseIntArg("-nmSize", 256);
+            float time = ParseFloatArg("-nmTime", 0.25f);
+            if (string.IsNullOrEmpty(manifest) || !File.Exists(manifest))
+            {
+                Debug.LogError("[NMParity] -nmManifest <file> is required.");
+                EditorApplication.Exit(2);
+                return;
+            }
+
+            PreloadPackageShaders();
+            EffectRegistry reg = LoadRegistryFromPackage();
+
+            int ok = 0, fail = 0;
+            foreach (string raw in File.ReadAllLines(manifest))
+            {
+                string line = raw.Trim();
+                if (line.Length == 0 || line.StartsWith("#")) continue;
+                string[] parts = line.Split('\t');
+                if (parts.Length < 2) continue;
+                string dslPath = parts[0], outPng = parts[1];
+                string name = Path.GetFileName(dslPath);
+                try
+                {
+                    RenderGraph graph = DslCompiler.Compile(File.ReadAllText(dslPath), reg);
+                    if (graph == null) { fail++; Debug.LogError("NM-DSL-FAIL " + name + ": compile returned null"); continue; }
+                    RenderGraphToPng(graph, outPng, size, time);
+                    ok++; Debug.Log("[NMParity] wrote " + outPng);
+                }
+                catch (CompileException ce)
+                {
+                    fail++;
+                    string detail = "NM-DSL-FAIL " + name + ": " + ce.Message;
+                    if (ce.Diagnostics != null)
+                        foreach (Diagnostic d in ce.Diagnostics) detail += " | " + d.Code + " " + d.Message;
+                    if (ce.ExpandErrors != null)
+                        foreach (string er in ce.ExpandErrors) detail += " | expand: " + er;
+                    Debug.LogError(detail);
+                }
+                catch (Exception e)
+                {
+                    fail++; Debug.LogError("NM-DSL-FAIL " + name + ": " + e.Message);
+                }
+            }
+            Debug.Log("[NMParity] dsl batch done: " + ok + " ok, " + fail + " fail");
+            EditorApplication.Exit(0);
+        }
+
+        // Build an EffectRegistry from the package's shipped Effects/*.json (the converted
+        // reference definitions). Mirrors canvas.js effect registration.
+        private static EffectRegistry LoadRegistryFromPackage()
+        {
+            var reg = new EffectRegistry();
+            string[] guids = AssetDatabase.FindAssets("t:TextAsset", new[] { "Packages/com.noisemaker.hlsl/Effects" });
+            int n = 0;
+            foreach (string g in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(g);
+                if (!path.EndsWith(".json")) continue;
+                TextAsset ta = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                if (ta == null || string.IsNullOrEmpty(ta.text)) continue;
+                try { reg.Register(JsonValue.Parse(ta.text)); n++; }
+                catch (Exception e) { Debug.LogWarning("[NMParity] skip " + path + ": " + e.Message); }
+            }
+            Debug.Log("[NMParity] registry loaded " + n + " effect defs.");
+            return reg;
+        }
+
+        // Core render shared by the graph.json path and the DSL path: build the pipeline
+        // from an in-memory RenderGraph, advance 8 frames, read back the LINEAR RT,
+        // quantise to 8-bit (no gamma — matches the golden), encode PNG.
+        public static void RenderGraphToPng(RenderGraph graph, string outPngPath, int size, float normalizedTime)
+        {
+            if (graph == null) throw new Exception("RenderGraphToPng: null graph");
+            if (PlayerSettings.colorSpace != ColorSpace.Linear)
+                Debug.LogWarning("[NMParity] Project color space is not Linear; parity requires Linear color.");
+
+            var output = new RenderTexture(size, size, 0, RenderTextureFormat.ARGBHalf,
+                RenderTextureReadWrite.Linear)
+            {
+                name = "NMParityOutput",
+                enableRandomWrite = false,
+                useMipMap = false,
+                autoGenerateMips = false,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            output.Create();
+            try
+            {
+                BuildAndRender(graph, output, size, normalizedTime);
+
+                var prev = RenderTexture.active;
+                RenderTexture.active = output;
+                var tex = new Texture2D(size, size, TextureFormat.RGBAFloat, false, /*linear*/ true);
+                tex.ReadPixels(new Rect(0, 0, size, size), 0, 0);
+                tex.Apply(false);
+                RenderTexture.active = prev;
+
+                var rgba32 = new Texture2D(size, size, TextureFormat.RGBA32, false, /*linear*/ true);
+                var srcpx = tex.GetPixels();
+                var dst = new Color32[srcpx.Length];
+                for (int i = 0; i < srcpx.Length; i++)
+                    dst[i] = new Color32(ToByte(srcpx[i].r), ToByte(srcpx[i].g), ToByte(srcpx[i].b), ToByte(srcpx[i].a));
                 rgba32.SetPixels32(dst);
                 rgba32.Apply(false);
 

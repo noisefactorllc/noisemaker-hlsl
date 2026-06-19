@@ -2,7 +2,10 @@
   "name": "Spiral",
   "namespace": "filter",
   "func": "spiral",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Spiral distortion",
   "paramAliases": {},
   "globals": {
@@ -11,7 +14,8 @@
       "default": -100,
       "uniform": "strength",
       "min": -100,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "speed": {
       "type": "int",
@@ -57,22 +61,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "strength": "strength",
-        "speed": "speed",
-        "rotation": "rotation",
-        "wrap": "wrap",
-        "aspectLens": "aspectLens",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

@@ -2,7 +2,10 @@
   "name": "Gabor",
   "namespace": "synth",
   "func": "gabor",
-  "tags": ["noise"],
+  "starter": true,
+  "tags": [
+    "noise"
+  ],
   "description": "Anisotropic bandlimited noise via sparse Gabor convolution",
   "paramAliases": {},
   "globals": {
@@ -53,7 +56,8 @@
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "seed": {
       "type": "int",
@@ -70,15 +74,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

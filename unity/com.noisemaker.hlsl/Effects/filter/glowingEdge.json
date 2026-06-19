@@ -2,7 +2,10 @@
   "name": "Glowing Edge",
   "namespace": "filter",
   "func": "glowingEdge",
-  "tags": ["edges"],
+  "starter": false,
+  "tags": [
+    "edges"
+  ],
   "description": "Glowing edge detection",
   "paramAliases": {},
   "globals": {
@@ -22,15 +25,15 @@
       "default": 1,
       "uniform": "width",
       "min": 0,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "alpha": {
       "type": "float",
       "default": 1,
       "uniform": "alpha",
       "min": 0,
-      "max": 1,
-      "step": 0.05
+      "max": 1
     }
   },
   "passes": [
@@ -40,21 +43,15 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
-        "sobelMetric": "shape",
+        "shape": "sobelMetric",
         "alpha": "alpha",
         "width": "width"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

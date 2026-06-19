@@ -2,7 +2,11 @@
   "name": "Cel Shading",
   "namespace": "filter",
   "func": "celShading",
-  "tags": ["color", "edges"],
+  "starter": false,
+  "tags": [
+    "color",
+    "edges"
+  ],
   "description": "Cartoon-style shading with posterization and outlines",
   "paramAliases": {
     "shadingStrength": "strength",
@@ -11,11 +15,10 @@
   "globals": {
     "mix": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "mixAmount",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
+      "min": 0,
+      "max": 1,
       "zero": 0
     },
     "levels": {
@@ -23,8 +26,7 @@
       "default": 4,
       "uniform": "levels",
       "min": 2,
-      "max": 8,
-      "step": 1
+      "max": 8
     },
     "gamma": {
       "type": "float",
@@ -32,7 +34,6 @@
       "uniform": "gamma",
       "min": 0.1,
       "max": 3,
-      "step": 0.05,
       "zero": 1
     },
     "antialias": {
@@ -45,34 +46,41 @@
       "default": 1,
       "uniform": "edgeWidth",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "edgeThreshold": {
       "type": "float",
       "default": 0.15,
       "uniform": "edgeThreshold",
       "min": 0.01,
-      "max": 1.0,
-      "step": 0.01,
+      "max": 1,
       "zero": 0
     },
     "edgeColor": {
       "type": "color",
-      "default": [0.0, 0.0, 0.0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "uniform": "edgeColor"
     },
     "lightDirection": {
       "type": "vec3",
-      "default": [0.5, 0.5, 1.0],
+      "default": [
+        0.5,
+        0.5,
+        1
+      ],
       "uniform": "lightDirection"
     },
     "strength": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "strength",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1
     }
   },
   "passes": [
@@ -84,13 +92,6 @@
       },
       "outputs": {
         "fragColor": "celShadingColorTex"
-      },
-      "uniforms": {
-        "levels": "levels",
-        "gamma": "gamma",
-        "antialias": "antialias",
-        "lightDirection": "lightDirection",
-        "strength": "strength"
       }
     },
     {
@@ -101,10 +102,6 @@
       },
       "outputs": {
         "fragColor": "celShadingEdgeTex"
-      },
-      "uniforms": {
-        "edgeWidth": "edgeWidth",
-        "edgeThreshold": "edgeThreshold"
       }
     },
     {
@@ -117,10 +114,6 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "edgeColor": "edgeColor",
-        "mixAmount": "mix"
       }
     }
   ],
@@ -134,11 +127,7 @@
       "width": "100%",
       "height": "100%",
       "format": "rgba16f"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
     }
-  }
+  },
+  "defaultProgram": "search filter, synth\n\nnoise(octaves: 4, scaleX: 100, scaleY: 100, ridges: true)\n  .celShading()\n  .write(o0)"
 }

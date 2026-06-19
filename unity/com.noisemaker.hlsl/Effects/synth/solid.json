@@ -2,21 +2,28 @@
   "name": "Solid",
   "namespace": "synth",
   "func": "solid",
-  "tags": ["color"],
+  "starter": true,
+  "tags": [
+    "color"
+  ],
   "description": "Solid color fill",
   "paramAliases": {},
   "globals": {
     "color": {
       "type": "color",
-      "default": [0.5, 0.5, 0.5],
+      "default": [
+        0.5,
+        0.5,
+        0.5
+      ],
       "uniform": "color"
     },
     "alpha": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
+      "uniform": "alpha",
       "min": 0,
-      "max": 1,
-      "uniform": "alpha"
+      "max": 1
     }
   },
   "passes": [
@@ -26,8 +33,7 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
   "textures": {}

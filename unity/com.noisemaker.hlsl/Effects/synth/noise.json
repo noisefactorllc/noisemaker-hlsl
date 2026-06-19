@@ -2,7 +2,10 @@
   "name": "Noise",
   "namespace": "synth",
   "func": "noise",
-  "tags": ["noise"],
+  "starter": true,
+  "tags": [
+    "noise"
+  ],
   "description": "Value noise with multiple interpolation types",
   "paramAliases": {
     "noiseType": "type",
@@ -70,6 +73,7 @@
       "default": 300,
       "define": "LOOP_OFFSET",
       "choices": {
+        "Shapes:": null,
         "circle": 10,
         "triangle": 20,
         "diamond": 30,
@@ -82,8 +86,10 @@
         "decagon": 100,
         "hendecagon": 110,
         "dodecagon": 120,
+        "Directional:": null,
         "horizontalScan": 200,
         "verticalScan": 210,
+        "Misc:": null,
         "noise": 300,
         "rings": 400,
         "sine": 410
@@ -121,12 +127,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {},
-      "blend": false
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

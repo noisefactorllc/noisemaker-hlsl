@@ -2,95 +2,86 @@
   "name": "Physarum",
   "namespace": "points",
   "func": "physarum",
-  "tags": ["sim"],
+  "starter": false,
+  "tags": [
+    "sim"
+  ],
   "description": "Physarum slime mold simulation",
   "paramAliases": {},
-  "outputXyz": "global_xyz",
-  "outputVel": "global_vel",
-  "outputRgba": "global_rgba",
   "globals": {
     "moveSpeed": {
       "type": "float",
       "default": 1.78,
       "uniform": "moveSpeed",
       "min": 0.05,
-      "max": 3,
-      "step": 0.01,
-      "ui": { "label": "move speed", "control": "slider", "category": "agents" }
+      "max": 3
     },
     "turnSpeed": {
       "type": "float",
       "default": 1,
       "uniform": "turnSpeed",
       "min": 0,
-      "max": 3.14159,
-      "step": 0.01,
-      "ui": { "label": "turn speed", "control": "slider", "category": "agents" }
+      "max": 3.14159
     },
     "sensorAngle": {
       "type": "float",
       "default": 1.26,
       "uniform": "sensorAngle",
       "min": 0.1,
-      "max": 1.5,
-      "step": 0.01,
-      "ui": { "label": "sensor angle", "control": "slider", "category": "agents" }
+      "max": 1.5
     },
     "sensorDistance": {
       "type": "float",
       "default": 0.03,
       "uniform": "sensorDistance",
       "min": 0.002,
-      "max": 0.1,
-      "step": 0.001,
-      "ui": { "label": "sensor dist", "control": "slider", "category": "agents" }
+      "max": 0.1
     },
     "inputWeight": {
       "type": "float",
       "default": 0,
       "uniform": "inputWeight",
       "min": 0,
-      "max": 100,
-      "step": 1,
-      "ui": { "label": "input weight", "control": "slider", "category": "agents" }
+      "max": 100
     },
     "deposit": {
       "type": "float",
       "default": 0.5,
       "uniform": "deposit",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "ui": { "label": "deposit", "control": "slider", "category": "chemistry" }
+      "min": 0,
+      "max": 1
     },
     "decay": {
       "type": "float",
       "default": 0.1,
       "uniform": "decay",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
-      "ui": { "label": "decay", "control": "slider", "category": "chemistry" }
+      "min": 0,
+      "max": 1
     },
     "resetState": {
       "type": "boolean",
       "default": false,
-      "uniform": "resetState",
-      "ui": { "control": "button", "buttonLabel": "reset", "label": "reset" }
+      "uniform": "resetState"
     }
   },
   "passes": [
     {
       "name": "decayTrail",
       "program": "diffuse",
-      "inputs": { "trailTex": "global_physarum_pheromone" },
-      "uniforms": { "decay": "decay", "resetState": "resetState" },
-      "outputs": { "fragColor": "global_physarum_pheromone" }
+      "inputs": {
+        "trailTex": "global_physarum_pheromone"
+      },
+      "uniforms": {
+        "decay": "decay",
+        "resetState": "resetState"
+      },
+      "outputs": {
+        "fragColor": "global_physarum_pheromone"
+      }
     },
     {
       "name": "agent",
       "program": "agent",
-      "drawBuffers": 3,
       "inputs": {
         "xyzTex": "global_xyz",
         "velTex": "global_vel",
@@ -109,63 +100,52 @@
         "outXYZ": "global_xyz",
         "outVel": "global_vel",
         "outRGBA": "global_rgba"
-      }
+      },
+      "drawBuffers": 3
     },
     {
       "name": "copy",
       "program": "passthrough",
-      "inputs": { "inputTex": "global_physarum_pheromone" },
-      "outputs": { "fragColor": "global_physarum_pheromone" }
+      "inputs": {
+        "inputTex": "global_physarum_pheromone"
+      },
+      "outputs": {
+        "fragColor": "global_physarum_pheromone"
+      }
     },
     {
       "name": "deposit",
       "program": "deposit",
-      "drawMode": "points",
-      "count": "input",
-      "blend": true,
       "inputs": {
         "xyzTex": "global_xyz",
         "rgbaTex": "global_rgba"
       },
-      "uniforms": { "deposit": "deposit" },
-      "outputs": { "fragColor": "global_physarum_pheromone" }
+      "uniforms": {
+        "deposit": "deposit"
+      },
+      "outputs": {
+        "fragColor": "global_physarum_pheromone"
+      },
+      "drawMode": "points",
+      "count": "input",
+      "blend": true
     },
     {
       "name": "passthrough",
       "program": "passthrough",
-      "inputs": { "inputTex": "inputTex" },
-      "outputs": { "fragColor": "outputTex" }
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      }
     }
   ],
   "textures": {
     "global_physarum_pheromone": {
       "width": "100%",
       "height": "100%",
-      "format": "rgba16f",
-      "_role": "PERSISTENT private pheromone/chemistry trail (NOT shared with pointsRender's visual trail). rgb=deposited color, a=deposited alpha. decayTrail multiplies by persistence (1-decay), copy blits it to the write buffer, deposit additively scatters agent pheromones into it (drawMode:'points', blend:true → Blend One One, count='input' = stateSize*stateSize from xyzTex dims), the agent pass senses it (luminance) at three sensor positions. Reads its own prior 'global_' output so it persists frame-to-frame (runtime double-buffers/ping-pongs; reference 04 §10.2/§10.7). NOT an isStateSurface (no _xyz/_vel/_rgba suffix, no 'state') but feedback read+write of the same key keeps it alive."
-    },
-    "global_xyz": {
-      "format": "rgba32f",
-      "_external": true,
-      "_role": "PERSISTENT agent state-surface ([x, y, heading(rad), alive], positions normalized [0,1]). Produced upstream by pointsEmit (sized stateSize x stateSize); updated in place by the agent pass MRT (outputXyz alias). vertex stage of deposit Loads pos.xy (clip = pos.xy*2-1) and pos.w (alive cull). isStateSurface=true (suffix '_xyz') → end-of-frame bindings persist (no swap)."
-    },
-    "global_vel": {
-      "format": "rgba32f",
-      "_external": true,
-      "_role": "PERSISTENT agent state-surface ([0, 0, age, seed]). Produced by pointsEmit; updated by the agent pass MRT (outputVel alias); vel.w=seed seeds dead-agent heading init, vel.z=age accumulates +0.016/frame. isStateSurface=true (suffix '_vel')."
-    },
-    "global_rgba": {
-      "format": "rgba32f",
-      "_external": true,
-      "_role": "PERSISTENT agent state-surface ([r, g, b, a] agent color from pointsEmit). Passed through by the agent pass MRT (outputRgba alias); rgb/a read by the deposit vertex stage and scaled by deposit. isStateSurface=true (suffix '_rgba')."
+      "format": "rgba16f"
     }
-  },
-  "feedback": {
-    "_comment": "Agent-based multi-pass slime-mold sim (hardest tier: MRT state, points-scatter deposit, feedback). State lives in PERSISTENT 'global_' surfaces. global_xyz/global_vel/global_rgba (rgba32f) are agent state-surfaces created upstream by pointsEmit (sized stateSize x stateSize) and matched by isStateSurface (suffix '_xyz'/'_vel'/'_rgba') → end-of-frame bindings persist with NO swap (particles continue from last frame). The agent pass writes all three via MRT (drawBuffers:3). global_physarum_pheromone (rgba16f, full-res, private) is the chemistry feedback surface: decayTrail multiplies by persistence (program 'diffuse', no blur), copy blits it to the post-swap write buffer (program 'passthrough'), deposit additively scatters agent pheromones into it (drawMode:'points', blend:true resolves to Blend One One, count='input' = stateSize*stateSize derived from xyzTex dims), the agent pass senses it. The final passthrough copies the pipeline input to outputTex. The deposit pass is drawn as DrawProcedural(Points, count); the vertex stage Loads agent state and emits one 1px point per alive agent (clip = pos.xy*2-1, no Y flip; D3D points = 1px matching reference gl_PointSize=1). No '_iteration' uniform; no repeat. resetState (injected 1/0) clears the pheromone in decayTrail.",
-    "persistent": ["global_xyz", "global_vel", "global_rgba", "global_physarum_pheromone"],
-    "transient": [],
-    "stateSurfaces": ["global_xyz", "global_vel", "global_rgba"],
-    "mrt": { "pass": "agent", "outputs": ["outXYZ", "outVel", "outRGBA"], "drawBuffers": 3 },
-    "scatter": { "pass": "deposit", "drawMode": "points", "count": "input", "countResolves": "stateSize*stateSize", "blend": ["one", "one"] }
   }
 }

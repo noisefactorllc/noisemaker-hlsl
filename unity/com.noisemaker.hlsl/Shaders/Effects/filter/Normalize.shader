@@ -204,8 +204,10 @@ Shader "Noisemaker/filter/normalize"
                 float4 texel = inputTex.Load(int3(coord, 0));
 
                 // Normalize RGB channels, preserve alpha.
+                // GLSL golden (apply.glsl:22) guards with `maxVal - minVal < 0.00001`
+                // (1e-5), not the WGSL 1e-4; matches for near-flat inputs.
                 float4 normalized;
-                if (range > 0.0001)
+                if (range > 0.00001)
                 {
                     normalized = float4(
                         (texel.r - global_min) / range,

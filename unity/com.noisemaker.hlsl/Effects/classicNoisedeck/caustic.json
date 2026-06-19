@@ -2,9 +2,14 @@
   "name": "Caustic",
   "namespace": "classicNoisedeck",
   "func": "caustic",
-  "tags": ["noise"],
+  "starter": true,
+  "tags": [
+    "noise"
+  ],
   "description": "Dual-noise caustic pattern with reflect blend",
-  "paramAliases": { "loopAmp": "speed" },
+  "paramAliases": {
+    "loopAmp": "speed"
+  },
   "globals": {
     "interp": {
       "type": "int",
@@ -78,12 +83,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {},
-      "blend": false
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

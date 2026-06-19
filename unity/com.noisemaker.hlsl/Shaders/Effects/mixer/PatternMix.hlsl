@@ -87,10 +87,12 @@ float nm_pm_checkerboard(float2 p, float sm)
     float2 f = frac(p);
     float d = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
     float2 cell = floor(p);
-    // WGSL `(cell.x + cell.y) % 2.0` is the `%` OPERATOR = truncated remainder
-    // (e1 - e2*trunc(e1/e2)), NOT floor-based modulo. That is HLSL `fmod`, not
-    // nm_mod. cell can be negative, so the two differ; match the WGSL exactly.
-    float check = fmod(cell.x + cell.y, 2.0);
+    // GLSL golden uses `mod(cell.x + cell.y, 2.0)` = FLOOR-based modulo
+    // (a - b*floor(a/b)), NOT the WGSL `%` truncated remainder. `p` is centered
+    // (st-0.5)*2, so cell=floor(p) is NEGATIVE over the left/bottom half; there
+    // fmod(-1,2)=-1 but mod(-1,2)=+1, flipping the checker parity (produced a
+    // black triangle on the negative-coordinate side). Match GLSL: use nm_mod.
+    float check = nm_mod(cell.x + cell.y, 2.0);
     float edge = smoothstep(0.0, sm * 0.5, d);
     return lerp(1.0 - check, check, edge);
 }
@@ -135,11 +137,11 @@ float nm_pm_hexagons(float2 p, float t, float sm)
 {
     float2 s = float2(1.0, NM_PM_SQRT3);
     float2 h = s * 0.5;
-    // WGSL `p % s` is the `%` OPERATOR = truncated remainder per component
-    // (e1 - e2*trunc(e1/e2)), NOT floor-based modulo. That is HLSL `fmod`, not
-    // nm_mod. p is centered/scaled (negative), so they differ; match WGSL.
-    float2 a = fmod(p, s) - h;
-    float2 b = fmod(p + h, s) - h;
+    // GLSL golden uses `mod(p, s)` / `mod(p + h, s)` = FLOOR-based modulo, NOT the
+    // WGSL `%` truncated remainder. p is centered/scaled (negative over half the
+    // image) so fmod and floor-mod diverge there. Match GLSL: use nm_mod.
+    float2 a = nm_mod(p, s) - h;
+    float2 b = nm_mod(p + h, s) - h;
     float2 g;
     if (length(a) < length(b)) {
         g = a;

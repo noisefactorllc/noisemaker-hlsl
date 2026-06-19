@@ -2,9 +2,15 @@
   "name": "Pattern",
   "namespace": "synth",
   "func": "pattern",
-  "tags": ["geometric", "pattern"],
+  "starter": true,
+  "tags": [
+    "geometric",
+    "pattern"
+  ],
   "description": "Geometric pattern generator",
-  "paramAliases": { "patternType": "type" },
+  "paramAliases": {
+    "patternType": "type"
+  },
   "globals": {
     "type": {
       "type": "int",
@@ -27,38 +33,38 @@
     },
     "scale": {
       "type": "float",
-      "default": 15.0,
+      "default": 15,
       "uniform": "scale",
-      "min": 1.0,
-      "max": 20.0
+      "min": 1,
+      "max": 20
     },
     "thickness": {
       "type": "float",
       "default": 0.5,
       "uniform": "thickness",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "smoothness": {
       "type": "float",
       "default": 0.02,
       "uniform": "smoothness",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "rotation": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "rotation",
-      "min": -180.0,
-      "max": 180.0
+      "min": -180,
+      "max": 180
     },
     "skew": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "skew",
-      "min": -2.0,
-      "max": 2.0
+      "min": -2,
+      "max": 2
     },
     "animation": {
       "type": "int",
@@ -75,16 +81,25 @@
       "default": 1,
       "uniform": "speed",
       "min": -5,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "fgColor": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
+      "default": [
+        1,
+        1,
+        1
+      ],
       "uniform": "fgColor"
     },
     "bgColor": {
       "type": "color",
-      "default": [0.0, 0.0, 0.0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "uniform": "bgColor"
     }
   },
@@ -95,15 +110,8 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

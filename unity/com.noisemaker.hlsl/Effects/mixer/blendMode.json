@@ -2,7 +2,10 @@
   "name": "BlendMode",
   "namespace": "mixer",
   "func": "blendMode",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Blend two inputs using selectable blend mode",
   "paramAliases": {
     "mixAmt": "mix"
@@ -51,19 +54,14 @@
         "inputTex": "inputTex",
         "tex": "tex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "mixAmt": "mix"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\nnoise(ridges: true, colorMode: mono)\n.write(o0)\n\nperlin()\n.blendMode(tex: read(o0), mode: phoenix)\n.write(o1)"
 }

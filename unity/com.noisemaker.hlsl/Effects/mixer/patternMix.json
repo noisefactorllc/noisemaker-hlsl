@@ -2,8 +2,13 @@
   "name": "PatternMix",
   "namespace": "mixer",
   "func": "patternMix",
-  "tags": ["blend", "pattern"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "pattern"
+  ],
   "description": "Mix inputs using geometric patterns",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -36,7 +41,7 @@
     },
     "scale": {
       "type": "float",
-      "default": 18.0,
+      "default": 18,
       "uniform": "scale",
       "min": 1,
       "max": 20
@@ -53,11 +58,12 @@
       "default": 0.01,
       "uniform": "smoothness",
       "min": 0,
-      "max": 0.25
+      "max": 0.25,
+      "zero": 0
     },
     "rotation": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "rotation",
       "min": -180,
       "max": 180
@@ -73,15 +79,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\nnoise(ridges: true, colorMode: mono)\n.write(o0)\n\nnoise(ridges: true)\n.patternMix(tex: read(o0))\n.write(o1)"
 }

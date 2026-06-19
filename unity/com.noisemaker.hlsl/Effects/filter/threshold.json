@@ -2,25 +2,27 @@
   "name": "Threshold",
   "namespace": "filter",
   "func": "threshold",
-  "tags": ["color", "edges"],
+  "starter": false,
+  "tags": [
+    "color",
+    "edges"
+  ],
   "description": "Threshold/step function",
   "paramAliases": {},
   "globals": {
     "level": {
       "type": "float",
       "default": 0.5,
+      "uniform": "level",
       "min": 0,
-      "max": 1,
-      "randMin": 0.5,
-      "randMax": 0.75,
-      "uniform": "level"
+      "max": 1
     },
     "sharpness": {
       "type": "float",
       "default": 0.5,
+      "uniform": "sharpness",
       "min": 0,
-      "max": 1,
-      "uniform": "sharpness"
+      "max": 1
     }
   },
   "passes": [
@@ -32,18 +34,8 @@
       },
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {
-        "level": 0.5,
-        "sharpness": 0.5
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

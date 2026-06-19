@@ -2,7 +2,10 @@
   "name": "Smooth",
   "namespace": "filter",
   "func": "smooth",
-  "tags": ["antialiasing"],
+  "starter": false,
+  "tags": [
+    "antialiasing"
+  ],
   "description": "Anti-aliasing with MSAA, SMAA, or edge-selective blur modes",
   "paramAliases": {},
   "globals": {
@@ -10,11 +13,15 @@
       "type": "int",
       "default": 0,
       "uniform": "smoothType",
-      "choices": { "msaa": 0, "smaa": 1, "blur": 2 }
+      "choices": {
+        "msaa": 0,
+        "smaa": 1,
+        "blur": 2
+      }
     },
     "strength": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "strength",
       "min": 0,
       "max": 1,
@@ -29,25 +36,27 @@
     },
     "radius": {
       "type": "float",
-      "default": 2.0,
+      "default": 2,
       "uniform": "radius",
       "min": 0.5,
-      "max": 4,
-      "step": 0.1
+      "max": 4
     },
     "samples": {
       "type": "int",
       "default": 4,
       "uniform": "samples",
-      "choices": { "x2": 2, "x4": 4, "x8": 8 }
+      "choices": {
+        "x2": 2,
+        "x4": 4,
+        "x8": 8
+      }
     },
     "searchSteps": {
       "type": "int",
       "default": 8,
       "uniform": "searchSteps",
       "min": 1,
-      "max": 32,
-      "step": 1
+      "max": 32
     }
   },
   "passes": [
@@ -59,10 +68,6 @@
       },
       "outputs": {
         "fragColor": "_smoothEdges"
-      },
-      "uniforms": {
-        "smoothType": "smoothType",
-        "threshold": "threshold"
       }
     },
     {
@@ -74,14 +79,6 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "smoothType": "smoothType",
-        "strength": "strength",
-        "threshold": "threshold",
-        "radius": "radius",
-        "samples": "samples",
-        "searchSteps": "searchSteps"
       }
     }
   ],
@@ -90,11 +87,7 @@
       "width": "input",
       "height": "input",
       "format": "rgba8unorm"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
     }
-  }
+  },
+  "defaultProgram": "search filter, synth\n\nmodPattern()\n.smooth(type: blur, radius: 4)\n.write(o0)"
 }

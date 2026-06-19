@@ -2,7 +2,10 @@
   "name": "Moodscape",
   "namespace": "classicNoisedeck",
   "func": "moodscape",
-  "tags": ["noise"],
+  "starter": true,
+  "tags": [
+    "noise"
+  ],
   "description": "Refracted value noise with multiple color modes",
   "paramAliases": {
     "loopAmp": "speed"
@@ -103,12 +106,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {},
-      "blend": false
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

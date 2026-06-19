@@ -2,9 +2,14 @@
   "name": "Mandelbrot",
   "namespace": "synth",
   "func": "mandelbrot",
-  "tags": ["fractal"],
+  "starter": true,
+  "tags": [
+    "fractal"
+  ],
   "description": "Mandelbrot explorer with deep zoom",
-  "paramAliases": { "poiMode": "poi" },
+  "paramAliases": {
+    "poiMode": "poi"
+  },
   "globals": {
     "poi": {
       "type": "int",
@@ -46,16 +51,14 @@
       "default": -0.5,
       "uniform": "centerHiX",
       "min": -3,
-      "max": 3,
-      "step": 0.001
+      "max": 3
     },
     "centerY": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "centerHiY",
       "min": -3,
-      "max": 3,
-      "step": 0.001
+      "max": 3
     },
     "rotation": {
       "type": "float",
@@ -66,23 +69,22 @@
     },
     "zoomSpeed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "zoomSpeed",
       "min": 0,
       "max": 5,
-      "step": 0.01
+      "zero": 0
     },
     "zoomDepth": {
       "type": "float",
       "default": 0,
       "uniform": "zoomDepth",
       "min": 0,
-      "max": 14,
-      "step": 0.001
+      "max": 14
     },
     "stripeFreq": {
       "type": "float",
-      "default": 5.0,
+      "default": 5,
       "uniform": "stripeFreq",
       "min": 0.5,
       "max": 20
@@ -115,15 +117,10 @@
       "name": "render",
       "program": "mandelbrot",
       "inputs": {},
-      "outputs": { "fragColor": "outputTex" },
-      "uniforms": {}
+      "outputs": {
+        "fragColor": "outputTex"
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

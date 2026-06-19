@@ -2,15 +2,21 @@
   "name": "Noise3d",
   "namespace": "classicNoisedeck",
   "func": "noise3d",
-  "tags": ["3d", "noise"],
+  "starter": true,
+  "tags": [
+    "3d",
+    "noise"
+  ],
   "description": "3D noise volumes",
-  "paramAliases": { "noiseScale": "scale", "noiseType": "type" },
+  "paramAliases": {
+    "noiseScale": "scale",
+    "noiseType": "type"
+  },
   "globals": {
     "type": {
       "type": "int",
       "default": 12,
       "define": "NOISE_TYPE",
-      "uniform": "NOISE_TYPE",
       "choices": {
         "cubes": 50,
         "simplex": 12,
@@ -38,7 +44,8 @@
       "default": 1,
       "uniform": "speed",
       "min": -10,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "scale": {
       "type": "float",
@@ -94,15 +101,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

@@ -62,7 +62,10 @@ float2 nm_pinch_rotate2D(float2 st, float rot, float ar)
     st = st - float2(0.5 * ar, 0.5);
     float c = cos(angle);
     float s = sin(angle);
-    st = float2(c * st.x - s * st.y, s * st.x + c * st.y);
+    // GLSL golden: mat2(cos,-sin,sin,cos) * st. GLSL mat2 is COLUMN-MAJOR, so it
+    // equals (c*st.x + s*st.y, -s*st.x + c*st.y) — opposite rotation direction from
+    // the WGSL transcription (c*x-s*y, s*x+c*y). Only diverges for nonzero rotation.
+    st = float2(c * st.x + s * st.y, -s * st.x + c * st.y);
     st = st + float2(0.5 * ar, 0.5);
     st.x = st.x / ar;
     return st;

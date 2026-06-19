@@ -2,7 +2,10 @@
   "name": "Adjust",
   "namespace": "filter",
   "func": "adjust",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Colorspace, hue/saturation, brightness/contrast",
   "paramAliases": {},
   "globals": {
@@ -62,11 +65,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nperlin(scale: 75, octaves: 2)\n.adjust(mode: hsv, rotation: 120, hueRange: 40)\n.write(o0)"
 }

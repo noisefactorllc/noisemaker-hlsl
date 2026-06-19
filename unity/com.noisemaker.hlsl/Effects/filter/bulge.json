@@ -2,7 +2,10 @@
   "name": "Bulge",
   "namespace": "filter",
   "func": "bulge",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Bulge distortion from center",
   "paramAliases": {},
   "globals": {
@@ -11,7 +14,8 @@
       "default": 25,
       "uniform": "strength",
       "min": 0,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "aspectLens": {
       "type": "boolean",
@@ -50,21 +54,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "strength": "strength",
-        "aspectLens": "aspectLens",
-        "wrap": "wrap",
-        "rotation": "rotation",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search synth, filter\ntestPattern(gridSize: 8)\n.bulge()\n.write(o0)"
 }

@@ -2,9 +2,15 @@
   "name": "ChromaticAberration",
   "namespace": "filter",
   "func": "chromaticAberration",
-  "tags": ["distort", "lens"],
+  "starter": false,
+  "tags": [
+    "distort",
+    "lens"
+  ],
   "description": "Color fringing effect simulating lens aberration",
-  "paramAliases": { "aberrationAmt": "aberration" },
+  "paramAliases": {
+    "aberrationAmt": "aberration"
+  },
   "globals": {
     "aberration": {
       "type": "float",
@@ -30,18 +36,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "aberrationAmt": "aberration",
-        "passthru": "passthru"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search synth, filter\nnoise(colorMode: mono, ridges: true)\n.chromaticAberration()\n.write(o0)"
 }

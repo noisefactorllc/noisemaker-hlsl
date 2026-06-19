@@ -2,7 +2,10 @@
   "name": "Test Pattern",
   "namespace": "synth",
   "func": "testPattern",
-  "tags": ["util"],
+  "starter": true,
+  "tags": [
+    "util"
+  ],
   "description": "Test patterns for debugging and calibration",
   "paramAliases": {},
   "globals": {
@@ -35,11 +38,8 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

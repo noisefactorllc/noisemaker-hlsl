@@ -2,23 +2,29 @@
   "name": "Seamless",
   "namespace": "filter",
   "func": "seamless",
-  "tags": ["tiling", "transform"],
+  "starter": false,
+  "tags": [
+    "tiling",
+    "transform"
+  ],
   "description": "Edge-blend cross-fade for seamless tiling",
   "paramAliases": {},
   "globals": {
     "blend": {
       "type": "float",
       "default": 0.25,
-      "min": 0.0,
+      "uniform": "blend",
+      "min": 0,
       "max": 0.5,
-      "uniform": "blend"
+      "zero": 0
     },
     "repeat": {
       "type": "float",
-      "default": 2.0,
-      "min": 1.0,
-      "max": 10.0,
-      "uniform": "repeat"
+      "default": 2,
+      "uniform": "repeat",
+      "min": 1,
+      "max": 10,
+      "zero": 1
     },
     "curve": {
       "type": "int",
@@ -40,19 +46,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "blend": "blend",
-        "repeat": "repeat",
-        "curve": "curve"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

@@ -2,7 +2,10 @@
   "name": "Outline",
   "namespace": "filter",
   "func": "outline",
-  "tags": ["edges"],
+  "starter": false,
+  "tags": [
+    "edges"
+  ],
   "description": "Outline/edge stroke",
   "paramAliases": {},
   "globals": {
@@ -19,11 +22,10 @@
     },
     "thickness": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "thickness",
-      "min": 1.0,
-      "max": 10.0,
-      "step": 0.1
+      "min": 1,
+      "max": 10
     },
     "invert": {
       "type": "boolean",
@@ -40,8 +42,7 @@
       },
       "outputs": {
         "color": "outlineValueMap"
-      },
-      "uniforms": {}
+      }
     },
     {
       "name": "sobel",
@@ -51,10 +52,6 @@
       },
       "outputs": {
         "color": "outlineEdges"
-      },
-      "uniforms": {
-        "sobelMetric": "shape",
-        "thickness": "thickness"
       }
     },
     {
@@ -66,9 +63,6 @@
       },
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {
-        "invert": "invert"
       }
     }
   ],
@@ -81,11 +75,6 @@
     "outlineEdges": {
       "width": "100%",
       "height": "100%",
-      "format": "rgba16f"
-    },
-    "outputTex": {
-      "width": "input",
-      "height": "input",
       "format": "rgba16f"
     }
   }

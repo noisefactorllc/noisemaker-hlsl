@@ -2,8 +2,13 @@
   "name": "Distortion",
   "namespace": "mixer",
   "func": "distortion",
-  "tags": ["blend", "distort"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "distort"
+  ],
   "description": "Displace, reflect, and refract with two surfaces",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -75,23 +80,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "mode": "mode",
-        "mapSource": "mapSource",
-        "intensity": "intensity",
-        "wrap": "wrap",
-        "smoothing": "smoothing",
-        "aberration": "aberration",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\ncell()\n.write(o0)\n\nnoise(ridges: true)\n.distortion(tex: read(o0))\n.write(o1)"
 }

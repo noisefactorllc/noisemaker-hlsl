@@ -2,7 +2,10 @@
   "name": "CenterMask",
   "namespace": "mixer",
   "func": "centerMask",
-  "tags": ["blend"],
+  "starter": false,
+  "tags": [
+    "blend"
+  ],
   "description": "Blend from edges (A) into center (B) using a distance mask",
   "paramAliases": {
     "mixAmt": "mix"
@@ -68,20 +71,15 @@
         "inputTex": "inputTex",
         "tex": "tex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "shape": "shape",
         "power": "mix"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\nnoise(ridges: true, colorMode: mono)\n.write(o0)\n\nnoise(ridges: true)\n.centerMask(tex: read(o0), mix: -75)\n.write(o1)"
 }

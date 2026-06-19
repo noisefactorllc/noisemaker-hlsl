@@ -2,218 +2,206 @@
   "name": "Mesh Render",
   "namespace": "render",
   "func": "meshRender",
-  "tags": ["mesh", "geometry"],
+  "starter": false,
+  "tags": [
+    "mesh",
+    "geometry"
+  ],
   "description": "Render meshes with Blinn-Phong lighting",
   "paramAliases": {},
   "globals": {
     "scale": {
       "type": "float",
-      "default": 1.0,
-      "min": 0.01,
-      "max": 10.0,
-      "randMin": 0.1,
-      "randMax": 1.0,
+      "default": 1,
       "uniform": "meshScale",
-      "ui": { "label": "mesh scale", "control": "slider", "category": "mesh" }
+      "min": 0.01,
+      "max": 10
     },
     "offsetX": {
       "type": "float",
-      "default": 0.0,
-      "min": -5.0,
-      "max": 5.0,
-      "randChance": 0,
+      "default": 0,
       "uniform": "offsetX",
-      "ui": { "label": "mesh offset x", "control": "slider", "category": "mesh" }
+      "min": -5,
+      "max": 5
     },
     "offsetY": {
       "type": "float",
-      "default": 0.0,
-      "min": -5.0,
-      "max": 5.0,
-      "randChance": 0,
+      "default": 0,
       "uniform": "offsetY",
-      "ui": { "label": "mesh offset y", "control": "slider", "category": "mesh" }
+      "min": -5,
+      "max": 5
     },
     "offsetZ": {
       "type": "float",
-      "default": 0.0,
-      "min": -5.0,
-      "max": 5.0,
-      "randChance": 0,
+      "default": 0,
       "uniform": "offsetZ",
-      "ui": { "label": "mesh offset z", "control": "slider", "category": "mesh" }
+      "min": -5,
+      "max": 5
     },
     "rotateX": {
       "type": "float",
       "default": 0,
-      "min": -180,
-      "max": 180,
-      "step": 1,
       "uniform": "rotateX",
-      "ui": { "label": "rotate x", "control": "slider", "category": "view" }
+      "min": -180,
+      "max": 180
     },
     "rotateY": {
       "type": "float",
       "default": 0,
-      "min": -180,
-      "max": 180,
-      "step": 1,
       "uniform": "rotateY",
-      "ui": { "label": "rotate y", "control": "slider", "category": "view" }
+      "min": -180,
+      "max": 180
     },
     "rotateZ": {
       "type": "float",
       "default": 0,
-      "min": -180,
-      "max": 180,
-      "step": 1,
       "uniform": "rotateZ",
-      "ui": { "label": "rotate z", "control": "slider", "category": "view" }
+      "min": -180,
+      "max": 180
     },
     "viewScale": {
       "type": "float",
-      "default": 1.0,
-      "min": 0.1,
-      "max": 10.0,
+      "default": 1,
       "uniform": "viewScale",
-      "ui": { "label": "zoom", "control": "slider", "category": "view" }
+      "min": 0.1,
+      "max": 10
     },
     "posX": {
       "type": "float",
-      "default": 0.0,
-      "min": -10.0,
-      "max": 10.0,
-      "randChance": 0,
+      "default": 0,
       "uniform": "posX",
-      "ui": { "label": "position x", "control": "slider", "category": "view" }
+      "min": -10,
+      "max": 10
     },
     "posY": {
       "type": "float",
-      "default": 0.0,
-      "min": -10.0,
-      "max": 10.0,
-      "randChance": 0,
+      "default": 0,
       "uniform": "posY",
-      "ui": { "label": "position y", "control": "slider", "category": "view" }
+      "min": -10,
+      "max": 10
     },
     "lightDirection": {
       "type": "vec3",
-      "default": [0.5, 0.7, 0.5],
-      "uniform": "lightDirection",
-      "ui": { "label": "direction", "control": "vector3", "category": "lighting" }
+      "default": [
+        0.5,
+        0.7,
+        0.5
+      ],
+      "uniform": "lightDirection"
     },
     "diffuseColor": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
-      "uniform": "diffuseColor",
-      "ui": { "label": "color", "control": "color", "category": "diffuse" }
+      "default": [
+        1,
+        1,
+        1
+      ],
+      "uniform": "diffuseColor"
     },
     "diffuseIntensity": {
       "type": "float",
       "default": 0.7,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01,
       "uniform": "diffuseIntensity",
-      "ui": { "label": "intensity", "control": "slider", "category": "diffuse" }
+      "min": 0,
+      "max": 2
     },
     "specularColor": {
       "type": "color",
-      "default": [1.0, 1.0, 1.0],
-      "uniform": "specularColor",
-      "ui": { "label": "color", "control": "color", "category": "specular" }
+      "default": [
+        1,
+        1,
+        1
+      ],
+      "uniform": "specularColor"
     },
     "specularIntensity": {
       "type": "float",
       "default": 0.3,
-      "min": 0.0,
-      "max": 2.0,
-      "step": 0.01,
       "uniform": "specularIntensity",
-      "ui": { "label": "intensity", "control": "slider", "category": "specular" }
+      "min": 0,
+      "max": 2
     },
     "shininess": {
       "type": "float",
-      "default": 32.0,
-      "min": 1.0,
-      "max": 256.0,
-      "step": 1.0,
+      "default": 32,
       "uniform": "shininess",
-      "ui": { "label": "shininess", "control": "slider", "category": "specular" }
+      "min": 1,
+      "max": 256
     },
     "ambientColor": {
       "type": "color",
-      "default": [0.1, 0.1, 0.1],
-      "uniform": "ambientColor",
-      "ui": { "label": "ambient color", "control": "color", "category": "ambient" }
+      "default": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "uniform": "ambientColor"
     },
     "rimIntensity": {
       "type": "float",
       "default": 0.15,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
       "uniform": "rimIntensity",
-      "ui": { "label": "rim intensity", "control": "slider", "category": "rim" }
+      "min": 0,
+      "max": 1
     },
     "rimPower": {
       "type": "float",
-      "default": 3.0,
-      "min": 0.5,
-      "max": 8.0,
-      "step": 0.1,
+      "default": 3,
       "uniform": "rimPower",
-      "ui": { "label": "rim power", "control": "slider", "category": "rim" }
+      "min": 0.5,
+      "max": 8
     },
     "meshColor": {
       "type": "color",
-      "default": [0.8, 0.8, 0.8],
-      "uniform": "meshColor",
-      "ui": { "label": "base color", "control": "color", "category": "material" }
+      "default": [
+        0.8,
+        0.8,
+        0.8
+      ],
+      "uniform": "meshColor"
     },
     "bgColor": {
       "type": "color",
-      "default": [0.1, 0.1, 0.15],
-      "uniform": "bgColor",
-      "ui": { "label": "bg color", "control": "color", "category": "material" }
+      "default": [
+        0.1,
+        0.1,
+        0.15
+      ],
+      "uniform": "bgColor"
     },
     "bgAlpha": {
       "type": "float",
-      "default": 1.0,
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01,
+      "default": 1,
       "uniform": "bgAlpha",
-      "ui": { "label": "bg opacity", "control": "slider", "category": "material" }
+      "min": 0,
+      "max": 1
     },
     "wireframe": {
       "type": "int",
       "default": 0,
       "uniform": "wireframe",
-      "choices": { "solid": 0, "wireframe": 1 },
-      "ui": { "label": "render mode", "control": "dropdown", "category": "material" }
+      "choices": {
+        "solid": 0,
+        "wireframe": 1
+      }
     }
   },
   "passes": [
     {
       "name": "clear",
       "program": "clear",
-      "_kind": "fullscreen",
       "inputs": {},
       "uniforms": {
         "bgColor": "bgColor",
         "bgAlpha": "bgAlpha"
       },
-      "outputs": { "fragColor": "outputTex" },
-      "renderState": { "zwrite": false, "ztest": "always", "cull": "off", "blend": "off" }
+      "outputs": {
+        "fragColor": "outputTex"
+      }
     },
     {
       "name": "render",
       "program": "render",
-      "_kind": "geometry",
-      "drawMode": "triangles",
-      "count": "input",
-      "blend": false,
       "inputs": {
         "inputTex": "inputTex",
         "meshPositions": "global_mesh0_positions",
@@ -242,33 +230,13 @@
         "meshColor": "meshColor",
         "wireframe": "wireframe"
       },
-      "outputs": { "fragColor": "outputTex" },
-      "renderState": { "zwrite": true, "ztest": "lequal", "cull": "back", "frontFace": "ccw", "clearDepth": true, "blend": "off" },
-      "_uniformNote": "definition.js maps the model-offset shader uniforms meshOffsetX/Y/Z from globals offsetX/Y/Z. The HLSL declares them under their global names offsetX/offsetY/offsetZ (values identical); the runtime must bind the global value to the HLSL uniform 'offsetX' etc. (the WGSL Uniforms struct also calls them offsetX/Y/Z). meshScale maps from global 'scale'."
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "drawMode": "triangles",
+      "count": "input",
+      "blend": false
     }
   ],
-  "textures": {
-    "global_mesh0_positions": {
-      "format": "rgba32f",
-      "width": 256,
-      "height": 256,
-      "_external": true,
-      "_role": "MESH SURFACE (reference 04 §8). Triplet member: xyz = world position, w = valid flag. 256x256 rgba32f, uploaded CPU-side by render/meshLoader (uploadMeshData / loadOBJ), NOT ping-ponged (static data, never recreated on resize). Bound to the render pass meshPositions. The vertex stage Loads one texel per SV_VertexID (x = id%256, y = id/256) and projects to clip space. count:'input' resolves to width*height = 65536 vertices."
-    },
-    "global_mesh0_normals": {
-      "format": "rgba32f",
-      "width": 256,
-      "height": 256,
-      "_external": true,
-      "_role": "MESH SURFACE (reference 04 §8). Triplet member: xyz = normal, w unused. 256x256 rgba32f, uploaded CPU-side by render/meshLoader, NOT ping-ponged. Bound to the render pass meshNormals; Loaded in the vertex stage and transformed by the rotation matrix for Blinn-Phong shading. (The mesh0 surface record also carries global_mesh0_uvs, but this effect does not read it; the VS derives uv from the texel coordinate.)"
-    }
-  },
-  "feedback": {
-    "_comment": "3D / RENDER tier geometry effect (rasterizes an OBJ mesh). 2 passes: clear (fullscreen bg fill, premultiplied alpha) then render (drawMode 'triangles', count 'input'). MESH SURFACES are the global mesh0 triplet (256x256 rgba32f positions/normals/uvs) uploaded CPU-side by render/meshLoader (uploadMeshData) and NOT ping-ponged. The render pass is issued as DrawProcedural(Triangles, count) where count = meshPositions.width*height = 256*256 = 65536; each group of 3 vertices is one triangle. The vertex stage reads vertex attributes from the mesh data textures by SV_VertexID via Texture2D.Load (SM4.5) — there is no vertex buffer. Depth: the reference webgl2 backend triangles branch enables DEPTH_TEST (gl.LESS) + depthMask + CULL_FACE BACK (frontFace CCW) and clears the depth buffer for the pass → render pass uses ZWrite On, ZTest LEqual, Cull Back (runtime clears depth before the pass). clipPos.y is flipped in the VS exactly as the WGSL does (orthographic, depth maps Z in [-10,10] to NDC [0,1]). Wireframe uses the WGSL canonical simplified flat-color path (no derivative edge detection; that exists only in the GLSL render.frag). NO Shader Graph wrapper (3D/multi-pass/geometry). No repeat, no MRT, no compute, no loop, no vol/geo atlas (mesh tier, not volume tier).",
-    "persistent": ["global_mesh0_positions", "global_mesh0_normals"],
-    "transient": [],
-    "stateSurfaces": [],
-    "meshSurfaces": ["global_mesh0_positions", "global_mesh0_normals"],
-    "geometry": { "pass": "render", "drawMode": "triangles", "count": "input", "countResolves": "meshPositions.width*height = 65536", "primitive": "triangles", "vertexSource": "SV_VertexID -> mesh data textures (Texture2D.Load)", "depth": { "zwrite": true, "ztest": "lequal", "cull": "back", "clearDepth": true } }
-  }
+  "textures": {}
 }

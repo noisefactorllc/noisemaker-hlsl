@@ -2,149 +2,128 @@
   "name": "Fractal3D",
   "namespace": "synth3d",
   "func": "fractal3d",
-  "tags": ["3d"],
+  "starter": true,
+  "tags": [
+    "3d"
+  ],
   "description": "3D Mandelbulb/Mandelcube fractals",
-  "paramAliases": { "fractalType": "type" },
+  "paramAliases": {
+    "fractalType": "type"
+  },
   "globals": {
     "volumeSize": {
       "type": "int",
       "default": 64,
       "uniform": "volumeSize",
-      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
-      "randChoices": [16, 32, 64],
-      "ui": { "label": "volume size", "control": "dropdown" }
+      "choices": {
+        "x16": 16,
+        "x32": 32,
+        "x64": 64,
+        "x128": 128
+      }
     },
     "type": {
       "type": "int",
       "default": 0,
       "uniform": "noiseType",
-      "_uniformNote": "GPU uniform renamed `type`->`noiseType` because `type` is a reserved keyword in WGSL/HLSL.",
-      "choices": { "mandelbulb": 0, "mandelcube": 1, "juliaBulb": 2, "juliaCube": 3 },
-      "ui": { "label": "type", "control": "dropdown" }
+      "choices": {
+        "mandelbulb": 0,
+        "mandelcube": 1,
+        "juliaBulb": 2,
+        "juliaCube": 3
+      }
     },
     "power": {
       "type": "float",
       "default": 8,
-      "min": 2,
-      "max": 16,
-      "randMax": 8,
       "uniform": "power",
-      "ui": { "label": "power", "control": "slider" }
+      "min": 2,
+      "max": 16
     },
     "iterations": {
       "type": "int",
       "default": 10,
-      "min": 1,
-      "max": 20,
       "uniform": "iterations",
-      "ui": { "label": "iterations", "control": "slider" }
+      "min": 1,
+      "max": 20
     },
     "bailout": {
       "type": "float",
       "default": 2,
-      "min": 1,
-      "max": 8,
       "uniform": "bailout",
-      "ui": { "label": "bailout", "control": "slider" }
+      "min": 1,
+      "max": 8
     },
     "juliaX": {
       "type": "float",
       "default": 0,
-      "min": -100,
-      "max": 100,
       "uniform": "juliaX",
-      "ui": { "label": "julia x", "control": "slider", "category": "julia", "enabledBy": { "param": "type", "in": [2, 3] } }
+      "min": -100,
+      "max": 100
     },
     "juliaY": {
       "type": "float",
       "default": 0,
-      "min": -100,
-      "max": 100,
       "uniform": "juliaY",
-      "ui": { "label": "julia y", "control": "slider", "category": "julia", "enabledBy": { "param": "type", "in": [2, 3] } }
+      "min": -100,
+      "max": 100
     },
     "juliaZ": {
       "type": "float",
       "default": 0,
-      "min": -100,
-      "max": 100,
       "uniform": "juliaZ",
-      "ui": { "label": "julia z", "control": "slider", "category": "julia", "enabledBy": { "param": "type", "in": [2, 3] } }
+      "min": -100,
+      "max": 100
     },
     "colorMode": {
       "type": "int",
       "default": 0,
       "uniform": "colorMode",
-      "_uniformNote": "Declared uniform; the canonical WGSL precompute body IGNORES colorMode (always writes rgb=dist,trap,iter). Carried for parity; the GLSL path branches on it but we port from WGSL.",
-      "choices": { "mono": 0, "orbitTrap": 1, "iteration": 2 },
-      "ui": { "label": "color mode", "control": "dropdown" }
-    }
-  },
-  "uniformLayouts": {
-    "precompute": {
-      "volumeSize": { "slot": 0, "components": "x" },
-      "noiseType": { "slot": 0, "components": "y" },
-      "power": { "slot": 0, "components": "z" },
-      "iterations": { "slot": 0, "components": "w" },
-      "bailout": { "slot": 1, "components": "x" },
-      "juliaX": { "slot": 1, "components": "y" },
-      "juliaY": { "slot": 1, "components": "z" },
-      "juliaZ": { "slot": 1, "components": "w" },
-      "colorMode": { "slot": 2, "components": "x" }
+      "choices": {
+        "mono": 0,
+        "orbitTrap": 1,
+        "iteration": 2
+      }
     }
   },
   "passes": [
     {
       "name": "precompute",
       "program": "precompute",
-      "drawBuffers": 2,
-      "drawMode": "triangles",
-      "viewport": {
-        "width": { "param": "volumeSize", "default": 64 },
-        "height": { "param": "volumeSize", "power": 2, "default": 4096 }
-      },
       "inputs": {},
       "outputs": {
         "color": "volumeCache",
         "geoOut": "geoBuffer"
       },
-      "_mrt": "drawBuffers:2 — attachment order: color=SV_Target0->volumeCache (vol atlas), geoOut=SV_Target1->geoBuffer (geo: xyz=normal, w=dist)."
+      "drawBuffers": 2
     }
   ],
   "textures": {
     "volumeCache": {
-      "is3D": true,
-      "width": { "param": "volumeSize", "default": 64 },
-      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
-      "depth": { "param": "volumeSize", "default": 64 },
-      "atlasSliceSize": { "param": "volumeSize", "default": 64 },
-      "format": "rgba16f",
-      "_role": "VOLUME (vol) surface: 2D ATLAS holding a 3D voxel field. Atlas = volumeSize wide x volumeSize^2 tall = volumeSize slices of volumeSize x volumeSize (canonical vol0..7 = 64x4096; reference 04 §8). Layout: voxel (x,y,z) -> atlas pixel (x, z*volumeSize + y). Channels: r=normalizedDist, g=orbitTrap, b=iterRatio, a=1 (WGSL ignores colorMode). Max safe volumeSize=128 (height 16384 = D3D11 limit). Downstream render3d/renderLit3d raymarches it."
+      "width": {
+        "param": "volumeSize",
+        "default": 64
+      },
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 4096
+      },
+      "format": "rgba16f"
     },
     "geoBuffer": {
-      "is3D": true,
-      "width": { "param": "volumeSize", "default": 64 },
-      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
-      "depth": { "param": "volumeSize", "default": 64 },
-      "atlasSliceSize": { "param": "volumeSize", "default": 64 },
-      "format": "rgba16f",
-      "_role": "GEO surface: matching atlas. xyz = normal*0.5+0.5 (analytic SDF gradient, WGSL normalize(-gradient+0.000001)), w = normalizedDist (depth/sdf). Consumed by render/renderLit3d for lighting."
+      "width": {
+        "param": "volumeSize",
+        "default": 64
+      },
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 4096
+      },
+      "format": "rgba16f"
     }
   },
   "outputTex3d": "volumeCache",
-  "outputGeo": "geoBuffer",
-  "is3D": true,
-  "volume": {
-    "_comment": "3D / RENDER tier VOLUME GENERATOR. Single volume-write pass (precompute) renders the Mandelbulb/Mandelcube/Julia voxel field into a 2D atlas (the vol surface) plus an analytic-normal geo atlas, via MRT (drawBuffers:2). The viewport is the atlas size (volumeSize x volumeSize^2), NOT the display resolution. No raymarch, no feedback, no MRT-ping-pong here — this just FILLS the volume; downstream render3d/renderLit3d raymarches the atlas into a 2D image. inheritsVolumeSize: when chained (e.g. noise3d().fractal3d()), the unscoped volumeSize is inherited from upstream.",
-    "atlasSliceSize": { "param": "volumeSize", "default": 64 },
-    "atlasMapping": "voxel(x,y,z) -> atlasPixel(x, z*volumeSize + y); slice = py / volumeSize, row = py % volumeSize",
-    "mrt": true,
-    "outputs": ["volumeCache", "geoBuffer"]
-  },
-  "feedback": {
-    "_comment": "Single-pass VOLUME-WRITE generator. No feedback, no repeat, no persistent state. Both outputs (volumeCache vol-atlas + geoBuffer geo-atlas) are transient pooled textures (NOT 'global_'), re-rendered whenever a uniform changes. MRT (drawBuffers:2). Atlas height = volumeSize^2 (reference 10 §6.11).",
-    "persistent": [],
-    "transient": ["volumeCache", "geoBuffer"],
-    "mrt": true
-  }
+  "outputGeo": "geoBuffer"
 }

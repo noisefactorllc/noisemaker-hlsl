@@ -2,7 +2,11 @@
   "name": "Temporal Chromatic Aberration",
   "namespace": "filter",
   "func": "temporalAberration",
-  "tags": ["color", "lens"],
+  "starter": false,
+  "tags": [
+    "color",
+    "lens"
+  ],
   "description": "Chromatic aberration via per-channel temporal frame delay",
   "paramAliases": {},
   "globals": {
@@ -11,31 +15,21 @@
       "default": 0,
       "uniform": "redDelay",
       "min": 0,
-      "max": 8,
-      "step": 0.1
+      "max": 8
     },
     "greenDelay": {
       "type": "float",
       "default": 4,
       "uniform": "greenDelay",
       "min": 0,
-      "max": 8,
-      "step": 0.1
+      "max": 8
     },
     "blueDelay": {
       "type": "float",
       "default": 8,
       "uniform": "blueDelay",
       "min": 0,
-      "max": 8,
-      "step": 0.1
-    }
-  },
-  "uniformLayouts": {
-    "temporalAberration": {
-      "redDelay": { "slot": 0, "components": "x" },
-      "greenDelay": { "slot": 0, "components": "y" },
-      "blueDelay": { "slot": 0, "components": "z" }
+      "max": 8
     }
   },
   "passes": [
@@ -60,103 +54,125 @@
     {
       "name": "shift8",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h7" },
-      "outputs": { "fragColor": "_h8" }
+      "inputs": {
+        "srcTex": "_h7"
+      },
+      "outputs": {
+        "fragColor": "_h8"
+      }
     },
     {
       "name": "shift7",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h6" },
-      "outputs": { "fragColor": "_h7" }
+      "inputs": {
+        "srcTex": "_h6"
+      },
+      "outputs": {
+        "fragColor": "_h7"
+      }
     },
     {
       "name": "shift6",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h5" },
-      "outputs": { "fragColor": "_h6" }
+      "inputs": {
+        "srcTex": "_h5"
+      },
+      "outputs": {
+        "fragColor": "_h6"
+      }
     },
     {
       "name": "shift5",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h4" },
-      "outputs": { "fragColor": "_h5" }
+      "inputs": {
+        "srcTex": "_h4"
+      },
+      "outputs": {
+        "fragColor": "_h5"
+      }
     },
     {
       "name": "shift4",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h3" },
-      "outputs": { "fragColor": "_h4" }
+      "inputs": {
+        "srcTex": "_h3"
+      },
+      "outputs": {
+        "fragColor": "_h4"
+      }
     },
     {
       "name": "shift3",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h2" },
-      "outputs": { "fragColor": "_h3" }
+      "inputs": {
+        "srcTex": "_h2"
+      },
+      "outputs": {
+        "fragColor": "_h3"
+      }
     },
     {
       "name": "shift2",
       "program": "delayShift",
-      "inputs": { "srcTex": "_h1" },
-      "outputs": { "fragColor": "_h2" }
+      "inputs": {
+        "srcTex": "_h1"
+      },
+      "outputs": {
+        "fragColor": "_h2"
+      }
     },
     {
       "name": "shift1",
       "program": "delayShift",
-      "inputs": { "srcTex": "inputTex" },
-      "outputs": { "fragColor": "_h1" }
+      "inputs": {
+        "srcTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "_h1"
+      }
     }
   ],
   "textures": {
     "_h1": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 1 (delay 1). Survives frame-to-frame; inits to zero (alpha 0 == empty). Written by shift1 (from inputTex), read by main + shift2."
+      "format": "rgba8unorm"
     },
     "_h2": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 2 (delay 2). Written by shift2 (from _h1), read by main + shift3."
+      "format": "rgba8unorm"
     },
     "_h3": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 3 (delay 3). Written by shift3 (from _h2), read by main + shift4."
+      "format": "rgba8unorm"
     },
     "_h4": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 4 (delay 4). Written by shift4 (from _h3), read by main + shift5."
+      "format": "rgba8unorm"
     },
     "_h5": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 5 (delay 5). Written by shift5 (from _h4), read by main + shift6."
+      "format": "rgba8unorm"
     },
     "_h6": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 6 (delay 6). Written by shift6 (from _h5), read by main + shift7."
+      "format": "rgba8unorm"
     },
     "_h7": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 7 (delay 7). Written by shift7 (from _h6), read by main + shift8."
+      "format": "rgba8unorm"
     },
     "_h8": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "PERSISTENT history stage 8 (delay 8). Written by shift8 (from _h7), read by main."
+      "format": "rgba8unorm"
     }
   },
-  "feedback": {
-    "_comment": "8-stage bucket-brigade temporal delay line. The 'main' read pass MUST run FIRST (definition.js order), sampling pre-shift history so _h1.._h8 still hold last frame's values. Then eight tail-first shift passes (shift8 first .. shift1 last) advance the line: each stage copies its source's last-frame value BEFORE that source is overwritten this frame (shift1 ingests the live inputTex into _h1). The eight _h1.._h8 textures are PERSISTENT state and must survive frame-to-frame (NOT cleared/reused per frame); they init to zero so alpha==0 marks 'empty', which the read shader falls back to the live frame for ramp-in. No 'repeat:' passes (no _iteration uniform). No MRT/drawBuffers. No blend (all passes Blend Off). Not the canonical 'selfTex' single-frame feedback alias — this is an explicit N-frame delay line wired via the _h* persistent textures."
-  }
+  "defaultProgram": "search filter, synth\n\nnoise(\n  speed: 40,\n  colorMode: mono,\n  ridges: true\n)\n  .temporalAberration()\n  .write(o0)"
 }

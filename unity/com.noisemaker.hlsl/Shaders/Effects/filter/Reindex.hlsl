@@ -203,17 +203,20 @@ float4 frag_nmReindexReduce(NMVaryings i) : SV_Target
         return float4(0.0, 0.0, 0.0, 0.0);
     }
 
-    int width_px  = max((int)round(resolution.x), 0);
-    int height_px = max((int)round(resolution.y), 0);
+    // GOLDEN (GLSL nmReindexReduce): tileCount derives from the statsTiles
+    // texture dimensions, NOT the engine `resolution` uniform. During this pass
+    // the output RT is 1x1, so a resolution-based tile_count can collapse to a
+    // single tile and the global min/max degenerates to tile (0,0) only. Use the
+    // statsTex size to scan every tile anchor, matching the GLSL golden.
+    int tex_width  = (int)dw;
+    int tex_height = (int)dh;
     int2 tile_count = int2(
-        (width_px + TILE_SIZE - 1) / TILE_SIZE,
-        (height_px + TILE_SIZE - 1) / TILE_SIZE
+        (tex_width  + TILE_SIZE - 1) / TILE_SIZE,
+        (tex_height + TILE_SIZE - 1) / TILE_SIZE
     );
 
     float global_min = F32_MAX;
     float global_max = F32_MIN;
-    int tex_width  = (int)dw;
-    int tex_height = (int)dh;
 
     [loop]
     for (int ty = 0; ty < MAX_TILE_DIM; ty = ty + 1)

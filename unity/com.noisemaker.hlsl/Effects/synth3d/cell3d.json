@@ -2,124 +2,106 @@
   "name": "Cell3D",
   "namespace": "synth3d",
   "func": "cell3d",
-  "tags": ["3d", "noise"],
+  "starter": true,
+  "tags": [
+    "3d",
+    "noise"
+  ],
   "description": "3D cellular/Voronoi noise volume",
-  "paramAliases": { "cellVariation": "variation" },
-  "defaultProgram": "search synth3d, filter3d, render\n\ncell3d(volumeSize: x64)\n.render3d()\n.write(o0)",
+  "paramAliases": {
+    "cellVariation": "variation"
+  },
   "globals": {
     "volumeSize": {
       "type": "int",
       "default": 64,
       "uniform": "volumeSize",
-      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
-      "randChoices": [16, 32, 64],
-      "ui": { "label": "volume size", "control": "dropdown" }
+      "choices": {
+        "x16": 16,
+        "x32": 32,
+        "x64": 64,
+        "x128": 128
+      }
     },
     "metric": {
       "type": "int",
       "default": 0,
       "uniform": "metric",
-      "choices": { "sphere": 0, "octahedron": 1, "cube": 2 },
-      "ui": { "label": "cell shape", "control": "dropdown" }
+      "choices": {
+        "sphere": 0,
+        "octahedron": 1,
+        "cube": 2
+      }
     },
     "scale": {
       "type": "float",
       "default": 10,
       "uniform": "scale",
       "min": 1,
-      "max": 15,
-      "ui": { "label": "cell scale" }
+      "max": 15
     },
     "variation": {
       "type": "float",
       "default": 100,
       "uniform": "cellVariation",
       "min": 0,
-      "max": 100,
-      "ui": { "label": "cell variation" }
+      "max": 100
     },
     "seed": {
       "type": "int",
       "default": 1,
       "uniform": "seed",
       "min": 0,
-      "max": 100,
-      "ui": { "label": "seed" }
+      "max": 100
     },
     "colorMode": {
       "type": "int",
       "default": 1,
       "uniform": "colorMode",
-      "choices": { "mono": 0, "rgb": 1 },
-      "ui": { "label": "color mode", "control": "dropdown" }
-    }
-  },
-  "uniformLayouts": {
-    "precompute": {
-      "scale": { "uniform": "scale" },
-      "seed": { "uniform": "seed" },
-      "metric": { "uniform": "metric" },
-      "cellVariation": { "uniform": "cellVariation" },
-      "volumeSize": { "uniform": "volumeSize" },
-      "colorMode": { "uniform": "colorMode" }
+      "choices": {
+        "mono": 0,
+        "rgb": 1
+      }
     }
   },
   "passes": [
     {
       "name": "precompute",
       "program": "precompute",
-      "drawBuffers": 2,
-      "viewport": {
-        "width": { "param": "volumeSize", "default": 64 },
-        "height": { "param": "volumeSize", "power": 2, "default": 4096 }
-      },
       "inputs": {},
       "outputs": {
         "color": "volumeCache",
         "geoOut": "geoBuffer"
-      }
+      },
+      "drawBuffers": 2
     }
   ],
   "textures": {
     "volumeCache": {
-      "is3D": false,
-      "width": { "param": "volumeSize", "default": 64 },
-      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
-      "format": "rgba16f",
-      "_atlas": {
-        "sliceSize": 64,
-        "atlasHeightFactor": "volumeSize",
-        "voxelMap": "x=x, y=yAtlas%volumeSize, z=floor(yAtlas/volumeSize)"
+      "width": {
+        "param": "volumeSize",
+        "default": 64
       },
-      "_role": "3D-VOLUME ATLAS (outputTex3d). 2D RenderTexture of size volumeSize x volumeSize^2 (default 64 x 4096 = 64 stacked 64x64 z-slices). Atlas texel (x,yAtlas) maps to voxel (x, yAtlas%volumeSize, yAtlas/volumeSize). Stores 3D Worley/cell noise: colorMode 0 -> rgb=normalizedDist (mono), a=1; colorMode 1 -> r=normalizedDist, gba = cell-id color hashes (h1,h2,h3). Written by SV_Target0 of the precompute pass; consumed downstream by render/render3d/renderLit3d (raymarch). See reference 04 §8 vol0..7 / 10 §3."
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 4096
+      },
+      "format": "rgba16f"
     },
     "geoBuffer": {
-      "is3D": false,
-      "width": { "param": "volumeSize", "default": 64 },
-      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
-      "format": "rgba16f",
-      "_atlas": {
-        "sliceSize": 64,
-        "atlasHeightFactor": "volumeSize",
-        "voxelMap": "x=x, y=yAtlas%volumeSize, z=floor(yAtlas/volumeSize)"
+      "width": {
+        "param": "volumeSize",
+        "default": 64
       },
-      "_role": "GEOMETRY/normal ATLAS (outputGeo). Same atlas layout/size as volumeCache. xyz = packed analytic normal (normalize(-gradient + 1e-6)*0.5+0.5), w = normalizedDist (the depth/field slot). Written by SV_Target1 of the precompute pass; consumed downstream for lit raymarch (render/renderLit3d). See reference 04 §8 geo buffers (xyz=normal, w=depth)."
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 4096
+      },
+      "format": "rgba16f"
     }
   },
   "outputTex3d": "volumeCache",
-  "outputGeo": "geoBuffer",
-  "volume": {
-    "_comment": "3D / RENDER tier volume-write generator (reference 04 §8, 10 §3). Single MRT pass 'precompute' (drawBuffers:2) FILLS a 2D atlas RenderTexture representing a volumeSize^3 voxel volume (default 64^3 -> 64x4096). The fragment maps atlas (u,v)=fragCoord -> voxel (x, v%volumeSize, v/volumeSize), evaluates a 3D Worley/cellular distance field (3x3x3 neighborhood, metric sphere/octahedron/cube), and writes the normalized density (+ optional cell-id colors) to volumeCache (SV_Target0) and a packed analytical-gradient normal + density to geoBuffer (SV_Target1). NO raymarch here: a downstream render3d/renderLit3d raymarches volumeCache/geoBuffer into a 2D image. No input texture. PARITY: ported from WGSL — gradient epsilon is 1.0/volumeSize (the GLSL's 0.01/scale is NOT used). colorMode 0 writes mono, 1 writes cell colors. cellVariation/100 -> jitter blends the cell point between center (0.5) and the pcg3d hash. When chained after another 3D effect (noise3d().cell3d()), volumeSize is inherited (inheritsVolumeSize).",
-    "kind": "volume-write",
-    "raymarch": false,
-    "mrt": true,
-    "atlasDims": {
-      "width": "volumeSize",
-      "height": "volumeSize^2",
-      "defaultWidth": 64,
-      "defaultHeight": 4096
-    },
-    "atlasSliceSize": 64,
-    "outputs": ["volumeCache (outputTex3d)", "geoBuffer (outputGeo)"]
-  }
+  "outputGeo": "geoBuffer"
 }

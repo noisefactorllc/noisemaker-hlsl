@@ -2,7 +2,11 @@
   "name": "TetraCosine",
   "namespace": "filter",
   "func": "tetraCosine",
-  "tags": ["color", "palette"],
+  "starter": false,
+  "tags": [
+    "color",
+    "palette"
+  ],
   "description": "Apply Tetra cosine palettes based on luminance",
   "paramAliases": {},
   "globals": {
@@ -10,7 +14,12 @@
       "type": "int",
       "default": 0,
       "uniform": "colorMode",
-      "choices": { "rgb": 0, "hsv": 1, "oklab": 2, "oklch": 3 }
+      "choices": {
+        "rgb": 0,
+        "hsv": 1,
+        "oklab": 2,
+        "oklch": 3
+      }
     },
     "offsetR": {
       "type": "float",
@@ -77,7 +86,7 @@
     },
     "phaseR": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "phaseR",
       "min": 0,
       "max": 1
@@ -97,10 +106,14 @@
       "max": 1
     },
     "rotation": {
-      "type": "int",
+      "type": "float",
       "default": 0,
       "uniform": "rotation",
-      "choices": { "none": 0, "fwd": 1, "back": -1 }
+      "choices": {
+        "none": 0,
+        "fwd": 1,
+        "back": -1
+      }
     },
     "repeat": {
       "type": "float",
@@ -111,14 +124,14 @@
     },
     "offset": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "offset",
       "min": 0,
       "max": 1
     },
     "alpha": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "alpha",
       "min": 0,
       "max": 1
@@ -133,33 +146,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "colorMode": "colorMode",
-        "offsetR": "offsetR",
-        "offsetG": "offsetG",
-        "offsetB": "offsetB",
-        "ampR": "ampR",
-        "ampG": "ampG",
-        "ampB": "ampB",
-        "freqR": "freqR",
-        "freqG": "freqG",
-        "freqB": "freqB",
-        "phaseR": "phaseR",
-        "phaseG": "phaseG",
-        "phaseB": "phaseB",
-        "rotation": "rotation",
-        "repeat": "repeat",
-        "offset": "offset",
-        "alpha": "alpha"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nnoise()\n  .tetraCosine()\n  .write(o0)"
 }

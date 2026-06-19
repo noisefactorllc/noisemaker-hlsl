@@ -2,16 +2,20 @@
   "name": "Wobble",
   "namespace": "filter",
   "func": "wobble",
-  "tags": ["transform"],
+  "starter": false,
+  "tags": [
+    "transform"
+  ],
   "description": "Wobble animation effect",
   "paramAliases": {},
   "globals": {
     "speed": {
       "type": "float",
-      "default": 5.0,
+      "default": 5,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "range": {
       "type": "float",
@@ -38,22 +42,16 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "speed": "speed",
         "range": "range",
         "time": "time",
         "wrap": "wrap"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

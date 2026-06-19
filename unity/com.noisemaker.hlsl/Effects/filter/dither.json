@@ -2,7 +2,11 @@
   "name": "Dither",
   "namespace": "filter",
   "func": "dither",
-  "tags": ["color", "pixel"],
+  "starter": false,
+  "tags": [
+    "color",
+    "pixel"
+  ],
   "description": "Ordered dithering with classic patterns and palettes",
   "paramAliases": {
     "ditherType": "type",
@@ -32,7 +36,7 @@
     },
     "threshold": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "threshold",
       "min": -0.5,
       "max": 0.5
@@ -63,10 +67,10 @@
     },
     "mix": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "mixAmount",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     }
   },
   "passes": [
@@ -78,22 +82,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "ditherType": 1,
-        "matrixScale": 2,
-        "threshold": 0.0,
-        "palette": 0,
-        "levels": 4,
-        "mixAmount": 1.0
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

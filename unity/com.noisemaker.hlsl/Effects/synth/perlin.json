@@ -2,16 +2,19 @@
   "name": "Perlin",
   "namespace": "synth",
   "func": "perlin",
-  "tags": ["noise"],
+  "starter": true,
+  "tags": [
+    "noise"
+  ],
   "description": "Perlin-like noise with optional warping",
+  "paramAliases": {},
   "globals": {
     "scale": {
       "type": "float",
       "default": 25,
       "uniform": "scale",
       "min": 0,
-      "max": 100,
-      "randMin": 15
+      "max": 100
     },
     "octaves": {
       "type": "int",
@@ -76,8 +79,7 @@
       "uniform": "speed",
       "min": 0,
       "max": 5,
-      "zero": 0,
-      "randMax": 2
+      "zero": 0
     }
   },
   "passes": [
@@ -90,7 +92,5 @@
       }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

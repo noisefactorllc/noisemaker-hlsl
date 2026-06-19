@@ -241,7 +241,15 @@ PRDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
         }
     }
 
-    o.positionCS = float4(clipPos, 0.0, 1.0);
+    // Y-orientation parity (CRITICAL): every FULLSCREEN pass (NMVertFullscreen)
+    // counter-flips clip.y by _ProjectionParams.x so that, when rendering INTO a
+    // RenderTexture on Metal/D3D (_ProjectionParams.x == -1), all passes store the
+    // trail in ONE consistent orientation. The deposit uses a CUSTOM vertex stage,
+    // so it MUST apply the SAME counter-flip — otherwise the scattered points land
+    // vertically MIRRORED relative to where the diffuse/copy/blend fullscreen passes
+    // read+write the same trail, and the composited output is upside-down vs the
+    // GLSL golden (which keeps GL bottom-left consistent throughout).
+    o.positionCS = float4(clipPos.x, clipPos.y * _ProjectionParams.x, 0.0, 1.0);
     o.color = float4(col.rgb, col.a);
     return o;
 }

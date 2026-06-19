@@ -2,8 +2,12 @@
   "name": "ThresholdMix",
   "namespace": "mixer",
   "func": "thresholdMix",
-  "tags": ["blend"],
+  "starter": false,
+  "tags": [
+    "blend"
+  ],
   "description": "Blend using threshold masking",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -101,15 +105,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\nnoise()\n.write(o0)\n\nsolid(color: #000000)\n.thresholdMix(tex: read(o0))\n.write(o1)\n"
 }

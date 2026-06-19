@@ -2,18 +2,17 @@
   "name": "Attractor",
   "namespace": "points",
   "func": "attractor",
-  "tags": ["sim"],
+  "starter": false,
+  "tags": [
+    "sim"
+  ],
   "description": "Strange attractors: chaotic dynamic systems visualization",
   "paramAliases": {},
-  "outputXyz": "global_xyz",
-  "outputVel": "global_vel",
-  "outputRgba": "global_rgba",
   "globals": {
     "stateSize": {
       "type": "int",
       "default": 256,
-      "uniform": "stateSize",
-      "ui": { "control": false }
+      "uniform": "stateSize"
     },
     "attractor": {
       "type": "int",
@@ -27,41 +26,25 @@
         "halvorsen": 4,
         "chen": 5,
         "dadras": 6
-      },
-      "ui": { "label": "attractor", "control": "dropdown" }
+      }
     },
     "speed": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "speed",
       "min": 0.01,
-      "max": 2,
-      "step": 0.01,
-      "ui": { "label": "speed", "control": "slider" }
+      "max": 2
     },
     "viewMode": {
       "type": "int",
       "default": 1,
-      "uniform": "viewMode",
-      "ui": { "control": false }
-    }
-  },
-  "uniformLayouts": {
-    "agent": {
-      "resolution": { "slot": 0, "components": "xy" },
-      "seed": { "slot": 0, "components": "w" },
-      "attractor": { "slot": 1, "components": "x" },
-      "speed": { "slot": 1, "components": "y" }
-    },
-    "passthrough": {
-      "resolution": { "slot": 0, "components": "xy" }
+      "uniform": "viewMode"
     }
   },
   "passes": [
     {
       "name": "agent",
       "program": "agent",
-      "drawBuffers": 3,
       "inputs": {
         "xyzTex": "global_xyz",
         "velTex": "global_vel",
@@ -75,7 +58,8 @@
         "outXYZ": "global_xyz",
         "outVel": "global_vel",
         "outRGBA": "global_rgba"
-      }
+      },
+      "drawBuffers": 3
     },
     {
       "name": "passthrough",
@@ -88,32 +72,5 @@
       }
     }
   ],
-  "textures": {
-    "global_xyz": {
-      "width": { "param": "stateSize", "paramDefault": 256 },
-      "height": { "param": "stateSize", "paramDefault": 256 },
-      "format": "rgba32f",
-      "_role": "PERSISTENT shared agent state (allocated by pointsEmit upstream; this effect declares textures:{} and only reads/writes it). Layout [x,y,z,alive_flag]. Double-buffered/ping-ponged across frames (reference 04 §10.7 isStateSurface matches the 'xyz' suffix => PERSIST, not swap). rgba32f (full float) to hold attractor-space positions far outside [0,1]."
-    },
-    "global_vel": {
-      "width": { "param": "stateSize", "paramDefault": 256 },
-      "height": { "param": "stateSize", "paramDefault": 256 },
-      "format": "rgba32f",
-      "_role": "PERSISTENT shared agent state (allocated by pointsEmit upstream). Layout [vx,vy,vz,seed]. Read+written unchanged by the agent pass (momentum carrier). Persists via isStateSurface 'vel' suffix."
-    },
-    "global_rgba": {
-      "width": { "param": "stateSize", "paramDefault": 256 },
-      "height": { "param": "stateSize", "paramDefault": 256 },
-      "format": "rgba32f",
-      "_role": "PERSISTENT shared agent state (allocated by pointsEmit upstream). Layout [r,g,b,a] agent color. Read+written unchanged by the agent pass. Persists via isStateSurface 'rgba' suffix."
-    }
-  },
-  "feedback": {
-    "_comment": "Multi-pass agent sim. State lives in three PERSISTENT shared 'global_' surfaces global_xyz/global_vel/global_rgba (allocated by pointsEmit upstream; this effect's textures:{} is empty in definition.js — the entries above are documented for parity, NOT pooled, NOT '_'-prefixed transient). Pass 1 'agent' is a FULLSCREEN MRT state update (drawBuffers:3) that reads + writes all three globals in ONE pass (SV_Target0/1/2 = outXYZ/outVel/outRGBA, attachment slots in outputs{} insertion order). The runtime ping-pongs each global per write (ref 04 §10.2) and persists final bindings at end-of-frame via isStateSurface (xyz/vel/rgba suffix match => PERSIST, not swap; §10.7). Pass 2 'passthrough' is a plain fullscreen copy of the 2D inputTex to outputTex. There is NO deposit / drawMode:'points' / scatter pass and NO diffuse pass in THIS effect — the points-scatter 1px deposit + render happen downstream in the separate pointsRender effect. No iteration uniform is injected (no repeat). MRT: true (agent pass only).",
-    "persistent": ["global_xyz", "global_vel", "global_rgba"],
-    "transient": [],
-    "mrt": true,
-    "deposit": false,
-    "diffuse": false
-  }
+  "textures": {}
 }

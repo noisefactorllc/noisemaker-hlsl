@@ -2,7 +2,11 @@
   "name": "Subdivide",
   "namespace": "synth",
   "func": "subdivide",
-  "tags": ["geometric", "pattern"],
+  "starter": true,
+  "tags": [
+    "geometric",
+    "pattern"
+  ],
   "description": "Recursive grid subdivision with shapes",
   "paramAliases": {},
   "globals": {
@@ -58,7 +62,8 @@
       "default": 3,
       "uniform": "outline",
       "min": 0,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "inputMix": {
       "type": "float",
@@ -72,7 +77,8 @@
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 20
+      "max": 20,
+      "zero": 0
     },
     "wrap": {
       "type": "int",
@@ -94,25 +100,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "mode": 1,
-        "depth": 5,
-        "density": 75,
-        "seed": 69,
-        "fill": 0,
-        "outline": 3,
-        "inputMix": 0,
-        "speed": 1,
-        "wrap": 0
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

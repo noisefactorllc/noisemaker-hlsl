@@ -2,28 +2,35 @@
   "name": "Scope",
   "namespace": "synth",
   "func": "scope",
-  "tags": ["audio"],
+  "starter": true,
+  "tags": [
+    "audio"
+  ],
   "description": "Audio waveform oscilloscope",
   "paramAliases": {},
   "globals": {
     "color": {
       "type": "color",
-      "default": [0, 1, 0],
+      "default": [
+        0,
+        1,
+        0
+      ],
       "uniform": "lineColor"
     },
     "thickness": {
       "type": "float",
-      "default": 2.0,
+      "default": 2,
       "uniform": "lineThickness",
       "min": 0.5,
       "max": 10
     },
     "gain": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "gain",
       "min": 0.1,
-      "max": 5.0
+      "max": 5
     }
   },
   "passes": [
@@ -33,15 +40,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

@@ -89,8 +89,19 @@ namespace Noisemaker.Hlsl.Compiler
 
         // Starter op names (bare AND namespaced), reference/02 §9 STARTER_OPS.
         private readonly HashSet<string> _starterOps = new HashSet<string>();
+
+        // Curated valid namespaces for `search` validation (reference/01 §3.2;
+        // shaders/src/runtime/tags.js VALID_NAMESPACES / _builtinDescriptors). This is
+        // FIXED bootstrap metadata — NOT derived from which effects happen to be loaded.
+        // `io` and `user` carry no effects but ARE valid search namespaces (the blaster
+        // corpus searches `user`); deriving from loaded effects wrongly rejected them.
+        private static readonly string[] BuiltinNamespaces =
+        {
+            "io", "classicNoisedeck", "synth", "mixer", "filter",
+            "render", "points", "synth3d", "filter3d", "user"
+        };
         // Valid namespace ids for `search` validation (reference/01 §3.2).
-        private readonly HashSet<string> _namespaces = new HashSet<string>();
+        private readonly HashSet<string> _namespaces = new HashSet<string>(BuiltinNamespaces);
 
         // Deprecated effect aliases (reference/01 §8.4): "<ns>.<func>" -> replacement name.
         private readonly Dictionary<string, string> _effectAliases = new Dictionary<string, string>();
@@ -326,49 +337,38 @@ namespace Noisemaker.Hlsl.Compiler
             "global_xyz0", "global_vel0", "global_rgba0"
         };
 
-        // reference/02 §9 starter detection. The reference flags an effect as a
-        // "starter" (can begin a chain with no input) in the manifest when it reads
-        // NO pipeline input — see generate-shader-manifest.mjs isStarterEffect. The
-        // converted C# effect-def JSON dropped the explicit `starter` field, so we
-        // derive it the same way (an explicit `starter` boolean still wins). Without
-        // this, _starterOps is empty and EVERY generator chain (noise().write()...)
-        // fails validation with S005.
+        // Starter detection — mirrors the LIVE reference runtime, canvas.js
+        // isStarterEffect() (the path registerStarterOpForEffect() feeds into
+        // registerStarterOps, and which tools/export-graph.mjs reproduces for the
+        // golden). An effect is a starter (can begin a chain with no upstream input)
+        // iff NONE of its pass `inputs` VALUES is a pipeline input; a pass-less
+        // effect is a starter. The reference runtime ignores the definition's
+        // explicit `starter` boolean AND does not consider surface-typed globals
+        // here — so neither do we. (Honoring the explicit flag previously demoted
+        // mixer/channelCombine, whose rTex/gTex/bTex surface globals are supplied as
+        // explicit read() args, to a non-starter, breaking `channelCombine(...).
+        // write(o3)` with S005 even though the demo/golden compile it fine.)
         private static bool DeriveStarter(JsonValue def)
         {
-            JsonValue s = def.Get("starter");
-            if (s != null && s.Kind == JsonKind.Bool) return s.AsBool;   // explicit wins
             return !ReadsPipelineInput(def);
         }
 
         private static bool ReadsPipelineInput(JsonValue def)
         {
             JsonValue passes = def.Get("passes");
-            if (passes != null && passes.Kind == JsonKind.Array)
+            // No passes => starter (reference isStarterEffect: passes.length === 0).
+            if (passes == null || passes.Kind != JsonKind.Array) return false;
+            foreach (JsonValue p in passes.AsArray)
             {
-                foreach (JsonValue p in passes.AsArray)
+                if (p == null || p.Kind != JsonKind.Object) continue;
+                JsonValue inputs = p.Get("inputs");
+                if (inputs == null || inputs.Kind != JsonKind.Object) continue;
+                foreach (var kv in inputs.AsObject)
                 {
-                    if (p == null || p.Kind != JsonKind.Object) continue;
-                    JsonValue inputs = p.Get("inputs");
-                    if (inputs == null || inputs.Kind != JsonKind.Object) continue;
-                    foreach (var kv in inputs.AsObject)
-                    {
-                        if (PipelineInputs.Contains(kv.Key)) return true;
-                        JsonValue v = kv.Value;
-                        if (v != null && v.Kind == JsonKind.String && PipelineInputs.Contains(v.AsString))
-                            return true;
-                    }
-                }
-            }
-            // A surface-typed global samples an input surface (reference TEX_SURFACE_RE).
-            JsonValue globals = def.Get("globals");
-            if (globals != null && globals.Kind == JsonKind.Object)
-            {
-                foreach (var kv in globals.AsObject)
-                {
-                    JsonValue g = kv.Value;
-                    if (g == null || g.Kind != JsonKind.Object) continue;
-                    JsonValue t = g.Get("type");
-                    if (t != null && t.Kind == JsonKind.String && t.AsString == "surface") return true;
+                    // Reference checks input VALUES only (not keys), not surface globals.
+                    JsonValue v = kv.Value;
+                    if (v != null && v.Kind == JsonKind.String && PipelineInputs.Contains(v.AsString))
+                        return true;
                 }
             }
             return false;

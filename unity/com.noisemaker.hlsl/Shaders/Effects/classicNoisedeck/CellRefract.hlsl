@@ -101,10 +101,11 @@ float3 cr_rgb2hsv(float3 rgb)
     float h = 0.0;
     if (delta != 0.0)
     {
-        // WGSL uses `%` (sign-of-dividend) here with NO `if (h<0) h+=1` fixup —
-        // NOT GLSL always-positive mod. Match WGSL exactly with fmod (the one
-        // place fmod is correct, because the reference is WGSL `%`, not mod()).
-        if (maxC == rgb.r)      { h = fmod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
+        // GLSL golden (cellRefract.glsl:184) uses always-positive mod():
+        // mod((g-b)/delta, 6.0). For maxC==r and g<b the arg is negative, where
+        // floor-mod (GLSL) and fmod (WGSL `%`) diverge by 6 → large hue error.
+        // The parity golden is WebGL2/GLSL, so match GLSL: use nm_mod.
+        if (maxC == rgb.r)      { h = nm_mod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
         else if (maxC == rgb.g) { h = ((rgb.b - rgb.r) / delta + 2.0) / 6.0; }
         else                    { h = ((rgb.r - rgb.g) / delta + 4.0) / 6.0; }
     }

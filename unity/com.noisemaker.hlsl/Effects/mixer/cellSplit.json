@@ -2,8 +2,13 @@
   "name": "CellSplit",
   "namespace": "mixer",
   "func": "cellSplit",
-  "tags": ["blend", "noise"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "noise"
+  ],
   "description": "Split between inputs using Voronoi cell regions",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -29,7 +34,7 @@
     },
     "scale": {
       "type": "float",
-      "default": 15.0,
+      "default": 15,
       "uniform": "scale",
       "min": 1,
       "max": 30
@@ -53,7 +58,8 @@
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     }
   },
   "passes": [
@@ -66,15 +72,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\nsolid(color: #000000)\n.write(o0)\n\nnoise()\n.cellSplit(invert: sourceB)\n.write(o1)\n"
 }

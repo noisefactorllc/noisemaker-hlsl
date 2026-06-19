@@ -2,7 +2,10 @@
   "name": "Vaseline",
   "namespace": "filter",
   "func": "vaseline",
-  "tags": ["blur"],
+  "starter": false,
+  "tags": [
+    "blur"
+  ],
   "description": "Vaseline lens blur effect",
   "paramAliases": {},
   "globals": {
@@ -11,8 +14,7 @@
       "default": 0.5,
       "uniform": "alpha",
       "min": 0,
-      "max": 1,
-      "step": 0.01
+      "max": 1
     }
   },
   "passes": [
@@ -22,19 +24,13 @@
       "inputs": {
         "inputTex": "inputTex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "alpha": "alpha"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

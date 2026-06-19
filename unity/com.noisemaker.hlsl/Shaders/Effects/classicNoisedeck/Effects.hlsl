@@ -108,7 +108,10 @@ float2 nm_cnd_rotate2D(float2 st_in, float rot)
     st -= float2(0.5 * nm_cnd_aspectRatio(), 0.5);
     float c = cos(angle);
     float s = sin(angle);
-    st = float2(c * st.x - s * st.y, s * st.x + c * st.y);
+    // GLSL golden: mat2(cos,-sin,sin,cos) * st. GLSL mat2 is COLUMN-MAJOR, so it
+    // equals (c*st.x + s*st.y, -s*st.x + c*st.y) — opposite rotation direction from
+    // the WGSL transcription (c*x-s*y, s*x+c*y). Only diverges for nonzero rotation.
+    st = float2(c * st.x + s * st.y, -s * st.x + c * st.y);
     st += float2(0.5 * nm_cnd_aspectRatio(), 0.5);
     st.x /= nm_cnd_aspectRatio();
     return st;
@@ -167,7 +170,10 @@ float3 nm_cnd_rgb2hsv(float3 rgb)
     float h = 0.0;
     if (delta != 0.0)
     {
-        if (maxC == rgb.r)      { h = fmod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
+        // GLSL golden: mod((g-b)/delta, 6.0). When maxC==r and g<b the arg is
+        // negative, where floor-mod (GLSL) and fmod (WGSL `%`) diverge — e.g.
+        // mod(-0.5,6)=5.5 vs fmod(-0.5,6)=-0.5, a large hue error. Match GLSL.
+        if (maxC == rgb.r)      { h = nm_mod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
         else if (maxC == rgb.g) { h = ((rgb.b - rgb.r) / delta + 2.0) / 6.0; }
         else                    { h = ((rgb.r - rgb.g) / delta + 4.0) / 6.0; }
     }

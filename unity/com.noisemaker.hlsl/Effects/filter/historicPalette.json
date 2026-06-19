@@ -2,9 +2,15 @@
   "name": "Historic Palette",
   "namespace": "filter",
   "func": "historicPalette",
-  "tags": ["color", "palette"],
+  "starter": false,
+  "tags": [
+    "color",
+    "palette"
+  ],
   "description": "Apply historical art color palettes",
-  "paramAliases": { "paletteIndex": "index" },
+  "paramAliases": {
+    "paletteIndex": "index"
+  },
   "globals": {
     "index": {
       "type": "int",
@@ -38,7 +44,11 @@
       "type": "float",
       "default": 0,
       "uniform": "rotation",
-      "choices": { "none": 0, "fwd": 1, "back": -1 }
+      "choices": {
+        "none": 0,
+        "fwd": 1,
+        "back": -1
+      }
     },
     "offset": {
       "type": "float",
@@ -78,22 +88,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "paletteIndex": 4,
-        "smoothness": 0,
-        "rotation": 0,
-        "offset": 0,
-        "repeat": 1,
-        "alpha": 1
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\nnoise(ridges: true, colorMode: mono)\n.historicPalette()\n.write(o0)"
 }

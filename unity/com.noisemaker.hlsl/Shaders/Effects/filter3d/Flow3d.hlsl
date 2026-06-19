@@ -41,7 +41,7 @@
 // PERSISTENT STATE TEXTURES (survive frame-to-frame; runtime ping-pongs them):
 //   global_flow3d_state1 (rgba16f, 512x512) — [x, y, z, rotRand]  3D pos + rot rand
 //   global_flow3d_state2 (rgba16f, 512x512) — [r, g, b, seed]     color + seed
-//   global_flow3d_state3 (rgba16f, 512x512) — [age, initialized, theta, phi]
+//   global_flow3d_state3 (rgba16f, 512x512) — [age, initialized, strideRand, 0]
 //     All three are isStateSurface=true (name contains 'state') → end-of-frame
 //     bindings persist with NO swap; the agent pass updates them in place via MRT.
 //   global_flow3d_trail   (rgba16f, atlas) — accumulated agent trail volume.
@@ -161,43 +161,13 @@ int2 flow3d_atlasTexel(int3 p, int volSize)
     return int2(clamped.x, clamped.y + clamped.z * volSize);
 }
 
-// Manual trilinear sample of the input volume atlas (8 Loads + lerps). The
-// atlas is bound as mixerTex (inputTex3d). textureLoad → .Load(int3(coord,0)).
-float4 flow3d_sampleVolume(float3 pos, int volSize)
+// Sample 3D volume at integer voxel position (matching 2D texelFetch pattern in
+// the GLSL golden agent.glsl sampleVoxel — NOT a trilinear tap). The atlas is
+// bound as mixerTex (inputTex3d). texelFetch → .Load(int3(coord,0)).
+float4 flow3d_sampleVoxel(int3 voxel, int volSize)
 {
-    float volSizeF = (float)volSize;
-    float3 texelPos = clamp(pos, float3(0.0, 0.0, 0.0), float3(volSizeF - 1.0, volSizeF - 1.0, volSizeF - 1.0));
-    float3 texelFloor = floor(texelPos);
-    float3 fr = texelPos - texelFloor;
-
-    int3 i0 = int3(texelFloor);
-    int3 i1 = min(i0 + int3(1, 1, 1), int3(volSize - 1, volSize - 1, volSize - 1));
-
-    float4 c000 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i0.x, i0.y, i0.z), volSize), 0));
-    float4 c100 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i1.x, i0.y, i0.z), volSize), 0));
-    float4 c010 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i0.x, i1.y, i0.z), volSize), 0));
-    float4 c110 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i1.x, i1.y, i0.z), volSize), 0));
-    float4 c001 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i0.x, i0.y, i1.z), volSize), 0));
-    float4 c101 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i1.x, i0.y, i1.z), volSize), 0));
-    float4 c011 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i0.x, i1.y, i1.z), volSize), 0));
-    float4 c111 = mixerTex.Load(int3(flow3d_atlasTexel(int3(i1.x, i1.y, i1.z), volSize), 0));
-
-    float4 c00 = lerp(c000, c100, fr.x);
-    float4 c10 = lerp(c010, c110, fr.x);
-    float4 c01 = lerp(c001, c101, fr.x);
-    float4 c11 = lerp(c011, c111, fr.x);
-
-    float4 c0 = lerp(c00, c10, fr.y);
-    float4 c1 = lerp(c01, c11, fr.y);
-
-    return lerp(c0, c1, fr.z);
-}
-
-float3 flow3d_getFallbackColor(float3 pos, uint seed)
-{
-    float3 col = flow3d_hash3(seed + (uint)(pos.x * 10.0 + pos.y * 100.0 + pos.z * 1000.0));
-    col = col * 0.5 + 0.25 + flow3d_hash3(seed) * 0.25;
-    return clamp(col, float3(0.0, 0.0, 0.0), float3(1.0, 1.0, 1.0));
+    int3 clamped = clamp(voxel, int3(0, 0, 0), int3(volSize - 1, volSize - 1, volSize - 1));
+    return mixerTex.Load(int3(flow3d_atlasTexel(clamped, volSize), 0));
 }
 
 float flow3d_srgb_to_linear(float value)
@@ -329,8 +299,7 @@ Flow3dAgentOutputs frag_agent(NMVaryings i)
     float seed_f = state2.w;
     float age = state3.x;
     float initialized = state3.y;
-    float theta = state3.z;
-    float phi = state3.w;
+    float strideRand = state3.z;   // per-agent stride random in [-0.5, 0.5]
 
     uint agentSeed = (uint)(coord.x + coord.y * width);
     uint baseSeed = agentSeed + (uint)(time * 1000.0);
@@ -338,7 +307,7 @@ Flow3dAgentOutputs frag_agent(NMVaryings i)
     int totalAgents = width * height;
     int agentIndex = coord.x + coord.y * width;
 
-    // Initialize agent if needed.
+    // Initialize agent if needed (GLSL agent.glsl lines 183-208).
     if (initialized < 0.5)
     {
         float3 pos = flow3d_hash3(agentSeed);
@@ -347,31 +316,22 @@ Flow3dAgentOutputs frag_agent(NMVaryings i)
         flow_z = pos.z * volSizeF;
 
         rotRand = flow3d_hash(agentSeed + 200u);
-        theta = flow3d_hash(agentSeed + 300u) * FLOW3D_TAU;
-        phi = acos(2.0 * flow3d_hash(agentSeed + 400u) - 1.0);
+        strideRand = flow3d_hash(agentSeed + 300u) - 0.5;  // [-0.5, 0.5]
 
-        float4 inputColor = flow3d_sampleVolume(float3(flow_x, flow_y, flow_z), volSize);
-
-        if (length(inputColor.rgb) < 0.01)
-        {
-            float3 fallbackCol = flow3d_getFallbackColor(float3(flow_x, flow_y, flow_z), agentSeed);
-            cr = fallbackCol.r;
-            cg = fallbackCol.g;
-            cb = fallbackCol.b;
-        }
-        else
-        {
-            cr = inputColor.r;
-            cg = inputColor.g;
-            cb = inputColor.b;
-        }
+        int xi = flow3d_wrap_int((int)flow_x, volSize);
+        int yi = flow3d_wrap_int((int)flow_y, volSize);
+        int zi = flow3d_wrap_int((int)flow_z, volSize);
+        float4 inputColor = flow3d_sampleVoxel(int3(xi, yi, zi), volSize);
+        cr = inputColor.r;
+        cg = inputColor.g;
+        cb = inputColor.b;
 
         seed_f = (float)agentSeed;
         age = 0.0;
         initialized = 1.0;
     }
 
-    // Check for respawn.
+    // Check for respawn (GLSL agent.glsl lines 210-236).
     float agentPhase = (float)agentIndex / (float)max(totalAgents, 1);
     float staggeredAge = age + agentPhase * lifetime;
     bool shouldRespawn = lifetime > 0.0 && staggeredAge >= lifetime;
@@ -384,67 +344,43 @@ Flow3dAgentOutputs frag_agent(NMVaryings i)
         flow_z = pos.z * volSizeF;
 
         rotRand = flow3d_hash(baseSeed + 200u);
-        theta = flow3d_hash(baseSeed + 300u) * FLOW3D_TAU;
-        phi = acos(2.0 * flow3d_hash(baseSeed + 400u) - 1.0);
 
-        float4 inputColor = flow3d_sampleVolume(float3(flow_x, flow_y, flow_z), volSize);
-
-        if (length(inputColor.rgb) < 0.01)
-        {
-            float3 fallbackCol = flow3d_getFallbackColor(float3(flow_x, flow_y, flow_z), baseSeed);
-            cr = fallbackCol.r;
-            cg = fallbackCol.g;
-            cb = fallbackCol.b;
-        }
-        else
-        {
-            cr = inputColor.r;
-            cg = inputColor.g;
-            cb = inputColor.b;
-        }
+        int xi = flow3d_wrap_int((int)flow_x, volSize);
+        int yi = flow3d_wrap_int((int)flow_y, volSize);
+        int zi = flow3d_wrap_int((int)flow_z, volSize);
+        float4 inputColor = flow3d_sampleVoxel(int3(xi, yi, zi), volSize);
+        cr = inputColor.r;
+        cg = inputColor.g;
+        cb = inputColor.b;
 
         age = 0.0;
     }
 
-    // Sample input for flow direction.
-    float4 texel = flow3d_sampleVolume(float3(flow_x, flow_y, flow_z), volSize);
-
-    float indexValue;
-    if (length(texel.rgb) < 0.01)
-    {
-        indexValue = flow3d_hash((uint)(flow_x * 10.0 + flow_y * 100.0 + flow_z * 1000.0 + time * 10.0));
-    }
-    else
-    {
-        indexValue = flow3d_oklab_l(texel.rgb);
-    }
+    // Sample input texture at current position for flow direction (GLSL 240-244).
+    int xi = flow3d_wrap_int((int)flow_x, volSize);
+    int yi = flow3d_wrap_int((int)flow_y, volSize);
+    int zi = flow3d_wrap_int((int)flow_z, volSize);
+    float4 texel = flow3d_sampleVoxel(int3(xi, yi, zi), volSize);
+    float indexValue = flow3d_oklab_l(texel.rgb);
 
     float baseHeading = flow3d_hash(0u) * FLOW3D_TAU;
     float rotationBias = flow3d_computeRotationBias(baseHeading, rotRand, time, agentIndex, totalAgents);
 
-    theta = theta + indexValue * FLOW3D_TAU * kink * 0.1 + rotationBias * 0.1;
-    phi = phi + (indexValue - 0.5) * FLOW3D_PI * kink * 0.1;
-    phi = clamp(phi, 0.01, FLOW3D_PI - 0.01);
+    // For 3D: azimuth (XY plane) — direct extension of 2D angle (GLSL 251).
+    float azimuth = indexValue * FLOW3D_TAU * kink + rotationBias;
+    // Elevation: indexValue modulates vertical movement (GLSL 255).
+    float elevation = (indexValue - 0.5) * FLOW3D_PI * kink * 0.5;
 
-    float sinPhi = sin(phi);
-    float cosPhi = cos(phi);
-    float sinTheta = sin(theta);
-    float cosTheta = cos(theta);
-
-    float3 direction = float3(
-        sinPhi * cosTheta,
-        sinPhi * sinTheta,
-        cosPhi
-    );
-
+    // Compute stride with deviation (exact match to 2D flow, GLSL 258-260).
     float scale = max(volSizeF / 64.0, 1.0);
-    float strideRand = flow3d_hash(agentSeed + 500u) - 0.5;
     float devFactor = 1.0 + strideRand * 2.0 * strideDeviation;
     float actualStride = max(0.1, stride * scale * devFactor);
 
-    float newX = flow_x + direction.x * actualStride;
-    float newY = flow_y + direction.y * actualStride;
-    float newZ = flow_z + direction.z * actualStride;
+    // Move agent in 3D (extending 2D sin/cos to include Z; GLSL 263-266).
+    float cosElev = cos(elevation);
+    float newX = flow_x + sin(azimuth) * cosElev * actualStride;
+    float newY = flow_y + cos(azimuth) * cosElev * actualStride;
+    float newZ = flow_z + sin(elevation) * actualStride;
 
     newX = flow3d_wrap_float(newX, volSizeF);
     newY = flow3d_wrap_float(newY, volSizeF);
@@ -454,7 +390,7 @@ Flow3dAgentOutputs frag_agent(NMVaryings i)
 
     o.outState1 = float4(newX, newY, newZ, rotRand);
     o.outState2 = float4(cr, cg, cb, seed_f);
-    o.outState3 = float4(age, initialized, theta, phi);
+    o.outState3 = float4(age, initialized, strideRand, 0.0);
 
     return o;
 }
@@ -500,12 +436,15 @@ float4 frag_copy(NMVaryings i) : SV_Target
 struct Flow3dDepositVaryings
 {
     float4 positionCS : SV_POSITION;
+    float  pointSize  : PSIZE;       // D3D points topology requires a PSIZE output
+                                     // (reference gl_PointSize = 1.0).
     float4 color      : TEXCOORD0;
 };
 
 Flow3dDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
 {
     Flow3dDepositVaryings o;
+    o.pointSize = 1.0;   // reference deposit.vert gl_PointSize = 1.0.
 
     int agentIndex = (int)vertexID;
 
@@ -564,7 +503,13 @@ Flow3dDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
         (atlasY / atlasHeight) * 2.0 - 1.0
     );
 
-    o.positionCS = float4(ndc, 0.0, 1.0);
+    // Y-orientation parity (CRITICAL): the diffuse/copy/blend passes read the
+    // trail atlas via NM_FragCoord-derived UV (NMVertFullscreen counter-flips
+    // clip.y by _ProjectionParams.x when rendering into an RT). This custom
+    // deposit VS MUST apply the SAME counter-flip so the deposited trail lands
+    // where those passes read it; otherwise the volume is vertically mirrored
+    // vs the sim that diffuses/copies/blends it (matches Physarum/Dla deposit).
+    o.positionCS = float4(ndc.x, ndc.y * _ProjectionParams.x, 0.0, 1.0);
     o.color = float4(state2.rgb, 1.0);
 
     return o;

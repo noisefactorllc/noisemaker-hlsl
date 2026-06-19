@@ -2,9 +2,16 @@
   "name": "LensDistortion",
   "namespace": "classicNoisedeck",
   "func": "lensDistortion",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Lens distortion simulation",
-  "paramAliases": { "aberrationAmt": "aberration", "opacity": "alpha", "loopAmp": "speed" },
+  "paramAliases": {
+    "aberrationAmt": "aberration",
+    "opacity": "alpha",
+    "loopAmp": "speed"
+  },
   "globals": {
     "shape": {
       "type": "int",
@@ -78,7 +85,11 @@
     },
     "tint": {
       "type": "color",
-      "default": [0.0, 0.0, 0.0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "uniform": "tint"
     },
     "alpha": {
@@ -133,32 +144,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "shape": "shape",
-        "distortion": "distortion",
-        "aspectLens": "aspectLens",
-        "loopScale": "loopScale",
-        "speed": "speed",
-        "mode": "mode",
-        "aberration": "aberration",
-        "blendMode": "blendMode",
-        "modulate": "modulate",
-        "tint": "tint",
-        "alpha": "alpha",
-        "hueRotation": "hueRotation",
-        "hueRange": "hueRange",
-        "saturation": "saturation",
-        "passthru": "passthru",
-        "vignetteAmt": "vignetteAmt"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

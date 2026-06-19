@@ -2,7 +2,12 @@
   "name": "Effects",
   "namespace": "classicNoisedeck",
   "func": "effects",
-  "tags": ["color", "edges", "transform"],
+  "starter": false,
+  "tags": [
+    "color",
+    "edges",
+    "transform"
+  ],
   "description": "Multi-effect processor",
   "paramAliases": {},
   "globals": {
@@ -73,9 +78,11 @@
       "define": "FLIP",
       "choices": {
         "none": 0,
+        "Flip:": null,
         "all": 1,
         "horizontal": 2,
         "vertical": 3,
+        "Mirror:": null,
         "leftToRight": 11,
         "rightToLeft": 12,
         "upToDown": 13,
@@ -110,25 +117,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "EFFECT": "effect",
-        "FLIP": "flip",
-        "effectAmt": "effectAmt",
-        "scaleAmt": "scaleAmt",
-        "rotation": "rotation",
-        "offsetX": "offsetX",
-        "offsetY": "offsetY",
-        "intensity": "intensity",
-        "saturation": "saturation"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

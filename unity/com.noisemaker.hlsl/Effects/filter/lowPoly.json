@@ -2,9 +2,16 @@
   "name": "Low Poly",
   "namespace": "filter",
   "func": "lowPoly",
-  "tags": ["geometric", "noise"],
+  "starter": false,
+  "tags": [
+    "geometric",
+    "noise"
+  ],
   "description": "Low-polygon style render using Voronoi cells",
-  "paramAliases": { "freq": "scale", "nth": "mode" },
+  "paramAliases": {
+    "freq": "scale",
+    "nth": "mode"
+  },
   "globals": {
     "scale": {
       "type": "int",
@@ -35,27 +42,32 @@
       "type": "float",
       "default": 0.15,
       "uniform": "edgeStrength",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "edgeColor": {
       "type": "color",
-      "default": [0.0, 0.0, 0.0],
+      "default": [
+        0,
+        0,
+        0
+      ],
       "uniform": "edgeColor"
     },
     "alpha": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "alpha",
-      "min": 0.0,
-      "max": 1.0
+      "min": 0,
+      "max": 1
     },
     "speed": {
       "type": "int",
       "default": 0,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     }
   },
   "passes": [
@@ -67,23 +79,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "scale": 50,
-        "seed": 1,
-        "mode": 1,
-        "edgeStrength": 0.15,
-        "edgeColor": [0.0, 0.0, 0.0],
-        "alpha": 1.0,
-        "speed": 0
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

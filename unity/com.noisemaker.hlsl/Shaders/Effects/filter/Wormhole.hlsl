@@ -105,12 +105,15 @@ float4 frag_clear(NMVaryings i) : SV_Target
 struct WormholeDepositVaryings
 {
     float4 positionCS : SV_POSITION;
+    float  pointSize  : PSIZE;      // D3D/Metal point topology requires a PSIZE
+                                    // output; 1px deposit (reference gl_PointSize=1.0).
     float4 color      : TEXCOORD0;
 };
 
 WormholeDepositVaryings vert_deposit(uint vertexIndex : SV_VertexID)
 {
     WormholeDepositVaryings o;
+    o.pointSize = 1.0;   // all paths: 1px point (culled points sent off-screen).
 
     // Source texel grid = inputTex dimensions (WGSL textureDimensions(inputTex,0)).
     uint tw, th;

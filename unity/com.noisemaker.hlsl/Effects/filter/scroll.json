@@ -2,7 +2,10 @@
   "name": "Scroll",
   "namespace": "filter",
   "func": "scroll",
-  "tags": ["transform"],
+  "starter": false,
+  "tags": [
+    "transform"
+  ],
   "description": "Scrolling offset animation",
   "paramAliases": {},
   "globals": {
@@ -25,14 +28,16 @@
       "default": 1,
       "uniform": "speedX",
       "min": -10,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "speedY": {
       "type": "float",
       "default": 1,
       "uniform": "speedY",
       "min": -10,
-      "max": 10
+      "max": 10,
+      "zero": 0
     },
     "wrap": {
       "type": "int",
@@ -54,21 +59,9 @@
       },
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {
-        "x": "x",
-        "y": "y",
-        "speedX": "speedX",
-        "speedY": "speedY",
-        "wrap": "wrap"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search filter, synth\n\ntestPattern()\n.scroll(speedX: 1, speedY: 1)\n.write(o0)"
 }

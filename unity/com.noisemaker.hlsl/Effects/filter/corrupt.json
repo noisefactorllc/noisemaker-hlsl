@@ -2,7 +2,11 @@
   "name": "Corrupt",
   "namespace": "filter",
   "func": "corrupt",
-  "tags": ["distort", "glitch"],
+  "starter": false,
+  "tags": [
+    "distort",
+    "glitch"
+  ],
   "description": "Scanline-based data corruption",
   "paramAliases": {},
   "globals": {
@@ -67,7 +71,8 @@
       "default": 1,
       "uniform": "speed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "seed": {
       "type": "int",
@@ -86,15 +91,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

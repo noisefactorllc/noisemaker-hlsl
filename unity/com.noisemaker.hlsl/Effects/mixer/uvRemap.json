@@ -2,8 +2,13 @@
   "name": "UvRemap",
   "namespace": "mixer",
   "func": "uvRemap",
-  "tags": ["blend", "distortion"],
+  "starter": false,
+  "tags": [
+    "blend",
+    "distortion"
+  ],
   "description": "Remap UVs of one input using color channels of another",
+  "paramAliases": {},
   "globals": {
     "tex": {
       "type": "surface",
@@ -30,14 +35,14 @@
     },
     "scale": {
       "type": "float",
-      "default": 100.0,
+      "default": 100,
       "uniform": "scale",
       "min": 0,
       "max": 200
     },
     "offset": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "offset",
       "min": -1,
       "max": 1
@@ -63,15 +68,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\npattern()\n.write(o0)\n\nnoise(ridges: true)\n.uvRemap(tex: read(o0), scale: 25)\n.write(o1)"
 }

@@ -125,10 +125,11 @@ float3 rgb2hsv(float3 rgb)
     float delta = maxC - minC;
     float h = 0.0;
     if (delta != 0.0) {
-        // TODO(verify): WGSL uses `% 6.0` (trunc-based, sign of dividend) -> fmod.
-        // The reference GLSL uses mod() (floor-based) here; for negative
-        // (g-b)/delta the two diverge. We follow the canonical WGSL (fmod).
-        if (maxC == rgb.r) { h = fmod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
+        // GLSL golden (shapeMixer.glsl:110) uses floor-based mod():
+        // mod((g-b)/delta, 6.0). For maxC==r and g<b the arg is negative, where
+        // floor-mod (GLSL) and fmod (WGSL `%`) diverge by 6 → large hue error.
+        // The parity golden is WebGL2/GLSL, so match GLSL: use nm_mod.
+        if (maxC == rgb.r) { h = nm_mod((rgb.g - rgb.b) / delta, 6.0) / 6.0; }
         else if (maxC == rgb.g) { h = ((rgb.b - rgb.r) / delta + 2.0) / 6.0; }
         else { h = ((rgb.r - rgb.g) / delta + 4.0) / 6.0; }
     }

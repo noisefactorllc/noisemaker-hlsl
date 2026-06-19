@@ -243,19 +243,32 @@ namespace Noisemaker.Hlsl
         }
 
         // Allocate one RenderTexture per distinct phys_N from graph.allocations.
-        // Each phys slot is sized using the spec of (one of) the texIds bound to it.
-        // The liveness allocator only shares a slot between texIds whose sizes are
-        // compatible, so the first-seen spec is representative (reference/04 §1.3).
+        // The JS liveness allocator (resources.js allocateResources) is a plain
+        // linear-scan register allocator: it reuses any freed slot WITHOUT a size
+        // check, so a single phys_N can be shared by texIds of DIFFERENT sizes (e.g.
+        // filter/normalize shares phys_2 between a 1x1 reduce2 and the full-res
+        // output). The JS WebGL2 runtime never collapses to phys_N — it allocates a
+        // real texture per virtual id at its own logical size. To stay correct under
+        // pooling we size each phys slot to the MAXIMUM dimensions across every texId
+        // mapped to it (a smaller pass renders into a sub-viewport of the larger RT;
+        // reduction passes whose GetDimensions/Load span the physical size still see
+        // the same global min/max because the out-of-range reads hit the unchanged
+        // sentinel side of min()/max()). First-seen format/is3D is representative.
         public void AllocatePooled(RenderGraph graph, System.Func<string, double?> uniforms)
         {
-            // phys_N -> already created flag (first spec wins, deterministic order).
-            var seen = new HashSet<string>();
+            // phys_N -> max (w,h,d) + representative format/is3D across mapped texIds.
+            var maxW = new Dictionary<string, int>();
+            var maxH = new Dictionary<string, int>();
+            var maxD = new Dictionary<string, int>();
+            var fmt  = new Dictionary<string, string>();
+            var is3d = new Dictionary<string, bool>();
+            var order = new List<string>(); // deterministic creation order
+
             foreach (var kv in graph.Allocations)
             {
                 string virtualId = kv.Key;
                 string physId = kv.Value;
                 if (string.IsNullOrEmpty(physId)) continue;
-                if (seen.Contains(physId)) continue;
 
                 TextureSpec spec;
                 if (!graph.Textures.TryGetValue(virtualId, out spec) || spec == null)
@@ -267,9 +280,24 @@ namespace Noisemaker.Hlsl
                 if (spec.Is3D && spec.Depth != null)
                     d = ResolveDimension(spec.Depth, ScreenHeight, uniforms);
 
-                CreateOrReuse(physId, w, h, spec.Format, spec.Is3D, d);
-                seen.Add(physId);
+                if (!maxW.ContainsKey(physId))
+                {
+                    order.Add(physId);
+                    maxW[physId] = w; maxH[physId] = h; maxD[physId] = d;
+                    fmt[physId] = spec.Format; is3d[physId] = spec.Is3D;
+                }
+                else
+                {
+                    if (w > maxW[physId]) maxW[physId] = w;
+                    if (h > maxH[physId]) maxH[physId] = h;
+                    if (d > maxD[physId]) maxD[physId] = d;
+                    // first-seen format/is3D wins (all mapped texIds share a format).
+                }
             }
+
+            foreach (string physId in order)
+                CreateOrReuse(physId, maxW[physId], maxH[physId],
+                    fmt[physId], is3d[physId], maxD[physId]);
         }
 
         public void DestroyAll()

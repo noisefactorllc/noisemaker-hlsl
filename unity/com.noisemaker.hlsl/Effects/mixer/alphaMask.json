@@ -2,7 +2,10 @@
   "name": "Alpha Mask",
   "namespace": "mixer",
   "func": "alphaMask",
-  "tags": ["blend"],
+  "starter": false,
+  "tags": [
+    "blend"
+  ],
   "description": "Alpha transparency blend",
   "paramAliases": {
     "mixAmt": "mix"
@@ -33,20 +36,15 @@
         "inputTex": "inputTex",
         "tex": "tex"
       },
-      "outputs": {
-        "fragColor": "outputTex"
-      },
       "uniforms": {
         "mixAmt": "mix",
         "maskMode": "maskMode"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth\n\npolygon(smooth: 0, bgAlpha: 0)\n  .write(o0)\n\n noise(scaleX: 100, scaleY: 100)\n  .alphaMask(tex: read(o0))\n  .write(o1)\n"
 }

@@ -2,7 +2,10 @@
   "name": "Normal Map",
   "namespace": "filter",
   "func": "normalMap",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Normal map generation",
   "paramAliases": {},
   "globals": {},
@@ -15,15 +18,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

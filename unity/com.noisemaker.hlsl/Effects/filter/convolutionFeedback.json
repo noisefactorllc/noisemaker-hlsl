@@ -2,7 +2,10 @@
   "name": "Convolution Feedback",
   "namespace": "filter",
   "func": "convolutionFeedback",
-  "tags": ["sim"],
+  "starter": false,
+  "tags": [
+    "sim"
+  ],
   "description": "Convolution feedback with blur and sharpen",
   "paramAliases": {},
   "globals": {
@@ -11,36 +14,28 @@
       "default": 5,
       "uniform": "sharpenRadius",
       "min": 1,
-      "max": 10,
-      "step": 1,
-      "randMin": 4
+      "max": 10
     },
     "sharpenAmount": {
       "type": "float",
       "default": 2.5,
       "uniform": "sharpenAmount",
       "min": 0,
-      "max": 3,
-      "step": 0.1,
-      "randMin": 1
+      "max": 3
     },
     "blurRadius": {
       "type": "int",
       "default": 4,
       "uniform": "blurRadius",
       "min": 1,
-      "max": 10,
-      "step": 1,
-      "randMax": 4
+      "max": 10
     },
     "blurAmount": {
       "type": "float",
       "default": 0.5,
       "uniform": "blurAmount",
       "min": 0,
-      "max": 1,
-      "step": 0.01,
-      "randMax": 0.3
+      "max": 1
     },
     "intensity": {
       "type": "float",
@@ -48,9 +43,7 @@
       "uniform": "intensity",
       "min": 0,
       "max": 1,
-      "step": 0.01,
-      "zero": 0,
-      "randMin": 0.65
+      "zero": 0
     },
     "resetState": {
       "type": "boolean",
@@ -95,18 +88,12 @@
     "_cfSharpened": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "transient internal (pooled); sharpen result"
+      "format": "rgba8unorm"
     },
     "_cfBlurred": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "_role": "transient internal (pooled); blur result, blend feedback source"
+      "format": "rgba8unorm"
     }
-  },
-  "feedback": {
-    "_comment": "Pass 0 input 'selfTex' is the canonical feedback alias (expander 03 reference 5.1 #7). At expand time it resolves to the chain's write surface, double-buffered (feedback_<outName> when plan.write.kind=='feedback', else global_<outName>). The runtime renders cfBlend into the write buffer; the next frame's cfSharpen reads the prior frame's read buffer. resetState bypasses feedback in cfBlend. No '_iteration' uniform; no repeat; no MRT.",
-    "input": "selfTex"
   }
 }

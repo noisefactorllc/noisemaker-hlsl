@@ -404,7 +404,20 @@ FractalOutput frag_precompute(NMVaryings i)
     float3 gradient = float3(dx.x - dist, dy.x - dist, dz.x - dist) / eps;
     float3 normal = normalize(-gradient + float3(0.000001, 0.000001, 0.000001));
 
-    float4 color = float4(normalizedDist, trap, iterRatio, 1.0);
+    // GLSL golden branches color output on colorMode (precompute.glsl):
+    //   colorMode 0 = mono  -> vec4(normalizedDist, normalizedDist, normalizedDist, 1)
+    //   colorMode != 0      -> vec4(normalizedDist, trap, iterRatio, 1)
+    // The prior WGSL-derived port ignored colorMode and always wrote RGB, which
+    // tinted the default (mono) volume — diverging from the gray golden.
+    float4 color;
+    if (colorMode == 0)
+    {
+        color = float4(normalizedDist, normalizedDist, normalizedDist, 1.0);
+    }
+    else
+    {
+        color = float4(normalizedDist, trap, iterRatio, 1.0);
+    }
     float4 geoOut = float4(normal * 0.5 + 0.5, normalizedDist);
 
     o.color = color;

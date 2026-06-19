@@ -2,7 +2,10 @@
   "name": "Invert",
   "namespace": "filter",
   "func": "invert",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Invert image luminance",
   "paramAliases": {},
   "globals": {},
@@ -15,15 +18,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

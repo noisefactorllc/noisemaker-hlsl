@@ -2,9 +2,16 @@
   "name": "Cell",
   "namespace": "synth",
   "func": "cell",
-  "tags": ["noise", "geometric"],
+  "starter": true,
+  "tags": [
+    "noise",
+    "geometric"
+  ],
   "description": "Cellular/Voronoi noise with distance metrics",
-  "paramAliases": { "cellVariation": "variation", "loopAmp": "speed" },
+  "paramAliases": {
+    "cellVariation": "variation",
+    "loopAmp": "speed"
+  },
   "globals": {
     "shape": {
       "type": "int",
@@ -77,7 +84,5 @@
       }
     }
   ],
-  "textures": {
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
-  }
+  "textures": {}
 }

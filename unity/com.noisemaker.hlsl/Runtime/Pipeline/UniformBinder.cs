@@ -74,7 +74,9 @@ namespace Noisemaker.Hlsl
         // Write a pass's resolved uniforms + define ints onto the reused MPB.
         // The MPB must be cleared by the caller (Clear()) before each pass to avoid
         // stale values bleeding across passes that omit a uniform.
-        public void BindPassUniforms(MaterialPropertyBlock mpb, Pass pass)
+        // normalizedTime is the 0..1 render time (reference/04 §10.4) used to evaluate
+        // per-frame automation (oscillator) uniforms.
+        public void BindPassUniforms(MaterialPropertyBlock mpb, Pass pass, float normalizedTime)
         {
             // Index-based iteration avoids the OrderedMap enumerator boxing per frame.
             // Define ints (compile-time consts bound as runtime ints; PORTING-GUIDE).
@@ -110,10 +112,10 @@ namespace Noisemaker.Hlsl
                         // names to numeric uniforms (reference/03 enum resolution).
                         break;
                     case UniformValueKind.Object:
-                        // Automation config (Oscillator/Midi/Audio). Resolution is
-                        // TODO(scope) — bind the static fallback if a "value"/"min"
-                        // numeric is present, else skip.
-                        BindAutomationFallback(mpb, name, v.Object);
+                        // Automation config (Oscillator/Midi/Audio). Oscillators are
+                        // evaluated per-frame (reference/04 §10.4 resolveUniformValue +
+                        // §11). Midi/Audio fall back to the static value/min (out of scope).
+                        BindAutomation(mpb, kv.Key, name, v.Object, pass, normalizedTime);
                         break;
                     case UniformValueKind.Null:
                     default:
@@ -133,19 +135,36 @@ namespace Noisemaker.Hlsl
             mpb.SetVector(name, new Vector4(x, y, z, w));
         }
 
-        // TODO(scope): full oscillator/midi/audio automation (reference/04 §10.4,
-        // §11, §12). For now bind a static fallback so a paused/static render works:
-        // prefer an explicit numeric "value", else "min", else skip.
-        private static void BindAutomationFallback(MaterialPropertyBlock mpb,
-            string name, JsonValue cfg)
+        // Automation binding (reference/04 §10.4 resolveUniformValue). For an Oscillator
+        // config: pct = evaluateOscillator(cfg, normalizedTime); if a consumer paramSpec
+        // exists, scale pct into [spec.min, spec.max], else bind pct directly. Midi/Audio
+        // are out of scope and fall back to the static value/min. canonicalName is the
+        // graph uniform key (used to look up pass.UniformSpecs); safeName is the Metal-
+        // safe shader property name actually bound.
+        private static void BindAutomation(MaterialPropertyBlock mpb,
+            string canonicalName, string safeName, JsonValue cfg, Pass pass,
+            float normalizedTime)
         {
             if (cfg == null || cfg.Kind != JsonKind.Object) return;
+            JsonValue type = cfg.Get("type");
+            if (type != null && type.Kind == JsonKind.String && type.AsString == "Oscillator")
+            {
+                double pct = Oscillators.Evaluate(cfg, normalizedTime);
+                UniformSpec spec;
+                if (pass.UniformSpecs != null &&
+                    pass.UniformSpecs.TryGetValue(canonicalName, out spec))
+                    pct = spec.Min + pct * (spec.Max - spec.Min);
+                mpb.SetFloat(safeName, (float)pct);
+                return;
+            }
+            // Non-oscillator automation (Midi/Audio): static fallback so a paused render
+            // works — prefer an explicit numeric "value", else "min", else skip.
             JsonValue val = cfg.Get("value");
             if (val != null && val.Kind == JsonKind.Number)
-            { mpb.SetFloat(name, (float)val.AsNumber); return; }
+            { mpb.SetFloat(safeName, (float)val.AsNumber); return; }
             JsonValue min = cfg.Get("min");
             if (min != null && min.Kind == JsonKind.Number)
-            { mpb.SetFloat(name, (float)min.AsNumber); return; }
+            { mpb.SetFloat(safeName, (float)min.AsNumber); return; }
         }
     }
 }

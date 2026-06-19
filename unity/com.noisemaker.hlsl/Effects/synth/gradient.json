@@ -2,7 +2,10 @@
   "name": "Gradient",
   "namespace": "synth",
   "func": "gradient",
-  "tags": ["color"],
+  "starter": true,
+  "tags": [
+    "color"
+  ],
   "description": "Multi-color gradient generator with various styles",
   "paramAliases": {},
   "globals": {
@@ -39,7 +42,8 @@
       "default": 0,
       "uniform": "speed",
       "min": -5,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "seed": {
       "type": "int",
@@ -50,22 +54,38 @@
     },
     "color1": {
       "type": "color",
-      "default": [1, 0, 0],
+      "default": [
+        1,
+        0,
+        0
+      ],
       "uniform": "color1"
     },
     "color2": {
       "type": "color",
-      "default": [1, 1, 0],
+      "default": [
+        1,
+        1,
+        0
+      ],
       "uniform": "color2"
     },
     "color3": {
       "type": "color",
-      "default": [0, 1, 0],
+      "default": [
+        0,
+        1,
+        0
+      ],
       "uniform": "color3"
     },
     "color4": {
       "type": "color",
-      "default": [0, 0, 1],
+      "default": [
+        0,
+        0,
+        1
+      ],
       "uniform": "color4"
     },
     "colorCount": {
@@ -83,15 +103,8 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

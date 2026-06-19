@@ -119,12 +119,15 @@ float4 frag_clear(NMVaryings i) : SV_Target
 struct DepositVaryings
 {
     float4 positionCS : SV_POSITION;
+    float  pointSize  : PSIZE;       // D3D points topology requires a PSIZE output;
+                                     // reference deposit.vert sets gl_PointSize = 2.0.
     float  amount     : TEXCOORD0;
 };
 
 DepositVaryings vert_deposit(uint vertexIndex : SV_VertexID)
 {
     DepositVaryings o;
+    o.pointSize = 2.0;   // reference gl_PointSize = 2.0 ("slightly larger deposit").
 
     // Get state size from xyz texture dimensions (matches WGSL textureDimensions).
     uint tw, th;
@@ -158,7 +161,13 @@ DepositVaryings vert_deposit(uint vertexIndex : SV_VertexID)
     // Convert position (0..1) to clip space (-1..1).
     float2 clipPos = pos.xy * 2.0 - 1.0;
 
-    o.positionCS = float4(clipPos, 0.0, 1.0);
+    // Y-orientation parity (CRITICAL): the convolve/agentField passes read the
+    // density field via NM_FragCoord-derived UV (NMVertFullscreen counter-flips
+    // clip.y by _ProjectionParams.x). This custom deposit VS MUST apply the SAME
+    // counter-flip so the deposited density lands where the field passes read it;
+    // otherwise the lenia field is vertically mirrored vs the simulation that
+    // consumes it (corrupting the dynamics + the final trail).
+    o.positionCS = float4(clipPos.x, clipPos.y * _ProjectionParams.x, 0.0, 1.0);
     o.amount = depositAmount;
     return o;
 }

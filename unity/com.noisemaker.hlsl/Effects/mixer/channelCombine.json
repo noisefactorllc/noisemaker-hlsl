@@ -2,8 +2,12 @@
   "name": "ChannelCombine",
   "namespace": "mixer",
   "func": "channelCombine",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Combine separate surface inputs into R, G, B channels",
+  "paramAliases": {},
   "globals": {
     "rTex": {
       "type": "surface",
@@ -50,19 +54,9 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "rLevel": "rLevel",
-        "gLevel": "gLevel",
-        "bLevel": "bLevel"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "defaultProgram": "search mixer, synth, filter\n\nnoise(ridges: true, colorMode: mono)\n.write(o0)\n\nperlin(colorMode: mono)\n.write(o1)\n\ngradient(type: linear)\n.write(o2)\n\nchannelCombine(rTex: read(o0), gTex: read(o1), bTex: read(o2))\n.write(o3)"
 }

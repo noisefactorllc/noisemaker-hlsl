@@ -2,7 +2,10 @@
   "name": "HS",
   "namespace": "filter",
   "func": "hs",
-  "tags": ["color"],
+  "starter": false,
+  "tags": [
+    "color"
+  ],
   "description": "Deprecated: use 'adjust' instead. Adjust hue and/or saturation",
   "paramAliases": {},
   "globals": {
@@ -37,19 +40,10 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "rotation": "rotation",
-        "hueRange": "hueRange",
-        "saturation": "saturation"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {},
+  "hidden": true,
+  "deprecatedBy": "adjust"
 }

@@ -2,7 +2,11 @@
   "name": "Cellular Automata 3D",
   "namespace": "synth3d",
   "func": "cellularAutomata3d",
-  "tags": ["3d", "sim"],
+  "starter": true,
+  "tags": [
+    "3d",
+    "sim"
+  ],
   "description": "3D cellular automata simulation",
   "paramAliases": {},
   "globals": {
@@ -10,17 +14,19 @@
       "type": "int",
       "default": 32,
       "uniform": "volumeSize",
-      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
-      "randChoices": [16, 32, 64],
-      "ui": { "label": "volume size", "control": "dropdown" }
+      "choices": {
+        "x16": 16,
+        "x32": 32,
+        "x64": 64,
+        "x128": 128
+      }
     },
     "seed": {
       "type": "int",
       "default": 1,
-      "min": 1,
-      "max": 100,
       "uniform": "seed",
-      "ui": { "control": false }
+      "min": 1,
+      "max": 100
     },
     "ruleIndex": {
       "type": "int",
@@ -38,86 +44,66 @@
         "pyroclastic": 8,
         "slowDecay": 9,
         "spikeyGrowth": 10
-      },
-      "ui": { "label": "rules", "control": "dropdown", "category": "rules" }
+      }
     },
     "neighborMode": {
       "type": "int",
       "default": 0,
       "uniform": "neighborMode",
-      "choices": { "moore": 0, "vonNeumann": 1 },
-      "ui": { "label": "neighborhood", "control": "dropdown", "category": "rules" }
+      "choices": {
+        "moore": 0,
+        "vonNeumann": 1
+      }
     },
     "speed": {
       "type": "int",
       "default": 1,
+      "uniform": "speed",
       "min": 0,
       "max": 10,
-      "zero": 0,
-      "randMin": 1,
-      "uniform": "speed",
-      "ui": { "label": "sim speed", "control": "slider" }
+      "zero": 0
     },
     "density": {
       "type": "float",
       "default": 50,
-      "min": 1,
-      "max": 100,
       "uniform": "density",
-      "ui": { "label": "density", "control": "slider" }
+      "min": 1,
+      "max": 100
     },
     "colorMode": {
       "type": "int",
       "default": 0,
       "uniform": "colorMode",
-      "choices": { "mono": 0, "age": 1 },
-      "ui": { "label": "color mode", "control": "dropdown" }
+      "choices": {
+        "mono": 0,
+        "age": 1
+      }
     },
     "resetState": {
       "type": "boolean",
       "default": false,
-      "uniform": "resetState",
-      "ui": { "label": "reset", "control": "button", "buttonLabel": "reset" }
+      "uniform": "resetState"
     },
     "source": {
       "type": "volume",
-      "default": "vol0",
-      "ui": { "label": "source vol", "category": "input" }
+      "default": "vol0"
     },
     "geoSource": {
       "type": "geometry",
-      "default": "geo0",
-      "ui": { "label": "source geo", "category": "input" }
+      "default": "geo0"
     },
     "weight": {
       "type": "float",
       "default": 0,
-      "min": 0,
-      "max": 100,
       "uniform": "weight",
-      "ui": { "label": "input weight", "control": "slider", "category": "input" }
-    }
-  },
-  "uniformLayouts": {
-    "simulate": {
-      "volumeSize": { "slot": 0, "components": "x" },
-      "seed": { "slot": 0, "components": "y" },
-      "ruleIndex": { "slot": 0, "components": "z" },
-      "neighborMode": { "slot": 0, "components": "w" },
-      "speed": { "slot": 1, "components": "x" },
-      "density": { "slot": 1, "components": "y" },
-      "weight": { "slot": 1, "components": "z" },
-      "resetState": { "slot": 1, "components": "w" }
+      "min": 0,
+      "max": 100
     }
   },
   "passes": [
     {
       "name": "simulate",
       "program": "simulate",
-      "viewport": {
-        "width": { "param": "volumeSize", "default": 32 },
-        "height": { "param": "volumeSize", "power": 2, "default": 1024 }
-      },
       "inputs": {
         "stateTex": "global_ca_state",
         "seedTex": "source"
@@ -129,44 +115,43 @@
   ],
   "textures": {
     "volumeCache": {
-      "width": { "param": "volumeSize", "default": 32 },
-      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
-      "format": "rgba16f",
-      "is3D": true,
-      "_atlas": "2D atlas of a 3D volume: width=volumeSize voxels, height=volumeSize^2 (volumeSize Z-slices of volumeSize x volumeSize stacked vertically). Atlas (u,v)->(x,y,z): x=u, y=v%volumeSize, z=v/volumeSize. Defaults shown are for volumeSize=32 (32x1024).",
-      "_role": "Reserved scratch atlas (declared by definition.js textures; not bound by the simulate pass)."
+      "width": {
+        "param": "volumeSize",
+        "default": 32
+      },
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 1024
+      },
+      "format": "rgba16f"
     },
     "geoBuffer": {
-      "width": { "param": "volumeSize", "default": 32 },
-      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
-      "format": "rgba16f",
-      "is3D": true,
-      "_role": "GEO atlas (xyz=normal, w=depth) exposed as outputGeo for downstream lit raymarching. Not written by the simulate pass in this definition."
+      "width": {
+        "param": "volumeSize",
+        "default": 32
+      },
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 1024
+      },
+      "format": "rgba16f"
     },
     "global_ca_state": {
-      "width": { "param": "volumeSize", "default": 32 },
-      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
-      "format": "rgba16f",
-      "is3D": true,
-      "_atlas": "Same atlas layout as volumeCache. Default 32x1024 at volumeSize=32; 64x4096 at 64; 128x16384 at 128.",
-      "_role": "PERSISTENT feedback state atlas (r=alive, g=age, b=alive, a=1). global_ prefix -> pipeline double-buffers/ping-pongs it. BOTH input (stateTex) and output (color) of the simulate pass; each frame reads the previous frame's volume. isStateSurface matches (name contains 'state'/'ca_state') so it persists across frames (reference 04 §10.7)."
+      "width": {
+        "param": "volumeSize",
+        "default": 32
+      },
+      "height": {
+        "param": "volumeSize",
+        "power": 2,
+        "default": 1024
+      },
+      "format": "rgba16f"
     }
   },
+  "defaultProgram": "search synth3d, filter3d, render\n\ncellularAutomata3d(ruleIndex: diamoeba)\n.render3d()\n.write(o0)",
   "outputTex3d": "global_ca_state",
-  "outputGeo": "geoBuffer",
-  "is3D": true,
-  "atlas": {
-    "_comment": "3D volume stored as a 2D atlas. width = volumeSize, height = volumeSize^2 (volumeSize Z-slices of volumeSize x volumeSize stacked vertically). depth = volumeSize. Atlas (u,v) -> voxel (x = u, y = v % volumeSize, z = v / volumeSize). Inverse voxel->atlas wraps periodically: atlas.x = (x+volumeSize)%volumeSize, atlas.y = (y+volumeSize)%volumeSize + ((z+volumeSize)%volumeSize)*volumeSize. NOTE: this effect uses PARAM-SIZED atlases (volumeSize x volumeSize^2), NOT the fixed 64x4096 vol0..7 global surfaces.",
-    "widthParam": "volumeSize",
-    "heightParam": "volumeSize^2",
-    "depthParam": "volumeSize",
-    "default": { "width": 32, "height": 1024, "depth": 32 }
-  },
-  "feedback": {
-    "_comment": "Single-pass multi-FRAME feedback sim (volume-write). State lives in ONE persistent 'global_' atlas global_ca_state (r=alive, g=age). The simulate pass reads its own previous output (stateTex == global_ca_state) and writes the next volume (color == global_ca_state); the runtime ping-pongs the surface across frames (within-frame ping-pong ref 04 §10.2, end-of-frame persistence via isStateSurface ref 04 §10.7 — name contains 'state'). seedTex ('source' volume / inputTex3d) seeds the first frame and on reset, and optionally blends in via 'weight'. No '_iteration' uniform. No repeat. No MRT (single color output). The shader self-initializes by detecting an all-zero buffer.",
-    "persistent": ["global_ca_state"],
-    "transient": [],
-    "repeat": null,
-    "mrt": false
-  }
+  "outputGeo": "geoBuffer"
 }

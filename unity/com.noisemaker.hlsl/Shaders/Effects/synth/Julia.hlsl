@@ -165,7 +165,10 @@ void nmj_transformCoords(float2 fragCoord, float2 res,
     float angle = -rot * NMJ_TAU / 360.0;
     float cs = cos(angle);
     float sn = sin(angle);
-    uv = float2(cs * uv.x - sn * uv.y, sn * uv.x + cs * uv.y);
+    // GLSL golden: mat2(cs,-sn,sn,cs) * uv. GLSL mat2 is COLUMN-MAJOR, so it equals
+    // (cs*uv.x + sn*uv.y, -sn*uv.x + cs*uv.y) — opposite rotation direction from the
+    // WGSL transcription (cs*x-sn*y, sn*x+cs*y). Only diverges for nonzero rotation.
+    uv = float2(cs * uv.x + sn * uv.y, -sn * uv.x + cs * uv.y);
 
     float scale = 2.5 / zm;
     reDF = nmj_df64_add(nmj_df64_mul_f(nmj_df64_from(uv.x), scale), nmj_df64_from(cx));

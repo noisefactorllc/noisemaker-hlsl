@@ -2,7 +2,10 @@
   "name": "Waves",
   "namespace": "filter",
   "func": "waves",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Sine wave distortion",
   "paramAliases": {},
   "globals": {
@@ -11,7 +14,8 @@
       "default": 25,
       "uniform": "strength",
       "min": 0,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "scale": {
       "type": "float",
@@ -59,22 +63,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "strength": "strength",
-        "scale": "scale",
-        "speed": "speed",
-        "wrap": "wrap",
-        "rotation": "rotation",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

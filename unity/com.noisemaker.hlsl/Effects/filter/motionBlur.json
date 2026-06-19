@@ -2,30 +2,25 @@
   "name": "Motion Blur",
   "namespace": "filter",
   "func": "motionBlur",
-  "tags": ["lens", "blur"],
+  "starter": false,
+  "tags": [
+    "lens",
+    "blur"
+  ],
   "description": "Simple motion blur via frame blending",
   "paramAliases": {},
   "globals": {
     "amount": {
       "type": "float",
       "default": 50,
-      "min": 0,
-      "max": 100,
       "uniform": "amount",
-      "ui": {
-        "label": "amount",
-        "control": "slider"
-      }
+      "min": 0,
+      "max": 100
     },
     "resetState": {
       "type": "boolean",
       "default": false,
-      "uniform": "resetState",
-      "ui": {
-        "control": "button",
-        "buttonLabel": "reset",
-        "label": "state"
-      }
+      "uniform": "resetState"
     }
   },
   "passes": [
@@ -55,8 +50,7 @@
     "_selfTex": {
       "width": "input",
       "height": "input",
-      "format": "rgba8unorm",
-      "persistent": true
+      "format": "rgba8unorm"
     }
   }
 }

@@ -2,7 +2,11 @@
   "name": "Bitwise",
   "namespace": "synth",
   "func": "bitwise",
-  "tags": ["geometric", "pattern"],
+  "starter": true,
+  "tags": [
+    "geometric",
+    "pattern"
+  ],
   "description": "Bitwise operation patterns (XOR squares, AND, OR, etc.)",
   "paramAliases": {},
   "globals": {
@@ -48,35 +52,40 @@
       "default": 0,
       "uniform": "rotation",
       "min": -180,
-      "max": 180
+      "max": 180,
+      "zero": 0
     },
     "offsetX": {
       "type": "int",
       "default": 0,
       "uniform": "offsetX",
       "min": -256,
-      "max": 256
+      "max": 256,
+      "zero": 0
     },
     "offsetY": {
       "type": "int",
       "default": 0,
       "uniform": "offsetY",
       "min": -256,
-      "max": 256
+      "max": 256,
+      "zero": 0
     },
     "seed": {
       "type": "int",
       "default": 0,
       "uniform": "seed",
       "min": 0,
-      "max": 255
+      "max": 255,
+      "zero": 0
     },
     "speed": {
       "type": "int",
       "default": 0,
       "uniform": "speed",
       "min": -5,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "colorMode": {
       "type": "int",
@@ -103,15 +112,8 @@
       "inputs": {},
       "outputs": {
         "color": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

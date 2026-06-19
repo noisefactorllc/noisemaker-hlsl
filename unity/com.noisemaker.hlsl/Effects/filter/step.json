@@ -2,7 +2,11 @@
   "name": "Step",
   "namespace": "filter",
   "func": "step",
-  "tags": ["edges", "util"],
+  "starter": false,
+  "tags": [
+    "edges",
+    "util"
+  ],
   "description": "Hard threshold at specified value",
   "paramAliases": {},
   "globals": {
@@ -28,18 +32,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "threshold": "threshold",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

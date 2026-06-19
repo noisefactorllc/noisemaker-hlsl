@@ -2,7 +2,11 @@
   "name": "Palette",
   "namespace": "filter",
   "func": "palette",
-  "tags": ["color", "palette"],
+  "starter": false,
+  "tags": [
+    "color",
+    "palette"
+  ],
   "description": "Apply cosine color palettes based on luminance",
   "paramAliases": {
     "paletteIndex": "index",
@@ -14,12 +18,7 @@
     "index": {
       "type": "member",
       "default": "palette.brushedMetal",
-      "enum": "palette",
-      "uniform": "paletteIndex",
-      "ui": {
-        "label": "palette",
-        "control": "dropdown"
-      }
+      "uniform": "paletteIndex"
     },
     "rotation": {
       "type": "float",
@@ -29,10 +28,6 @@
         "none": 0,
         "fwd": 1,
         "back": -1
-      },
-      "ui": {
-        "label": "rotation",
-        "control": "dropdown"
       }
     },
     "offset": {
@@ -40,37 +35,21 @@
       "default": 0,
       "uniform": "offset",
       "min": 0,
-      "max": 100,
-      "step": 1,
-      "ui": {
-        "label": "offset",
-        "control": "slider"
-      }
+      "max": 100
     },
     "repeat": {
       "type": "int",
       "default": 1,
       "uniform": "repeat",
       "min": 1,
-      "max": 10,
-      "randMax": 5,
-      "ui": {
-        "label": "repeat",
-        "control": "slider"
-      }
+      "max": 10
     },
     "alpha": {
       "type": "float",
       "default": 1,
       "uniform": "alpha",
       "min": 0,
-      "max": 1,
-      "randMin": 0.5,
-      "step": 0.01,
-      "ui": {
-        "label": "alpha",
-        "control": "slider"
-      }
+      "max": 1
     }
   },
   "passes": [
@@ -82,21 +61,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "paletteIndex": 7,
-        "rotation": 0,
-        "offset": 0.0,
-        "repeat": 1,
-        "alpha": 1.0
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

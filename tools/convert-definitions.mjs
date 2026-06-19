@@ -26,7 +26,7 @@
 //   NM_REFERENCE_ROOT  override reference repo root (default: ../.. of this file)
 //   NM_OUT_DIR         override output dir (default: ../unity/.../Effects)
 
-import { readdirSync, statSync, mkdirSync, writeFileSync, existsSync } from 'node:fs'
+import { readdirSync, statSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname, resolve, basename } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -46,6 +46,20 @@ const NAMESPACES = [
   'classicNoisedeck', 'filter', 'filter3d',
   'mixer', 'points', 'render', 'synth', 'synth3d'
 ]
+
+// Bootstrap metadata — the `starter` flag is computed by the reference manifest
+// generator (shaders/scripts/generate-shader-manifest.mjs isStarterEffect) and is
+// the SINGLE SOURCE OF TRUTH (reference/02 §1.3 STARTER_OPS <- registerStarterOps).
+// We DO NOT re-derive it; we project it straight from shaders/effects/manifest.json,
+// keyed "<namespace>/<dirname>". The C# loader keys on the explicit `starter` field.
+const MANIFEST_PATH = join(EFFECTS_DIR, 'manifest.json')
+let MANIFEST
+try {
+  MANIFEST = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'))
+} catch (err) {
+  process.stderr.write(`[convert] FATAL: cannot read manifest ${MANIFEST_PATH} — ${err?.message || err}\n`)
+  process.exit(1)
+}
 
 // ---------------------------------------------------------------------------
 // Field projection. We copy only the fields the C# definition loader reads, in a
@@ -120,6 +134,15 @@ function convertEffect (instance, namespace, name) {
     namespace: instance.namespace || namespace,
     func
   }
+  // Authoritative starter flag from the manifest (NOT re-derived). The manifest is
+  // keyed "<namespace>/<dirname>"; default false (an effect absent from the manifest
+  // is not a registered starter, matching canvas.js loadManifest).
+  const mkey = `${namespace}/${name}`
+  const mentry = MANIFEST[mkey]
+  if (mentry === undefined) {
+    process.stderr.write(`[convert] WARN: ${mkey} not in manifest — starter defaults to false\n`)
+  }
+  def.starter = !!(mentry && mentry.starter)
   if (instance.tags) def.tags = instance.tags
   if (instance.description) def.description = instance.description
   def.paramAliases = instance.paramAliases || {}
@@ -135,8 +158,16 @@ function convertEffect (instance, namespace, name) {
 
   // Carry forward optional declarative flags the runtime may key on.
   if (instance.defaultProgram !== undefined) def.defaultProgram = instance.defaultProgram
+  // Output-surface passthrough declarations (reference/03 §4.10). The expander uses
+  // these to update the 2D/agent-state cursors so downstream effects read the right
+  // surface. The particle pipeline (pointsEmit/flow/physical/lenia/pointsRender) relies
+  // on outputXyz/Vel/Rgba — dropping them broke agent-state propagation.
+  if (instance.outputTex !== undefined) def.outputTex = instance.outputTex
   if (instance.outputTex3d !== undefined) def.outputTex3d = instance.outputTex3d
   if (instance.outputGeo !== undefined) def.outputGeo = instance.outputGeo
+  if (instance.outputXyz !== undefined) def.outputXyz = instance.outputXyz
+  if (instance.outputVel !== undefined) def.outputVel = instance.outputVel
+  if (instance.outputRgba !== undefined) def.outputRgba = instance.outputRgba
   if (instance.hidden) def.hidden = true
   if (instance.deprecatedBy) def.deprecatedBy = instance.deprecatedBy
 

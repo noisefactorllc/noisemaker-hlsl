@@ -2,7 +2,10 @@
   "name": "Pinch",
   "namespace": "filter",
   "func": "pinch",
-  "tags": ["distort"],
+  "starter": false,
+  "tags": [
+    "distort"
+  ],
   "description": "Pinch distortion toward center",
   "paramAliases": {},
   "globals": {
@@ -11,7 +14,8 @@
       "default": 75,
       "uniform": "strength",
       "min": 0,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "aspectLens": {
       "type": "boolean",
@@ -50,21 +54,8 @@
       },
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {
-        "strength": "strength",
-        "aspectLens": "aspectLens",
-        "wrap": "wrap",
-        "rotation": "rotation",
-        "antialias": "antialias"
       }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

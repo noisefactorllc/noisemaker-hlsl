@@ -2,7 +2,11 @@
   "name": "PixelSort",
   "namespace": "filter",
   "func": "pixelSort",
-  "tags": ["glitch", "pixel"],
+  "starter": false,
+  "tags": [
+    "glitch",
+    "pixel"
+  ],
   "description": "Pixel sorting glitch effect",
   "paramAliases": {},
   "globals": {
@@ -11,8 +15,7 @@
       "default": 0,
       "uniform": "angled",
       "min": -180,
-      "max": 180,
-      "step": 1
+      "max": 180
     },
     "darkest": {
       "type": "boolean",
@@ -31,11 +34,10 @@
     },
     "alpha": {
       "type": "float",
-      "default": 1.0,
+      "default": 1,
       "uniform": "alpha",
-      "min": 0.0,
-      "max": 1.0,
-      "step": 0.01
+      "min": 0,
+      "max": 1
     }
   },
   "passes": [
@@ -61,7 +63,6 @@
       "inputs": {
         "inputTex": "prepared"
       },
-      "uniforms": {},
       "outputs": {
         "fragColor": "luminance"
       }
@@ -72,7 +73,6 @@
       "inputs": {
         "lumTex": "luminance"
       },
-      "uniforms": {},
       "outputs": {
         "fragColor": "brightest"
       }
@@ -83,7 +83,6 @@
       "inputs": {
         "lumTex": "luminance"
       },
-      "uniforms": {},
       "outputs": {
         "fragColor": "rank"
       }
@@ -96,7 +95,6 @@
         "rankTex": "rank",
         "brightestTex": "brightest"
       },
-      "uniforms": {},
       "outputs": {
         "fragColor": "sorted"
       }
@@ -121,11 +119,30 @@
     }
   ],
   "textures": {
-    "prepared":  { "width": "100%", "height": "100%", "format": "rgba16f" },
-    "luminance": { "width": "100%", "height": "100%", "format": "rgba16f" },
-    "brightest": { "width": "100%", "height": "100%", "format": "rgba16f" },
-    "rank":      { "width": "100%", "height": "100%", "format": "rgba16f" },
-    "sorted":    { "width": "100%", "height": "100%", "format": "rgba16f" },
-    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
+    "prepared": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f"
+    },
+    "luminance": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f"
+    },
+    "brightest": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f"
+    },
+    "rank": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f"
+    },
+    "sorted": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f"
+    }
   }
 }

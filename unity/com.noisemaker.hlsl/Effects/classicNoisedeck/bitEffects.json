@@ -2,28 +2,41 @@
   "name": "BitEffects",
   "namespace": "classicNoisedeck",
   "func": "bitEffects",
-  "tags": ["geometric", "pattern"],
+  "starter": true,
+  "tags": [
+    "geometric",
+    "pattern"
+  ],
   "description": "Bit field and bit mask effects",
-  "paramAliases": { "loopAmp": "speed" },
+  "paramAliases": {
+    "loopAmp": "speed"
+  },
   "globals": {
     "mode": {
       "type": "int",
       "default": 1,
       "define": "MODE",
-      "choices": { "bitField": 0, "bitMask": 1 }
+      "choices": {
+        "bitField": 0,
+        "bitMask": 1
+      }
     },
     "speed": {
       "type": "float",
       "default": 50,
       "uniform": "speed",
       "min": 0,
-      "max": 100
+      "max": 100,
+      "zero": 0
     },
     "formula": {
       "type": "int",
       "default": 0,
       "define": "FORMULA",
-      "choices": { "alien": 0, "sierpinski": 1 }
+      "choices": {
+        "alien": 0,
+        "sierpinski": 1
+      }
     },
     "n": {
       "type": "int",
@@ -71,7 +84,10 @@
       "type": "int",
       "default": 0,
       "define": "INTERP",
-      "choices": { "constant": 0, "linear": 1 }
+      "choices": {
+        "constant": 0,
+        "linear": 1
+      }
     },
     "maskFormula": {
       "type": "int",
@@ -102,7 +118,12 @@
       "type": "int",
       "default": 1,
       "define": "MASK_COLOR_SCHEME",
-      "choices": { "blackWhite": 0, "justHue": 3, "hueSaturation": 2, "hsv": 1 }
+      "choices": {
+        "blackWhite": 0,
+        "justHue": 3,
+        "hueSaturation": 2,
+        "hsv": 1
+      }
     },
     "baseHueRange": {
       "type": "float",
@@ -138,16 +159,10 @@
       "name": "render",
       "program": "bitEffects",
       "inputs": {},
-      "outputs": { "fragColor": "outputTex" },
-      "uniforms": {},
-      "blend": "off"
+      "outputs": {
+        "fragColor": "outputTex"
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }

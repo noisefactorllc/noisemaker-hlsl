@@ -433,9 +433,17 @@ namespace Noisemaker.Hlsl.Compiler
                 PushDiag("S001", stmt.Chain.Count > 0 ? stmt.Chain[0] : stmt, "Chain must have explicit write() or write3d() target");
                 return null;
             }
+            // write3dTarget (reference/02 §4.2; validator.js lines 439-442). When a chain
+            // TERMINATES with write3d(vol, geo), the statement-level write3d target is recorded
+            // for the plan. The terminal Write3DNode ALSO remains in stmt.Chain and is flattened
+            // by ProcessChain into a chainable `_write3d` step (which emits the vol/geo blits);
+            // plan.write stays null so the expander's final-chain blit (§4.11) is skipped.
+            SurfaceRef write3dTex3d = null, write3dGeo = null;
             if (stmt.Write3d != null)
-                // TODO(scope): write3d/vol/geo lane wiring.
-                throw new NotImplementedException("write3d() is not implemented in the first-cut DSL frontend (reference/02 §4.2 write3dTarget).");
+            {
+                write3dTex3d = new SurfaceRef { Kind = "vol", Name = SurfaceName(stmt.Write3d.Tex3d) };
+                write3dGeo = new SurfaceRef { Kind = "geo", Name = SurfaceName(stmt.Write3d.Geo) };
+            }
 
             string writeName = (stmt.Write is OutputRefNode orf) ? orf.Name
                 : (stmt.Write is SurfaceRefNode srf ? srf.Name : null);
@@ -446,7 +454,7 @@ namespace Noisemaker.Hlsl.Compiler
             if (stmt.Write is OutputRefNode oo) writeSurf = new WriteTarget { Kind = "output", Name = oo.Name };
             else if (stmt.Write is SurfaceRefNode ss) writeSurf = new WriteTarget { Kind = "output", Name = ss.Name };
 
-            return new Plan { Chain = chain, Write = writeSurf, Final = finalIndex };
+            return new Plan { Chain = chain, Write = writeSurf, Final = finalIndex, Write3dTex3d = write3dTex3d, Write3dGeo = write3dGeo };
         }
 
         // --- chain flattening (reference/02 §5) -----------------------------
@@ -476,9 +484,34 @@ namespace Noisemaker.Hlsl.Compiler
                     current = rdIdx;
                     continue;
                 }
+                // read3d two-arg starter (reference/02 §5.1; validator.js lines 481-525).
+                // Two-arg form `read3d(vol0, geo0)` is a STARTER node emitting a `_read3d`
+                // builtin step with {tex3d,geo} surface args. Single-arg `read3d(vol0)` is a
+                // param value (handled in ResolveVolumeArg), never reaches the chain here.
                 if (original is Read3DNode r3 && r3.Geo != null)
-                    // TODO(scope): read3d two-arg starter form.
-                    throw new NotImplementedException("read3d(tex3d, geo) starter is not implemented in the first-cut DSL frontend (reference/02 §5.1).");
+                {
+                    if (current != null)
+                    {
+                        PushDiag("S001", r3, "read3d() is a starter node and cannot be chained inline. Use standalone read3d() to start a new chain.");
+                        continue;
+                    }
+                    SurfaceRef tex3d = Make3dRef(r3.Tex3d, "vol", NodeKind.VolRef);
+                    SurfaceRef geo = Make3dRef(r3.Geo, "geo", NodeKind.GeoRef);
+                    if (tex3d == null || geo == null)
+                    {
+                        PushDiag("S001", r3, "read3d() as starter requires tex3d and geo references");
+                        continue;
+                    }
+                    int rd3Idx = _tempIndex++;
+                    var rd3Args = new StepArgs();
+                    rd3Args.Set("tex3d", ArgValue.OfSurface(tex3d));
+                    rd3Args.Set("geo", ArgValue.OfSurface(geo));
+                    if (r3.Skip) rd3Args.Set("_skip", ArgValue.Of(true));
+                    var rd3Step = new Step { Op = "_read3d", Args = rd3Args, From = null, Temp = rd3Idx, Builtin = true, LeadingComments = original.LeadingComments };
+                    chain.Add(rd3Step);
+                    current = rd3Idx;
+                    continue;
+                }
                 if (original is WriteNode wn)
                 {
                     SurfaceRef surface = ToSurface(wn.Surface);
@@ -492,8 +525,32 @@ namespace Noisemaker.Hlsl.Compiler
                     current = wrIdx;
                     continue;
                 }
-                if (original is Write3DNode)
-                    throw new NotImplementedException("write3d() chain node is not implemented in the first-cut DSL frontend (reference/02 §5.1).");
+                // write3d chain node (reference/02 §5.1; validator.js lines 552-586). Emits a
+                // chainable `_write3d` builtin step: blits the live 3D + geo lanes to the named
+                // vol/geo surfaces while passing all lanes through.
+                if (original is Write3DNode w3)
+                {
+                    SurfaceRef tex3d = Make3dRef(w3.Tex3d, "vol", NodeKind.VolRef);
+                    SurfaceRef geo = Make3dRef(w3.Geo, "geo", NodeKind.GeoRef);
+                    if (tex3d == null || geo == null)
+                    {
+                        PushDiag("S001", w3, "write3d() requires tex3d and geo references");
+                        continue;
+                    }
+                    if (current == null)
+                    {
+                        PushDiag("S005", w3, "write3d() requires an input - cannot be first in chain");
+                        continue;
+                    }
+                    int wr3Idx = _tempIndex++;
+                    var wr3Args = new StepArgs();
+                    wr3Args.Set("tex3d", ArgValue.OfSurface(tex3d));
+                    wr3Args.Set("geo", ArgValue.OfSurface(geo));
+                    var wr3Step = new Step { Op = "_write3d", Args = wr3Args, From = current, Temp = wr3Idx, Builtin = true, LeadingComments = original.LeadingComments };
+                    chain.Add(wr3Step);
+                    current = wr3Idx;
+                    continue;
+                }
                 // Subchain / DSL LOOP bracket (reference/02 §5.1; validator.js
                 // 'Subchain' branch lines 588-630). Emits _subchain_begin / _subchain_end
                 // passthrough markers around the recursively-flattened body. tempIndex
@@ -911,8 +968,11 @@ namespace Noisemaker.Hlsl.Compiler
             }
             if (node is FuncNode)
                 throw new NotImplementedException("Func numeric params ((state)=>...) are not implemented in the first-cut DSL frontend (reference/02 §6.10; cannot eval JS in C#).");
-            if (node is OscillatorNode)
-                throw new NotImplementedException("osc() value oscillators are not implemented in the first-cut DSL frontend (reference/02 §6.11).");
+            if (node is OscillatorNode osc)
+            {
+                args.Set(argKey, ArgValue.OfWrapped(ResolveOscillator(osc)));
+                return;
+            }
             if (node is MidiNode)
                 throw new NotImplementedException("midi() automation args are not implemented in the first-cut DSL frontend (reference/02 §6.12).");
             if (node is AudioNode)
@@ -953,6 +1013,53 @@ namespace Noisemaker.Hlsl.Compiler
                 args.Set(argKey, refVal);
             else
                 args.Set(argKey, DefaultArg(def));
+        }
+
+        // 6.11 osc() value oscillator -> resolved config object (reference/02 §6.11).
+        // Carried verbatim through the graph as a JsonValue (UniformValue.Object) and
+        // evaluated per-frame by the runtime (reference/04 §10.4/§11). Bit-for-bit with
+        // shaders/src/lang/validator.js: oscType via Member-path resolveEnum or Ident as
+        // oscKind.{name}; resolveOscParam maps Number/Boolean/Member; min/max clamp01;
+        // speed/offset/seed unclamped; DEFAULT SEED = 1.
+        private JsonValue ResolveOscillator(OscillatorNode node)
+        {
+            double oscType = 0;
+            if (node.OscType is MemberNode mn)
+            {
+                double? r = ResolveEnumNumber(mn.Path);
+                if (r.HasValue) oscType = r.Value;
+            }
+            else if (node.OscType is IdentNode idn)
+            {
+                double? r = ResolveEnumNumber(new List<string> { "oscKind", idn.Name });
+                if (r.HasValue) oscType = r.Value;
+            }
+
+            var map = new OrderedMap<string, JsonValue>();
+            map.Add("type", JsonValue.Of("Oscillator"));
+            map.Add("oscType", JsonValue.Of(oscType));
+            map.Add("min", JsonValue.Of(Clamp01(ResolveOscParam(node.Min) ?? 0)));
+            map.Add("max", JsonValue.Of(Clamp01(ResolveOscParam(node.Max) ?? 1)));
+            map.Add("speed", JsonValue.Of(ResolveOscParam(node.Speed) ?? 1));
+            map.Add("offset", JsonValue.Of(ResolveOscParam(node.Offset) ?? 0));
+            map.Add("seed", JsonValue.Of(ResolveOscParam(node.Seed) ?? 1));
+            return JsonValue.Of(map);
+        }
+
+        // resolveOscParam (reference/02 §6.11): Number->value; Boolean->1/0;
+        // Member->resolveEnum; else undefined (null).
+        private double? ResolveOscParam(Node param)
+        {
+            if (param == null) return null;
+            if (param is NumberNode nn) return nn.Value;
+            if (param is BooleanNode bn) return bn.Value ? 1 : 0;
+            if (param is MemberNode mn) return ResolveEnumNumber(mn.Path);
+            return null;
+        }
+
+        private static double Clamp01(double x)
+        {
+            return Math.Max(0, Math.Min(1, x));
         }
 
         // --- helpers --------------------------------------------------------
@@ -1040,6 +1147,20 @@ namespace Noisemaker.Hlsl.Compiler
             if (n is OutputRefNode o) return o.Name;
             if (n is IdentNode i) return i.Name;
             return null;
+        }
+
+        // Build a {kind,name} surface ref for a read3d/write3d tex3d-or-geo operand
+        // (reference/02 §5.1; validator.js: tex3d kind = VolRef?'vol':'tex3d', geo kind always
+        // 'geo'). `refKind` is VolRef for the tex3d slot, GeoRef for the geo slot. Returns null
+        // when the operand has no name (mirrors the `?.name ? {...} : null` guard).
+        private static SurfaceRef Make3dRef(Node n, string defaultKind, NodeKind refKind)
+        {
+            string name = SurfaceName(n);
+            if (name == null) return null;
+            string kind = (defaultKind == "vol")
+                ? (n is SurfaceRefNode sr && sr.Kind == refKind ? "vol" : "tex3d")
+                : "geo";
+            return new SurfaceRef { Kind = kind, Name = name };
         }
 
         // /^vol[0-7]$/ etc. as a literal check (the only patterns used are vol/geo).

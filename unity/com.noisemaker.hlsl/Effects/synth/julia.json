@@ -2,7 +2,10 @@
   "name": "Julia",
   "namespace": "synth",
   "func": "julia",
-  "tags": ["fractal"],
+  "starter": true,
+  "tags": [
+    "fractal"
+  ],
   "description": "Julia set explorer with deep zoom",
   "paramAliases": {},
   "globals": {
@@ -59,14 +62,14 @@
     },
     "centerX": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "centerX",
       "min": -3,
       "max": 3
     },
     "centerY": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "centerY",
       "min": -3,
       "max": 3
@@ -94,7 +97,8 @@
       "default": 0.3,
       "uniform": "cSpeed",
       "min": 0,
-      "max": 2
+      "max": 2,
+      "zero": 0
     },
     "cRadius": {
       "type": "float",
@@ -105,10 +109,11 @@
     },
     "zoomSpeed": {
       "type": "float",
-      "default": 0.0,
+      "default": 0,
       "uniform": "zoomSpeed",
       "min": 0,
-      "max": 5
+      "max": 5,
+      "zero": 0
     },
     "zoomDepth": {
       "type": "float",
@@ -119,7 +124,7 @@
     },
     "stripeFreq": {
       "type": "float",
-      "default": 5.0,
+      "default": 5,
       "uniform": "stripeFreq",
       "min": 0.5,
       "max": 20
@@ -136,7 +141,7 @@
     },
     "lightAngle": {
       "type": "float",
-      "default": 45.0,
+      "default": 45,
       "uniform": "lightAngle",
       "min": 0,
       "max": 360
@@ -154,15 +159,8 @@
       "inputs": {},
       "outputs": {
         "fragColor": "outputTex"
-      },
-      "uniforms": {}
+      }
     }
   ],
-  "textures": {
-    "outputTex": {
-      "width": "input",
-      "height": "input",
-      "format": "rgba16f"
-    }
-  }
+  "textures": {}
 }
