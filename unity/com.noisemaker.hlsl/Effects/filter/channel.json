@@ -13,7 +13,8 @@
     "channel": {
       "type": "member",
       "default": "channel.r",
-      "uniform": "channel"
+      "uniform": "channel",
+      "enum": "channel"
     },
     "scale": {
       "type": "float",

@@ -18,7 +18,8 @@
     "index": {
       "type": "member",
       "default": "palette.brushedMetal",
-      "uniform": "paletteIndex"
+      "uniform": "paletteIndex",
+      "enum": "palette"
     },
     "rotation": {
       "type": "float",

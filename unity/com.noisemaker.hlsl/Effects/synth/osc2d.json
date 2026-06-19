@@ -14,7 +14,8 @@
     "oscType": {
       "type": "member",
       "default": "oscType.sine",
-      "uniform": "oscType"
+      "uniform": "oscType",
+      "enum": "oscType"
     },
     "freq": {
       "type": "int",

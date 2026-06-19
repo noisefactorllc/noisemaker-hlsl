@@ -5,6 +5,12 @@ It renders **live procedural textures from the Polymorphic DSL**, aiming to be
 **pixel-identical** to the JS/WebGPU reference engine, and exposes effects both as a
 standalone renderer and as **Shader Graph (material) nodes**.
 
+> **🚧 Work in progress — not yet at full parity.** This port is under active
+> development. Most deterministic effects (generators / filters) render correctly,
+> but parity work is ongoing — notably the chaotic iterative simulations
+> (`navierStokes`, `reactionDiffusion`, feedback) and agent / particle systems,
+> plus the live-display color pipeline. Treat current output as provisional.
+
 > ProgramState and UI bindings from the reference are intentionally out of scope.
 > The reference engine in `../shaders` is the ground truth; this tree never modifies it.
 

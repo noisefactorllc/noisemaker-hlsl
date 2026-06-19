@@ -74,6 +74,12 @@ function projectGlobal (spec) {
   if (spec.type !== undefined) out.type = spec.type
   if (spec.default !== undefined) out.default = spec.default
   if (spec.uniform !== undefined) out.uniform = spec.uniform
+  // enum/enumPath reference an EXTERNAL enum table (e.g. index -> "palette",
+  // smoothing -> "smoothing"). Without these the validator cannot resolve a
+  // named arg (palette(index: solaris)) and silently falls back to the default
+  // (reference/02 §6.10 member-param resolution). Inline `choices` are separate.
+  if (spec.enum !== undefined) out.enum = spec.enum
+  if (spec.enumPath !== undefined) out.enumPath = spec.enumPath
   if (spec.define !== undefined) out.define = spec.define
   if (spec.min !== undefined) out.min = spec.min
   if (spec.max !== undefined) out.max = spec.max
