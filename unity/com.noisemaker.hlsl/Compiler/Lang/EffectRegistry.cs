@@ -195,7 +195,7 @@ namespace Noisemaker.Hlsl.Compiler
                 Name = Str(def, "name"),
                 Namespace = Str(def, "namespace"),
                 Func = Str(def, "func"),
-                Starter = Bool(def, "starter"),
+                Starter = DeriveStarter(def),
                 Globals = def.Get("globals"),
                 Passes = def.Get("passes"),
                 Textures = def.Get("textures"),
@@ -315,6 +315,63 @@ namespace Noisemaker.Hlsl.Compiler
                 if (kv.Value.Kind == JsonKind.Number) map.Add(kv.Key, kv.Value.AsNumber);
             }
             return map;
+        }
+
+        // Pipeline inputs whose presence makes an effect a non-starter (reference
+        // scripts/generate-shader-manifest.mjs PIPELINE_INPUTS + agent surfaces).
+        private static readonly HashSet<string> PipelineInputs = new HashSet<string>
+        {
+            "inputTex", "inputTex3d", "inputXyz", "inputVel", "inputRgba",
+            "o0", "o1", "o2", "o3", "o4", "o5", "o6", "o7",
+            "global_xyz0", "global_vel0", "global_rgba0"
+        };
+
+        // reference/02 §9 starter detection. The reference flags an effect as a
+        // "starter" (can begin a chain with no input) in the manifest when it reads
+        // NO pipeline input — see generate-shader-manifest.mjs isStarterEffect. The
+        // converted C# effect-def JSON dropped the explicit `starter` field, so we
+        // derive it the same way (an explicit `starter` boolean still wins). Without
+        // this, _starterOps is empty and EVERY generator chain (noise().write()...)
+        // fails validation with S005.
+        private static bool DeriveStarter(JsonValue def)
+        {
+            JsonValue s = def.Get("starter");
+            if (s != null && s.Kind == JsonKind.Bool) return s.AsBool;   // explicit wins
+            return !ReadsPipelineInput(def);
+        }
+
+        private static bool ReadsPipelineInput(JsonValue def)
+        {
+            JsonValue passes = def.Get("passes");
+            if (passes != null && passes.Kind == JsonKind.Array)
+            {
+                foreach (JsonValue p in passes.AsArray)
+                {
+                    if (p == null || p.Kind != JsonKind.Object) continue;
+                    JsonValue inputs = p.Get("inputs");
+                    if (inputs == null || inputs.Kind != JsonKind.Object) continue;
+                    foreach (var kv in inputs.AsObject)
+                    {
+                        if (PipelineInputs.Contains(kv.Key)) return true;
+                        JsonValue v = kv.Value;
+                        if (v != null && v.Kind == JsonKind.String && PipelineInputs.Contains(v.AsString))
+                            return true;
+                    }
+                }
+            }
+            // A surface-typed global samples an input surface (reference TEX_SURFACE_RE).
+            JsonValue globals = def.Get("globals");
+            if (globals != null && globals.Kind == JsonKind.Object)
+            {
+                foreach (var kv in globals.AsObject)
+                {
+                    JsonValue g = kv.Value;
+                    if (g == null || g.Kind != JsonKind.Object) continue;
+                    JsonValue t = g.Get("type");
+                    if (t != null && t.Kind == JsonKind.String && t.AsString == "surface") return true;
+                }
+            }
+            return false;
         }
 
         private static string Str(JsonValue obj, string key)
