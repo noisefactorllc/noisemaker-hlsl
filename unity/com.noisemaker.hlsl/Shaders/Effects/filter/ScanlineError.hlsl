@@ -18,11 +18,12 @@
 //    Texture2D.Load(int3(x, y, 0)). No bilinear filtering, no UV normalization
 //    for the fetch. The "coord" is vec2<i32>(in.position.xy) = trunc(fragCoord);
 //    we use (int2)NM_FragCoord(i). NMFullscreen gives top-left, +0.5-centered
-//    fragCoord matching @builtin(position) (H8). ROW-ANCHORED NOISE EXCEPTION:
-//    this effect derives a per-row noise band from the integer row. Under the
-//    Metal RT path the integer row addressed for a row-based effect is mirrored
-//    vs the WGSL position.y, so the noise row is flipped to (height-1-coord.y)
-//    (see `noiseRow`). The .Load() texel fetch keeps coord.y (already correct).
+//    fragCoord matching @builtin(position) (H8). NOISE ROW == FETCH ROW: the
+//    reference anchors the per-row noise pattern AND the texel fetch to the SAME
+//    integer row (gl_FragCoord.y / gid.y), so this port uses coord.y for both
+//    (`noiseRow = coord.y`) — NO per-effect Y flip (matches bitEffects' verified
+//    NM_FragCoord convention). An earlier flip to (height-1-coord.y) desynced the
+//    noise gate from the fetched content; it was calibrated against a stale golden.
 //  * DIMS: the WGSL derives all width_f/height_f from textureDimensions(inputTex)
 //    (the INPUT texture's own size), NOT fullResolution. We follow the WGSL: dims
 //    = input GetDimensions. (The GLSL splits into tile-aware fullResolution math;
@@ -65,6 +66,30 @@ static const float SE_TAU = 6.283185307179586;
 float se_clamp01(float value)
 {
     return clamp(value, 0.0, 1.0);
+}
+
+// Accurate cos via quadrant range-reduction. Unity's Metal `cos` intrinsic is
+// fast-math (~1e-3 absolute error near pi/2; `precise` does NOT override it).
+// BOTH noise paths multiply cos(t*SE_TAU) by a large `spd` (speed*10 or *100)
+// and feed it as a floor()/lattice-quantized z-seed: se_compute_simplex_value ->
+// se_simplex_noise (scanline mode) and se_vhs_computeNoise -> se_valueNoise (vhs
+// mode). At the parity time t=0.25 (pi/2, cos≈0) the ~-0.004 fast-math error
+// becomes a ~-0.4 z-shift that crosses a lattice boundary -> wrong noise layer.
+// Reducing the argument to [-pi/4, pi/4], where sin/cos are accurate even under
+// fast-math, gives exact zeros at the quarter-turns and matches the reference
+// WebGL `cos` (accurate on desktop GL). Used by both noise paths below.
+float se_cos(float x)
+{
+    const float HALF_PI = 1.5707963267948966;
+    float q = round(x / HALF_PI);
+    float r = x - q * HALF_PI;          // [-pi/4, pi/4]
+    int qi = ((int)q) & 3;              // quadrant 0..3 (bitwise & on int wraps negatives)
+    float sr = sin(r);
+    float cr = cos(r);
+    if (qi == 0) return cr;
+    if (qi == 1) return -sr;
+    if (qi == 2) return -cr;
+    return sr;                          // qi == 3
 }
 
 // =====================================================================
@@ -174,7 +199,7 @@ float se_compute_simplex_value(float2 coord, float2 freq, float t, float speed_v
 {
     float freq_x = max(freq.x, 1.0);
     float freq_y = max(freq.y, 1.0);
-    float angle = cos(t * SE_TAU) * speed_value;
+    float angle = se_cos(t * SE_TAU) * speed_value;   // se_cos: fast-math cos boundary (see note above)
     float3 sampleVec = float3(coord.x * freq_x + offset.x, coord.y * freq_y + offset.y, angle + offset.z);
     return se_simplex_noise(sampleVec);
 }
@@ -253,28 +278,6 @@ float se_valueNoise(float3 p)
         lerp(lerp(c001, c101, u.x), lerp(c011, c111, u.x), u.y),
         u.z
     );
-}
-
-// Accurate cos via quadrant range-reduction. Unity's Metal `cos` intrinsic is
-// fast-math (~1e-3 absolute error near pi/2; `precise` does NOT override it). In
-// se_vhs_computeNoise the cos is multiplied by `spd` (= speed*100 for scanNoise)
-// and feeds a `floor`ed value-noise z-seed, so the ~-0.004 error at t=0.25 (pi/2)
-// becomes a ~-0.4 z-shift that crosses a lattice boundary -> wrong noise layer
-// (this is the whole scanlineError VHS divergence). Reducing the argument to
-// [-pi/4, pi/4], where sin/cos are accurate even under fast-math, yields exact
-// zeros at the quarter-turns and matches the reference WebGL `cos`.
-float se_cos(float x)
-{
-    const float HALF_PI = 1.5707963267948966;
-    float q = round(x / HALF_PI);
-    float r = x - q * HALF_PI;          // [-pi/4, pi/4]
-    int qi = ((int)q) & 3;              // quadrant 0..3 (bitwise & on int wraps negatives)
-    float sr = sin(r);
-    float cr = cos(r);
-    if (qi == 0) return cr;
-    if (qi == 1) return -sr;
-    if (qi == 2) return -cr;
-    return sr;                          // qi == 3
 }
 
 float se_vhs_computeNoise(float2 coord, float2 freq, float t, float spd, float3 baseOff, float3 timeOff)
@@ -395,8 +398,8 @@ float4 NMFrag_scanlineError(NMVaryings i) : SV_Target
         // Scanline error mode (default)
         float4 input_texel = inputTex.Load(int3(coord.x, coord.y, 0));
 
-        // Noise is anchored to the mirrored row (see noiseRow note above); the
-        // x coordinate is unchanged. The .Load() below still uses coord.y.
+        // Noise and the .Load() fetch use the SAME row (noiseRow == coord.y); only
+        // the x sample coordinate is displaced. (See the no-flip note at noiseRow.)
         float2 coord_norm = (float2(coord.x, noiseRow) + 0.5) / dims;
         float2 freq_line = float2(max(floor(width_f * 0.5), 1.0), max(floor(height_f * 0.5), 1.0));
         float swerve_height = max(floor(height_f * 0.01), 1.0);
