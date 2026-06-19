@@ -48,21 +48,98 @@ async function renderOne (page, dsl, size, time, lastId) {
     const ed = document.getElementById('dsl-editor'); const run = document.getElementById('dsl-run-btn')
     ed.value = src; ed.dispatchEvent(new Event('input', { bubbles: true })); run.click()
   }, dsl)
+  // Wait until OUR DSL has actually compiled and SETTLED. A bare `graph.id !==
+  // base` check races: on load the demo runs its own default DSL and recompiles
+  // it, which bumps graph.id BEFORE our reactionDiffusion/etc. graph lands — so a
+  // naive id-change check returns while the live pipeline still holds the default
+  // graph (and its RAF-warmed sim). We therefore wait for: (a) no error in
+  // status, (b) the status reports a successful "compiled" of the new effect,
+  // (c) compilation finished (isCompiling===false), and (d) the graph id is
+  // stable across two consecutive polls (no recompile in flight). Together these
+  // guarantee the graph we then clear+render is OUR DSL, not the default.
   await page.waitForFunction((base) => {
     const s = (document.getElementById('status')?.textContent || '').toLowerCase()
     if (s.includes('error') || s.includes('failed')) throw new Error('DSL compile failed: ' + document.getElementById('status')?.textContent)
     const p = window.__noisemakerRenderingPipeline
-    return !!(p && p.graph && p.graph.id !== base)
+    if (!(p && p.graph && p.graph.id !== base && p.isCompiling === false)) return false
+    if (!s.includes('compiled')) return false
+    // Require the graph id to hold steady across two polls so we don't capture a
+    // transient default graph mid-recompile.
+    if (window.__nmStableId === p.graph.id) { window.__nmStableCount = (window.__nmStableCount || 0) + 1 }
+    else { window.__nmStableId = p.graph.id; window.__nmStableCount = 0 }
+    return window.__nmStableCount >= 1
   }, { timeout: STATUS_TIMEOUT }, baselineId)
+  // DETERMINISM STEP 1 — STOP the free-running RAF loop. The demo starts an
+  // animation loop on load and on every recompile; while it runs it advances the
+  // pipeline (frameIndex/lastTime + every state/feedback surface) an unknown
+  // number of times before we get control. setPaused(true) calls renderer.stop(),
+  // cancelling the RAF so nothing can advance the sim behind our back.
   await page.evaluate(() => { if (window.__noisemakerSetPaused) window.__noisemakerSetPaused(true) })
   await page.evaluate((sz) => {
     const r = window.__noisemakerCanvasRenderer; const p = window.__noisemakerRenderingPipeline
     if (r && r.canvas) { r.canvas.width = sz; r.canvas.height = sz; if (r.canvas.style){ r.canvas.style.width = sz+'px'; r.canvas.style.height = sz+'px' } }
     if (p && typeof p.resize === 'function') p.resize(sz, sz)
   }, size)
+  // DETERMINISM STEP 2 — render EXACTLY `frames` from a CLEAN, ZEROED state,
+  // matching the Unity side (NMParityRunner.BuildAndRender: fresh NMPipeline,
+  // Init, then exactly 8 Render(0.25) from a zeroed pipeline). We cannot create a
+  // fresh JS pipeline per effect cheaply, so we reproduce the same starting
+  // conditions on the existing pipeline:
+  //   (a) zero EVERY surface (read AND write) — o0-o7, feedback, and the state/
+  //       trail surfaces sims & agents persist across frames (navierStokes,
+  //       reactionDiffusion, convolutionFeedback, feedback, points/flow trails).
+  //       After resize the demo may already have rendered the new graph once
+  //       (recompile path reuses the pipeline and its surfaces), so the surfaces
+  //       are NOT guaranteed zero — clear them explicitly.
+  //   (b) reset frameIndex/lastTime so `frame` and deltaTime start identical
+  //       to a freshly-Init'd pipeline (frame N is then reproducible).
+  // Together these make the golden the SAME clean N-frames-from-zero render the
+  // Unity side does, and removes the warm-up pollution + cross-effect leakage that
+  // made stateful goldens bimodal.
   await page.evaluate(({ t, frames }) => {
+    const p = window.__noisemakerRenderingPipeline
     if (window.__noisemakerSetPausedTime) window.__noisemakerSetPausedTime(t)
-    const p = window.__noisemakerRenderingPipeline; const r = window.__noisemakerCanvasRenderer
+    if (p) {
+      // Zero EVERY GPU texture, not just the double-buffered surfaces. Iterative
+      // sims keep their state in a graph texture that is NOT a pipeline surface:
+      // reactionDiffusion's field lives in `global_rd_state` / `node_*` textures
+      // (created by recreateTextures, absent from p.surfaces). The free-running
+      // RAF warms that texture ~40 frames before we get control, and clearing
+      // only p.surfaces left it polluted — so the "clean" render actually
+      // continued from a partially-converged field whose exact frame count
+      // varied run-to-run, bifurcating the chaotic Gray-Scott pattern (the
+      // bimodal golden). A freshly-Init'd Unity pipeline starts with every
+      // texture zeroed; reproduce that by clearing the whole backend registry.
+      const backend = p.backend
+      if (backend?.textures && typeof backend.clearTexture === 'function') {
+        for (const texId of backend.textures.keys()) backend.clearTexture(texId)
+      }
+      // Restore the canonical ping-pong orientation for double-buffered surfaces.
+      // clearSurface/clearTexture zero the physical buffers, but the read/write
+      // POINTERS may be swapped from prior rendering. A freshly-Init'd pipeline
+      // always has read=global_<name>_read / write=global_<name>_write; restore
+      // that exact orientation so frame 0 is byte-reproducible.
+      if (p.surfaces) {
+        for (const [name, surface] of p.surfaces.entries()) {
+          const readId = `global_${name}_read`
+          const writeId = `global_${name}_write`
+          // Only normalize double-buffered surfaces (o0-o7, state, feedback).
+          // Mesh surfaces have no read/write pair; leave them untouched.
+          if (backend?.textures?.get?.(readId) && backend?.textures?.get?.(writeId)) {
+            surface.read = readId
+            surface.write = writeId
+          }
+        }
+      }
+      // Reset the frame/time accumulators to a freshly-Init'd state. A fresh
+      // pipeline has frameIndex=0 and lastTime=0; with lastTime=0 the first
+      // render() computes deltaTime=0 (the `lastTime>0` guard), and every later
+      // frame is at the same fixed `time`, so deltaTime stays 0 throughout —
+      // identical to the Unity 8×Render(0.25)-from-zero contract.
+      p.frameIndex = 0
+      p.lastTime = 0
+    }
+    const r = window.__noisemakerCanvasRenderer
     for (let i = 0; i < frames; i++) { if (p && p.render) p.render(t); else if (r && r.render) r.render(t) }
   }, { t: time, frames: 8 })
   const result = await page.evaluate(() => {
