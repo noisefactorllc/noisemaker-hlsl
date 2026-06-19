@@ -1,0 +1,83 @@
+{
+  "name": "Color Replace",
+  "namespace": "filter",
+  "func": "colorReplace",
+  "tags": ["color", "util"],
+  "description": "Color replacement with alpha output. Matches pixels near targetColor and remaps their RGB and/or alpha.",
+  "paramAliases": {},
+  "globals": {
+    "targetColor": {
+      "type": "color",
+      "default": [0.0, 0.0, 0.0],
+      "uniform": "targetColor"
+    },
+    "replaceColor": {
+      "type": "color",
+      "default": [1.0, 1.0, 1.0],
+      "uniform": "replaceColor"
+    },
+    "sensitivity": {
+      "type": "float",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "uniform": "sensitivity"
+    },
+    "smoothing": {
+      "type": "float",
+      "default": 0.1,
+      "min": 0,
+      "max": 1,
+      "uniform": "smoothing"
+    },
+    "colorMix": {
+      "type": "float",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "uniform": "colorMix"
+    },
+    "replaceAlpha": {
+      "type": "float",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "uniform": "replaceAlpha"
+    },
+    "keepAlpha": {
+      "type": "float",
+      "default": 1.0,
+      "min": 0,
+      "max": 1,
+      "uniform": "keepAlpha"
+    }
+  },
+  "passes": [
+    {
+      "name": "main",
+      "program": "colorReplace",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "color": "outputTex"
+      },
+      "uniforms": {
+        "targetColor": "targetColor",
+        "replaceColor": "replaceColor",
+        "sensitivity": "sensitivity",
+        "smoothing": "smoothing",
+        "colorMix": "colorMix",
+        "replaceAlpha": "replaceAlpha",
+        "keepAlpha": "keepAlpha"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "name": "Text",
+  "namespace": "filter",
+  "func": "text",
+  "tags": ["text"],
+  "description": "Overlay text onto the image",
+  "paramAliases": {
+    "bgOpacity": "matteOpacity",
+    "bgAlpha": "matteOpacity",
+    "bgColor": "matteColor"
+  },
+  "globals": {
+    "text": {
+      "type": "string",
+      "default": "Hello World"
+    },
+    "font": {
+      "type": "string",
+      "default": "Nunito",
+      "choices": {
+        "nunito": "Nunito",
+        "sansSerif": "sans-serif",
+        "serif": "serif",
+        "monospace": "monospace",
+        "cursive": "cursive",
+        "fantasy": "fantasy"
+      }
+    },
+    "size": {
+      "type": "float",
+      "default": 0.1,
+      "min": 0.01,
+      "max": 1.0
+    },
+    "posX": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "posY": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "rotation": {
+      "type": "float",
+      "default": 0.0,
+      "min": -180.0,
+      "max": 180.0
+    },
+    "color": {
+      "type": "color",
+      "default": "#ffffff"
+    },
+    "matteColor": {
+      "type": "color",
+      "default": "#000000",
+      "uniform": "matteColor"
+    },
+    "matteOpacity": {
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "uniform": "matteOpacity"
+    },
+    "justify": {
+      "type": "string",
+      "default": "center",
+      "choices": {
+        "left": "left",
+        "center": "center",
+        "right": "right"
+      }
+    }
+  },
+  "passes": [
+    {
+      "name": "overlay",
+      "program": "text",
+      "inputs": {
+        "inputTex": "inputTex",
+        "textTex": "textTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "matteColor": "matteColor",
+        "matteOpacity": "matteOpacity"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

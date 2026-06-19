@@ -1,0 +1,187 @@
+{
+  "name": "Life",
+  "namespace": "points",
+  "func": "life",
+  "tags": ["sim"],
+  "description": "Type-based attraction/repulsion particle simulation",
+  "paramAliases": {},
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "globals": {
+    "stateSize": {
+      "type": "int",
+      "default": 256,
+      "uniform": "stateSize",
+      "ui": { "control": false }
+    },
+    "typeCount": {
+      "type": "int",
+      "default": 6,
+      "uniform": "typeCount",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "ui": { "label": "types", "control": "slider", "category": "types" }
+    },
+    "attractionScale": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "attractionScale",
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "ui": { "label": "attraction", "control": "slider", "category": "forces" }
+    },
+    "repulsionScale": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "repulsionScale",
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "ui": { "label": "repulsion", "control": "slider", "category": "forces" }
+    },
+    "minRadius": {
+      "type": "float",
+      "default": 0.01,
+      "uniform": "minRadius",
+      "min": 0.001,
+      "max": 0.05,
+      "step": 0.001,
+      "ui": { "label": "min radius", "control": "slider", "category": "forces" }
+    },
+    "maxRadius": {
+      "type": "float",
+      "default": 0.08,
+      "uniform": "maxRadius",
+      "min": 0.02,
+      "max": 0.2,
+      "step": 0.01,
+      "ui": { "label": "max radius", "control": "slider", "category": "forces" }
+    },
+    "maxSpeed": {
+      "type": "float",
+      "default": 0.003,
+      "uniform": "maxSpeed",
+      "min": 0.0005,
+      "max": 0.01,
+      "step": 0.0001,
+      "ui": { "label": "max speed", "control": "slider", "category": "motion" }
+    },
+    "friction": {
+      "type": "float",
+      "default": 0.1,
+      "uniform": "friction",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "ui": { "label": "friction", "control": "slider", "category": "motion" }
+    },
+    "boundaryMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "boundaryMode",
+      "choices": { "wrap": 0, "bounce": 1 },
+      "ui": { "label": "boundary", "control": "dropdown", "category": "motion" }
+    },
+    "matrixSeed": {
+      "type": "float",
+      "default": 42,
+      "uniform": "matrixSeed",
+      "min": 0,
+      "max": 1000,
+      "step": 1,
+      "ui": { "label": "matrix seed", "control": "slider", "category": "types" }
+    },
+    "symmetricForces": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "symmetricForces",
+      "ui": { "label": "symmetric", "control": "checkbox", "category": "types" }
+    },
+    "useTypeColor": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "useTypeColor",
+      "ui": { "label": "show types", "control": "checkbox", "category": "types" }
+    }
+  },
+  "passes": [
+    {
+      "name": "matrix",
+      "program": "matrix",
+      "inputs": {},
+      "uniforms": {
+        "typeCount": "typeCount",
+        "matrixSeed": "matrixSeed",
+        "symmetricForces": "symmetricForces"
+      },
+      "outputs": { "color": "forceMatrix" }
+    },
+    {
+      "name": "agent",
+      "program": "agent",
+      "drawBuffers": 4,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba",
+        "dataTex": "global_life_data",
+        "forceMatrix": "forceMatrix",
+        "inputTex": "inputTex"
+      },
+      "uniforms": {
+        "typeCount": "typeCount",
+        "attractionScale": "attractionScale",
+        "repulsionScale": "repulsionScale",
+        "minRadius": "minRadius",
+        "maxRadius": "maxRadius",
+        "maxSpeed": "maxSpeed",
+        "friction": "friction",
+        "boundaryMode": "boundaryMode",
+        "matrixSeed": "matrixSeed",
+        "symmetricForces": "symmetricForces",
+        "useTypeColor": "useTypeColor"
+      },
+      "outputs": {
+        "color": "global_xyz",
+        "color1": "global_vel",
+        "color2": "global_rgba",
+        "color3": "global_life_data"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": { "inputTex": "inputTex" },
+      "outputs": { "color": "outputTex" }
+    }
+  ],
+  "textures": {
+    "global_life_data": {
+      "width": { "param": "stateSize", "default": 256 },
+      "height": { "param": "stateSize", "default": 256 },
+      "format": "rgba16f",
+      "_role": "PERSISTENT internal agent data [typeId, mass, 0, 0]. Uses the global_ prefix specifically so the runtime double-buffers / ping-pongs it (avoids read==write feedback in the agent MRT pass) and so it is scoped to the particle pipeline (e.g. global_life_data_node_1). Size tracks the particle textures via the stateSize param."
+    },
+    "forceMatrix": {
+      "width": 8,
+      "height": 8,
+      "format": "rgba16f",
+      "_role": "TRANSIENT 8x8 force matrix for up to 8 types: R=attraction strength (-1..1), G=preferred distance, B=curve shape, A=1. Regenerated each frame by the matrix pass; read by the agent pass. Not '_'/'global_'-prefixed -> pooled per frame."
+    }
+  },
+  "stateTextures": {
+    "_comment": "global_xyz/global_vel/global_rgba are PERSISTENT particle-state surfaces CREATED by the upstream pointsEmit effect (rgba32f, full float, per reference) and consumed/updated here as middleware (see definition.js outputXyz/outputVel/outputRgba). They are NOT declared in this effect's textures{} because pointsEmit owns their creation; this effect only reads+writes them. The runtime persists them frame-to-frame via isStateSurface (name matches xyz|vel|rgba) and double-buffers each on every write (ref 04 §10.2/§10.7). global_life_data (above) is this effect's own persistent internal state.",
+    "global_xyz": { "format": "rgba32f", "_role": "PERSISTENT [x, y, 0, alive] normalized coords [0,1]" },
+    "global_vel": { "format": "rgba32f", "_role": "PERSISTENT [vx, vy, age, seed]" },
+    "global_rgba": { "format": "rgba32f", "_role": "PERSISTENT [r, g, b, a] agent color" }
+  },
+  "feedback": {
+    "_comment": "Agent-based middleware. NO deposit/drawMode:'points' pass (the points scatter lives in points/pointsRender downstream). 3 fullscreen passes/frame: matrix -> agent (MRT 4 outputs) -> passthrough. The agent pass reads and writes all four state surfaces in one MRT pass; persistence + read/write ping-pong is handled by the runtime (the global_ prefix on every state key including global_life_data is what enables the double-buffering, per definition.js). No 'repeat'. No countUniform/drawMode (fullscreen only).",
+    "persistent": ["global_xyz", "global_vel", "global_rgba", "global_life_data"],
+    "transient": ["forceMatrix"],
+    "mrt": { "pass": "agent", "drawBuffers": 4, "outputs": ["global_xyz", "global_vel", "global_rgba", "global_life_data"] }
+  }
+}

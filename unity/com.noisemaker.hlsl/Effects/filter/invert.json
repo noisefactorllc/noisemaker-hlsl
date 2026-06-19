@@ -1,0 +1,29 @@
+{
+  "name": "Invert",
+  "namespace": "filter",
+  "func": "invert",
+  "tags": ["color"],
+  "description": "Invert image luminance",
+  "paramAliases": {},
+  "globals": {},
+  "passes": [
+    {
+      "name": "render",
+      "program": "inv",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {}
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "name": "Lighting",
+  "namespace": "filter",
+  "func": "lighting",
+  "tags": ["color"],
+  "description": "Applies 3D lighting effects",
+  "paramAliases": {},
+  "globals": {
+    "normalStrength": {
+      "type": "float",
+      "default": 1.5,
+      "uniform": "normalStrength",
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.01
+    },
+    "smoothing": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "smoothing",
+      "min": 1.0,
+      "max": 10.0,
+      "step": 0.1
+    },
+    "diffuseColor": {
+      "type": "color",
+      "default": [1.0, 1.0, 1.0],
+      "uniform": "diffuseColor"
+    },
+    "specularColor": {
+      "type": "color",
+      "default": [1.0, 1.0, 1.0],
+      "uniform": "specularColor"
+    },
+    "specularIntensity": {
+      "type": "float",
+      "default": 0.5,
+      "uniform": "specularIntensity",
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.01
+    },
+    "shininess": {
+      "type": "float",
+      "default": 64.0,
+      "uniform": "shininess",
+      "min": 8.0,
+      "max": 256.0,
+      "step": 1.0
+    },
+    "ambientColor": {
+      "type": "color",
+      "default": [0.2, 0.2, 0.2],
+      "uniform": "ambientColor"
+    },
+    "lightDirection": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 1.0],
+      "uniform": "lightDirection"
+    },
+    "reflection": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "reflection",
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.1
+    },
+    "refraction": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "refraction",
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.1
+    },
+    "aberration": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "aberration",
+      "min": 0.0,
+      "max": 100.0,
+      "step": 0.1
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "lighting",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "normalStrength": "normalStrength",
+        "smoothing": "smoothing",
+        "diffuseColor": "diffuseColor",
+        "specularColor": "specularColor",
+        "specularIntensity": "specularIntensity",
+        "shininess": "shininess",
+        "ambientColor": "ambientColor",
+        "lightDirection": "lightDirection",
+        "reflection": "reflection",
+        "refraction": "refraction",
+        "aberration": "aberration"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

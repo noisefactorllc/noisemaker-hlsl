@@ -1,0 +1,178 @@
+{
+  "name": "Reaction-Diffusion 3D",
+  "namespace": "synth3d",
+  "func": "reactionDiffusion3d",
+  "tags": ["3d", "sim"],
+  "description": "3D reaction-diffusion simulation",
+  "paramAliases": {},
+  "_tier": "3D / RENDER — synth3d volume generator. Outputs a 2D volume ATLAS (volumeSize x volumeSize^2) consumed by render/render3d or render/renderLit3d. NOT a raymarch; this is an atlas-WRITE simulation.",
+  "globals": {
+    "volumeSize": {
+      "type": "int",
+      "default": 32,
+      "uniform": "volumeSize",
+      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
+      "randChoices": [16, 32, 64],
+      "ui": { "label": "volume size", "control": "dropdown" }
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 100,
+      "uniform": "seed",
+      "ui": { "control": false }
+    },
+    "iterations": {
+      "type": "int",
+      "default": 8,
+      "uniform": "iterations",
+      "min": 1,
+      "max": 32,
+      "ui": { "label": "iterations", "control": "slider" }
+    },
+    "feed": {
+      "type": "float",
+      "default": 110,
+      "uniform": "feed",
+      "min": 10,
+      "max": 110,
+      "ui": { "label": "feed rate", "control": "slider", "category": "rules" }
+    },
+    "kill": {
+      "type": "float",
+      "default": 62,
+      "uniform": "kill",
+      "min": 45,
+      "max": 70,
+      "ui": { "label": "kill rate", "control": "slider", "category": "rules" }
+    },
+    "rate1": {
+      "type": "float",
+      "default": 120,
+      "uniform": "rate1",
+      "min": 50,
+      "max": 120,
+      "ui": { "label": "diffuse rate a", "control": "slider", "category": "rules" }
+    },
+    "rate2": {
+      "type": "float",
+      "default": 30,
+      "uniform": "rate2",
+      "min": 20,
+      "max": 80,
+      "ui": { "label": "diffuse rate b", "control": "slider", "category": "rules" }
+    },
+    "speed": {
+      "type": "int",
+      "default": 100,
+      "uniform": "speed",
+      "min": 10,
+      "max": 200,
+      "ui": { "label": "sim speed", "control": "slider" }
+    },
+    "colorMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "colorMode",
+      "choices": { "mono": 0, "gradient": 1 },
+      "ui": { "label": "color mode", "control": "dropdown" }
+    },
+    "resetState": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "resetState",
+      "ui": { "label": "reset", "control": "button", "buttonLabel": "reset" }
+    },
+    "source": {
+      "type": "volume",
+      "default": "vol0",
+      "ui": { "label": "source vol", "category": "input" }
+    },
+    "geoSource": {
+      "type": "geometry",
+      "default": "geo0",
+      "ui": { "label": "source geo", "category": "input" }
+    },
+    "weight": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "uniform": "weight",
+      "ui": { "label": "input weight", "control": "slider", "category": "input" }
+    }
+  },
+  "uniformLayouts": {
+    "_comment": "We bind per-effect uniforms as individual named uniforms (PORTING-GUIDE). speed is declared f32 in the WGSL despite int type in definition.js — bound as float. resetState is boolean (1.0/0.0) read as int and tested != 0.",
+    "simulate": {
+      "volumeSize": "volumeSize",
+      "seed": "seed",
+      "feed": "feed",
+      "kill": "kill",
+      "rate1": "rate1",
+      "rate2": "rate2",
+      "speed": "speed",
+      "weight": "weight",
+      "iterations": "iterations",
+      "colorMode": "colorMode",
+      "resetState": "resetState"
+    }
+  },
+  "passes": [
+    {
+      "name": "simulate",
+      "program": "simulate",
+      "repeat": "iterations",
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 32 },
+        "height": { "param": "volumeSize", "power": 2, "default": 1024 }
+      },
+      "inputs": {
+        "stateTex": "global_rd_state",
+        "seedTex": "source"
+      },
+      "outputs": {
+        "color": "global_rd_state"
+      }
+    }
+  ],
+  "outputTex3d": "global_rd_state",
+  "outputGeo": "geoBuffer",
+  "textures": {
+    "volumeCache": {
+      "width": { "param": "volumeSize", "default": 32 },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
+      "format": "rgba16f",
+      "_role": "Pooled cache atlas (declared in definition.js; not bound by the simulate pass). volumeSize x volumeSize^2."
+    },
+    "geoBuffer": {
+      "width": { "param": "volumeSize", "default": 32 },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
+      "format": "rgba16f",
+      "_role": "outputGeo atlas (xyz=normal, w=depth/SDF). Allocated for downstream lit raymarch; the simulate pass does not write it."
+    },
+    "global_rd_state": {
+      "width": { "param": "volumeSize", "default": 32 },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
+      "format": "rgba16f",
+      "_role": "PERSISTENT 3D volume ATLAS + sim state. Per voxel: r=B (density, read by render3d), g/b=visualization colours, a=A (chemical sim state). volumeSize x volumeSize^2 (default 32x1024). Double-buffered/ping-ponged across frames and per repeat:iterations. This IS the outputTex3d."
+    }
+  },
+  "is3D": {
+    "_comment": "synth3d volume tier. The 'volume' is a 2D atlas RenderTexture; depth = volumeSize Z-slices stacked vertically. Atlas mapping: texel (x,y) -> voxel (x, y % volumeSize, y / volumeSize). vol0..7 standard atlas is 64x4096; THIS effect drives the atlas size from the volumeSize param (default 32 -> 32x1024). source/geoSource bind the upstream vol/geo surfaces (inputTex3d/inputGeo).",
+    "volumeSize": 32,
+    "depth": 32,
+    "atlasWidth": { "param": "volumeSize", "default": 32 },
+    "atlasHeight": { "param": "volumeSize", "power": 2, "default": 1024 },
+    "atlasMapping": "voxel(x, y % volumeSize, y / volumeSize); atlasTexel(p) = (wrap(x), wrap(y) + wrap(z) * volumeSize) with wrap(v)=(v+volumeSize)%volumeSize",
+    "volumeSurfaces": { "source": "vol0", "geoSource": "geo0" }
+  },
+  "feedback": {
+    "_comment": "Single-pass feedback sim that WRITES a volume atlas. State lives in the PERSISTENT 'global_' surface rd_state (NOT pooled, NOT '_'-prefixed transient). The runtime double-buffers it: within-frame and per-iteration ping-pong for the repeat:iterations 'simulate' pass (ref 04 §10.6), plus end-of-frame persistence (the pass samples its own previous output via stateTex == global_rd_state). The shader self-initializes on an all-zero buffer and on resetState; no '_iteration' uniform is injected (the shader has no iteration index — it reads `iterations` only to scale the timestep). NO MRT (single color output per pass).",
+    "persistent": ["global_rd_state"],
+    "transient": [],
+    "repeat": { "pass": "simulate", "count": "iterations" },
+    "mrt": false
+  }
+}

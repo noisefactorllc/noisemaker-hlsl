@@ -1,0 +1,179 @@
+{
+  "name": "Points Render",
+  "namespace": "render",
+  "func": "pointsRender",
+  "tags": ["agents"],
+  "description": "Blend agent trails with input for particle systems",
+  "paramAliases": {},
+  "globals": {
+    "density": {
+      "type": "float",
+      "default": 50.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "density",
+      "ui": { "label": "density", "control": "slider", "category": "visual" }
+    },
+    "intensity": {
+      "type": "float",
+      "default": 75.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "intensity",
+      "ui": { "label": "trail intensity", "control": "slider", "category": "visual" }
+    },
+    "inputIntensity": {
+      "type": "float",
+      "default": 10.15,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "inputIntensity",
+      "ui": { "label": "input mix", "control": "slider", "category": "visual" }
+    },
+    "viewMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "viewMode",
+      "choices": { "flat": 0, "ortho": 1 },
+      "ui": { "label": "view", "control": "dropdown", "category": "view" }
+    },
+    "rotateX": {
+      "type": "float",
+      "default": 0.3,
+      "uniform": "rotateX",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate x", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "rotateY": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotateY",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate y", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "rotateZ": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotateZ",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate z", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "viewScale": {
+      "type": "float",
+      "default": 0.8,
+      "uniform": "viewScale",
+      "min": 0.1,
+      "max": 10,
+      "step": 0.01,
+      "ui": { "label": "zoom", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "posX": {
+      "type": "float",
+      "default": 0,
+      "uniform": "posX",
+      "min": -50,
+      "max": 50,
+      "step": 0.1,
+      "ui": { "label": "pos x", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "posY": {
+      "type": "float",
+      "default": 0,
+      "uniform": "posY",
+      "min": -50,
+      "max": 50,
+      "step": 0.1,
+      "ui": { "label": "pos y", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "matteOpacity": {
+      "type": "float",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "randMin": 0.75,
+      "uniform": "matteOpacity",
+      "ui": { "label": "bg opacity", "control": "slider", "category": "visual" }
+    }
+  },
+  "passes": [
+    {
+      "name": "diffuse",
+      "program": "diffuse",
+      "inputs": { "trailTex": "global_points_trail" },
+      "uniforms": { "intensity": "intensity" },
+      "outputs": { "fragColor": "global_points_trail" }
+    },
+    {
+      "name": "copy",
+      "program": "copy",
+      "inputs": { "sourceTex": "global_points_trail" },
+      "outputs": { "fragColor": "global_points_trail" }
+    },
+    {
+      "name": "deposit",
+      "program": "deposit",
+      "drawMode": "points",
+      "count": "input",
+      "blend": true,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "rgbaTex": "global_rgba"
+      },
+      "uniforms": {
+        "density": "density",
+        "viewMode": "viewMode",
+        "rotateX": "rotateX",
+        "rotateY": "rotateY",
+        "rotateZ": "rotateZ",
+        "viewScale": "viewScale",
+        "posX": "posX",
+        "posY": "posY"
+      },
+      "outputs": { "fragColor": "global_points_trail" }
+    },
+    {
+      "name": "blend",
+      "program": "blend",
+      "inputs": {
+        "inputTex": "inputTex",
+        "trailTex": "global_points_trail"
+      },
+      "uniforms": {
+        "inputIntensity": "inputIntensity",
+        "matteOpacity": "matteOpacity"
+      },
+      "outputs": { "fragColor": "outputTex" }
+    }
+  ],
+  "textures": {
+    "global_points_trail": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f",
+      "_role": "PERSISTENT visual trail accumulation surface (rgb=deposited agent color, a from deposit). diffuse multiplies it by clamp(intensity/100) (persistence; no blur), copy blits it to the post-swap write buffer (ping-pong correction so HW blending is correct), deposit additively scatters agent colors into it (drawMode:'points', blend:true -> Blend One One, count='input' = stateSize*stateSize from xyzTex dims), blend composites it with the pipeline input. Reads its own prior 'global_' output so it persists frame-to-frame (runtime double-buffers/ping-pongs; reference 04 §10.2/§10.7). isStateSurface=true (suffix '_trail') -> end-of-frame bindings persist with NO swap (trail continues from last frame)."
+    },
+    "global_xyz": {
+      "format": "rgba32f",
+      "_external": true,
+      "_role": "PERSISTENT agent state-surface ([x, y, z/heading, alive]; for 2D systems xy in [0,1] with z near 0, for 3D attractors xyz roughly +/-40). Produced upstream by pointsEmit (sized stateSize x stateSize). READ-ONLY in pointsRender: the deposit VERTEX stage Loads pos.xyz (for the 2D/3D view transform) and pos.w (alive cull, pos.w >= 0.5). isStateSurface=true (suffix '_xyz')."
+    },
+    "global_rgba": {
+      "format": "rgba32f",
+      "_external": true,
+      "_role": "PERSISTENT agent state-surface ([r, g, b, a] agent color from pointsEmit). READ-ONLY in pointsRender: the deposit VERTEX stage Loads col and emits it as the point color (col.rgb, col.a). isStateSurface=true (suffix '_rgba')."
+    }
+  },
+  "feedback": {
+    "_comment": "Agent-consumer multi-pass effect with a POINTS scatter (drives a visual trail; hardest tier). State lives in PERSISTENT 'global_' surfaces. global_xyz/global_rgba (rgba32f) are agent state-surfaces created upstream by pointsEmit (sized stateSize x stateSize) and matched by isStateSurface (suffix '_xyz'/'_rgba'); pointsRender only READS them (deposit vertex stage). global_points_trail (rgba16f, full-res) is the visual trail feedback surface: diffuse multiplies by clamp(intensity/100) (program 'diffuse', no blur), copy blits it to the post-swap write buffer (program 'copy'), deposit additively scatters agent colors into it (drawMode:'points', blend:true resolves to Blend One One, count='input' = stateSize*stateSize derived from xyzTex dims), blend composites it with the input into outputTex. The deposit pass is drawn as DrawProcedural(Points, count); the vertex stage Loads agent state and emits one 1px point per alive, density-passing agent (clip from the 2D/3D view transform, no Y flip; D3D points = 1px matching reference gl_PointSize=1). No '_iteration' uniform; no repeat.",
+    "persistent": ["global_points_trail", "global_xyz", "global_rgba"],
+    "transient": [],
+    "stateSurfaces": ["global_points_trail", "global_xyz", "global_rgba"],
+    "scatter": { "pass": "deposit", "drawMode": "points", "count": "input", "countResolves": "stateSize*stateSize", "blend": ["one", "one"] }
+  }
+}

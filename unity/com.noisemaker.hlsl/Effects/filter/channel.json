@@ -1,0 +1,54 @@
+{
+  "name": "Channel",
+  "namespace": "filter",
+  "func": "channel",
+  "tags": ["color", "util"],
+  "description": "Channel isolation (r, g, b, or a)",
+  "paramAliases": {},
+  "globals": {
+    "channel": {
+      "type": "member",
+      "default": 0,
+      "uniform": "channel",
+      "choices": ["r", "g", "b", "a"]
+    },
+    "scale": {
+      "type": "float",
+      "default": 1.0,
+      "min": -10.0,
+      "max": 10.0,
+      "uniform": "scale"
+    },
+    "offset": {
+      "type": "float",
+      "default": 0.0,
+      "min": -10.0,
+      "max": 10.0,
+      "uniform": "offset"
+    }
+  },
+  "passes": [
+    {
+      "name": "main",
+      "program": "channel",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "channel": "channel",
+        "scale": "scale",
+        "offset": "offset"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

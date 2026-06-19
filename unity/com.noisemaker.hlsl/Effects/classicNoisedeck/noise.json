@@ -1,0 +1,239 @@
+{
+  "name": "Noise",
+  "namespace": "classicNoisedeck",
+  "func": "noise",
+  "tags": ["noise"],
+  "description": "Noise pattern generator",
+  "paramAliases": {
+    "noiseType": "type",
+    "loopAmp": "speed"
+  },
+  "globals": {
+    "type": {
+      "type": "int",
+      "default": 10,
+      "define": "NOISE_TYPE",
+      "choices": {
+        "constant": 0,
+        "linear": 1,
+        "hermite": 2,
+        "catmullRom3x3": 3,
+        "catmullRom4x4": 4,
+        "bSpline3x3": 5,
+        "bSpline4x4": 6,
+        "simplex": 10,
+        "sine": 11
+      }
+    },
+    "octaves": {
+      "type": "int",
+      "default": 2,
+      "uniform": "octaves",
+      "min": 1,
+      "max": 8
+    },
+    "xScale": {
+      "type": "float",
+      "default": 75,
+      "uniform": "xScale",
+      "min": 1,
+      "max": 100
+    },
+    "yScale": {
+      "type": "float",
+      "default": 75,
+      "uniform": "yScale",
+      "min": 1,
+      "max": 100
+    },
+    "ridges": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "ridges"
+    },
+    "wrap": {
+      "type": "boolean",
+      "default": true,
+      "uniform": "wrap"
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "uniform": "seed",
+      "min": 1,
+      "max": 100
+    },
+    "refractMode": {
+      "type": "int",
+      "default": 2,
+      "define": "REFRACT_MODE",
+      "choices": {
+        "color": 0,
+        "topology": 1,
+        "colorTopology": 2
+      }
+    },
+    "refractAmt": {
+      "type": "float",
+      "default": 0,
+      "uniform": "refractAmt",
+      "min": 0,
+      "max": 100
+    },
+    "loopOffset": {
+      "type": "int",
+      "default": 300,
+      "define": "LOOP_OFFSET",
+      "choices": {
+        "circle": 10,
+        "triangle": 20,
+        "diamond": 30,
+        "square": 40,
+        "pentagon": 50,
+        "hexagon": 60,
+        "heptagon": 70,
+        "octagon": 80,
+        "nonagon": 90,
+        "decagon": 100,
+        "hendecagon": 110,
+        "dodecagon": 120,
+        "horizontalScan": 200,
+        "verticalScan": 210,
+        "noise": 300,
+        "rings": 400,
+        "sine": 410
+      }
+    },
+    "loopScale": {
+      "type": "float",
+      "default": 75,
+      "uniform": "loopScale",
+      "min": 1,
+      "max": 100
+    },
+    "speed": {
+      "type": "float",
+      "default": 25,
+      "uniform": "speed",
+      "min": -100,
+      "max": 100,
+      "zero": 0
+    },
+    "kaleido": {
+      "type": "int",
+      "default": 1,
+      "uniform": "kaleido",
+      "min": 1,
+      "max": 32
+    },
+    "metric": {
+      "type": "int",
+      "default": 0,
+      "define": "METRIC",
+      "choices": {
+        "circle": 0,
+        "diamond": 1,
+        "hexagon": 2,
+        "octagon": 3,
+        "square": 4,
+        "triangle": 5
+      }
+    },
+    "paletteMode": {
+      "type": "int",
+      "default": 3,
+      "uniform": "paletteMode"
+    },
+    "hueRotation": {
+      "type": "float",
+      "default": 179,
+      "uniform": "hueRotation",
+      "min": 0,
+      "max": 360
+    },
+    "hueRange": {
+      "type": "float",
+      "default": 25,
+      "uniform": "hueRange",
+      "min": 0,
+      "max": 100
+    },
+    "colorMode": {
+      "type": "int",
+      "default": 6,
+      "define": "COLOR_MODE",
+      "choices": {
+        "mono": 0,
+        "linearRgb": 1,
+        "srgb": 2,
+        "oklab": 3,
+        "palette": 4,
+        "hsv": 6
+      }
+    },
+    "palette": {
+      "type": "palette",
+      "default": 2,
+      "uniform": "palette"
+    },
+    "cyclePalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "cyclePalette",
+      "choices": {
+        "off": 0,
+        "forward": 1,
+        "backward": -1
+      }
+    },
+    "rotatePalette": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotatePalette",
+      "min": 0,
+      "max": 100
+    },
+    "repeatPalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "repeatPalette",
+      "min": 1,
+      "max": 10
+    },
+    "paletteOffset": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteOffset"
+    },
+    "paletteAmp": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteAmp"
+    },
+    "paletteFreq": {
+      "type": "vec3",
+      "default": [1, 1, 1],
+      "uniform": "paletteFreq"
+    },
+    "palettePhase": {
+      "type": "vec3",
+      "default": [0.3, 0.2, 0.2],
+      "uniform": "palettePhase"
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "noise",
+      "inputs": {},
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {},
+      "blend": false
+    }
+  ],
+  "textures": {
+    "outputTex": { "width": "input", "height": "input", "format": "rgba16f" }
+  }
+}

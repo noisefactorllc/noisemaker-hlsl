@@ -1,0 +1,12 @@
+{
+    "name": "Noisemaker.Hlsl.Runtime",
+    "rootNamespace": "Noisemaker.Hlsl",
+    "references": [
+        "Noisemaker.Hlsl.Compiler"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

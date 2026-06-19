@@ -1,0 +1,57 @@
+{
+  "name": "Mesh Loader",
+  "namespace": "render",
+  "func": "meshLoader",
+  "tags": ["mesh", "geometry", "3D", "OBJ"],
+  "description": "Load mesh data from OBJ files into GPU textures.",
+  "paramAliases": {},
+  "externalMesh": "mesh0",
+  "builtinMeshes": {
+    "sphere": "share/meshes/sphere.obj",
+    "cube": "share/meshes/cube.obj",
+    "torus": "share/meshes/torus.obj",
+    "cylinder": "share/meshes/cylinder.obj",
+    "cone": "share/meshes/cone.obj",
+    "capsule": "share/meshes/capsule.obj",
+    "icosphere": "share/meshes/icosphere.obj"
+  },
+  "globals": {},
+  "uniformLayouts": {
+    "preview": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "tileOffset": { "slot": 0, "components": "zw" },
+      "fullResolution": { "slot": 1, "components": "xy" }
+    }
+  },
+  "passes": [
+    {
+      "name": "preview",
+      "program": "preview",
+      "kind": "fullscreen",
+      "inputs": {
+        "positionsTex": "global_mesh0_positions",
+        "normalsTex": "global_mesh0_normals"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      }
+    }
+  ],
+  "textures": {},
+  "meshSurfaces": {
+    "mesh0": {
+      "positions": "global_mesh0_positions",
+      "normals": "global_mesh0_normals",
+      "uvs": "global_mesh0_uvs",
+      "width": 256,
+      "height": 256,
+      "format": "rgba32f",
+      "is3D": false,
+      "_role": "STATIC mesh surface triplet (reference 04 §8). positions: xyz worldpos, w=valid flag. normals: xyz, w unused. uvs: uv, zw unused. Uploaded CPU-side by the runtime (uploadMeshData) from the OBJ named by externalMesh / builtinMeshes; NOT ping-ponged, NOT recreated on resize. meshLoader's preview pass SAMPLES global_mesh0_positions and global_mesh0_normals; downstream meshRender rasterizes the triplet via DrawProcedural over SV_VertexID."
+    }
+  },
+  "_notes": {
+    "comment": "Single fullscreen 'preview' pass that visualizes the mesh0 surface triplet (left half = positions remapped -1..1->0..1; right half = normals). No geometry/scatter/raymarch/volume-write pass: the actual mesh data upload is CPU-side (runtime uploadMeshData), driven by the demo UI loading an OBJ URL into the mesh0 surfaces. No scalar uniforms (definition.js globals = {}); only engine globals (resolution/tileOffset/fullResolution) are used, sampled UV = (fragCoord + tileOffset) / fullResolution per the WGSL. No MRT (single fragColor). No repeat. drawMode = fullscreen-triangle (default).",
+    "shaderGraph": "SKIPPED — mesh/3D tier, depends on a CPU-side mesh upload and the mesh0 surface-triplet binding; ships as a runtime-rendered Texture2D, no Shader Graph Custom Function wrapper."
+  }
+}

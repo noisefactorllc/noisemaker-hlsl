@@ -1,0 +1,246 @@
+{
+  "name": "Flow3D",
+  "namespace": "filter3d",
+  "func": "flow3d",
+  "tags": ["3d", "sim"],
+  "description": "3D agent-based flow field",
+  "paramAliases": {},
+  "outputGeo": "geoBuffer",
+  "outputTex3d": "global_flow3d_blended",
+  "globals": {
+    "volumeSize": {
+      "type": "int",
+      "default": 32,
+      "uniform": "volumeSize",
+      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
+      "ui": { "label": "volume size", "control": "dropdown" }
+    },
+    "behavior": {
+      "type": "int",
+      "default": 1,
+      "uniform": "BEHAVIOR",
+      "_define": "BEHAVIOR",
+      "_note": "Reference globals.behavior used a compile-time #define BEHAVIOR (7-way computeRotationBias dispatch, once per agent per frame). Per PORTING-GUIDE, ported as an int uniform branched at runtime with [branch] (same as the WGSL const-fold path; all variants kept). The runtime sets BEHAVIOR by reference name.",
+      "choices": {
+        "none": 0,
+        "obedient": 1,
+        "crosshatch": 2,
+        "unruly": 3,
+        "chaotic": 4,
+        "randomMix": 5,
+        "meandering": 10
+      },
+      "ui": { "label": "behavior", "control": "dropdown" }
+    },
+    "density": {
+      "type": "float",
+      "default": 20,
+      "uniform": "density",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "ui": { "label": "density", "control": "slider" }
+    },
+    "stride": {
+      "type": "float",
+      "default": 1,
+      "uniform": "stride",
+      "min": 0.1,
+      "max": 10,
+      "step": 0.1,
+      "ui": { "label": "stride", "control": "slider" }
+    },
+    "strideDeviation": {
+      "type": "float",
+      "default": 0.05,
+      "uniform": "strideDeviation",
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01,
+      "ui": { "label": "deviation", "control": "slider" }
+    },
+    "kink": {
+      "type": "float",
+      "default": 1,
+      "uniform": "kink",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "ui": { "label": "kink", "control": "slider" }
+    },
+    "intensity": {
+      "type": "float",
+      "default": 90,
+      "uniform": "intensity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "ui": { "label": "persistence", "control": "slider" }
+    },
+    "inputIntensity": {
+      "type": "float",
+      "default": 50,
+      "uniform": "inputIntensity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "ui": { "label": "input mix", "control": "slider" }
+    },
+    "lifetime": {
+      "type": "float",
+      "default": 30,
+      "uniform": "lifetime",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "ui": { "label": "lifetime", "control": "slider" }
+    }
+  },
+  "passes": [
+    {
+      "name": "agent",
+      "program": "agent",
+      "drawBuffers": 3,
+      "inputs": {
+        "stateTex1": "global_flow3d_state1",
+        "stateTex2": "global_flow3d_state2",
+        "stateTex3": "global_flow3d_state3",
+        "mixerTex": "inputTex3d",
+        "inputGeoTex": "inputGeo"
+      },
+      "uniforms": {
+        "density": "density",
+        "stride": "stride",
+        "strideDeviation": "strideDeviation",
+        "kink": "kink",
+        "lifetime": "lifetime",
+        "volumeSize": "volumeSize"
+      },
+      "outputs": {
+        "outState1": "global_flow3d_state1",
+        "outState2": "global_flow3d_state2",
+        "outState3": "global_flow3d_state3"
+      }
+    },
+    {
+      "name": "diffuse",
+      "program": "diffuse",
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+        "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" }
+      },
+      "inputs": { "sourceTex": "global_flow3d_trail" },
+      "uniforms": { "intensity": "intensity" },
+      "outputs": { "fragColor": "global_flow3d_trail" }
+    },
+    {
+      "name": "copy",
+      "program": "copy",
+      "_comment": "Copy decayed trail to write buffer before deposit so hardware blending lands correctly after ping-pong.",
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+        "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" }
+      },
+      "inputs": { "sourceTex": "global_flow3d_trail" },
+      "outputs": { "fragColor": "global_flow3d_trail" }
+    },
+    {
+      "name": "deposit",
+      "program": "deposit",
+      "drawMode": "points",
+      "count": 262144,
+      "blend": true,
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+        "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" }
+      },
+      "inputs": {
+        "stateTex1": "global_flow3d_state1",
+        "stateTex2": "global_flow3d_state2"
+      },
+      "uniforms": {
+        "density": "density",
+        "volumeSize": "volumeSize"
+      },
+      "outputs": { "fragColor": "global_flow3d_trail" }
+    },
+    {
+      "name": "blend",
+      "program": "blend",
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+        "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" }
+      },
+      "inputs": {
+        "mixerTex": "inputTex3d",
+        "trailTex": "global_flow3d_trail"
+      },
+      "uniforms": { "inputIntensity": "inputIntensity" },
+      "outputs": { "fragColor": "global_flow3d_blended" }
+    }
+  ],
+  "textures": {
+    "volumeCache": {
+      "width": { "param": "volumeSize", "default": 32 },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
+      "format": "rgba16f",
+      "is3D": true,
+      "_atlas": { "sliceSize": "volumeSize", "atlasWidth": "volumeSize", "atlasHeight": "volumeSize^2", "mapping": "atlasY = y_voxel + z_voxel*volumeSize" },
+      "_role": "Declared volume cache (pooled, default 32x1024 atlas = 32 slices of 32x32). Not referenced by flow3d's own passes; present for the 3D resource model."
+    },
+    "geoBuffer": {
+      "width": { "param": "volumeSize", "default": 32 },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024 },
+      "format": "rgba16f",
+      "is3D": true,
+      "_atlas": { "sliceSize": "volumeSize", "atlasWidth": "volumeSize", "atlasHeight": "volumeSize^2", "mapping": "atlasY = y_voxel + z_voxel*volumeSize" },
+      "_role": "outputGeo buffer (xyz=normal, w=depth). NOT written by flow3d; populated by a DOWNSTREAM render3d/renderLit3d raymarch that consumes the blended volume."
+    },
+    "global_flow3d_state1": {
+      "width": 512,
+      "height": 512,
+      "format": "rgba16f",
+      "_role": "PERSISTENT agent state-surface ([x, y, z, rotRand] — 3D voxel position in [0,volSize) + per-agent rotation random). Updated in place by the agent pass MRT (SV_Target0). The deposit vertex stage Loads x/y/z to scatter into the trail atlas. isStateSurface=true (name contains 'state') → end-of-frame bindings persist, no swap."
+    },
+    "global_flow3d_state2": {
+      "width": 512,
+      "height": 512,
+      "format": "rgba16f",
+      "_role": "PERSISTENT agent state-surface ([r, g, b, seed] — agent color + seed). Updated by the agent pass MRT (SV_Target1); rgb read by the deposit vertex stage as the scattered point color. isStateSurface=true."
+    },
+    "global_flow3d_state3": {
+      "width": 512,
+      "height": 512,
+      "format": "rgba16f",
+      "_role": "PERSISTENT agent state-surface ([age, initialized, theta, phi] — age, init flag, spherical heading angles). Updated by the agent pass MRT (SV_Target2). isStateSurface=true."
+    },
+    "global_flow3d_trail": {
+      "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" },
+      "format": "rgba16f",
+      "is3D": true,
+      "_atlas": { "sliceSize": "volumeSize", "atlasWidth": "volumeSize", "atlasHeight": "volumeSize^2", "mapping": "atlasY = y_voxel + z_voxel*volumeSize" },
+      "_role": "PERSISTENT trail-volume feedback surface (2D atlas, volumeSize x volumeSize^2). diffuse multiplies by persistence (intensity/100), copy blits it to the post-ping-pong write buffer, deposit additively scatters agent colors into it (drawMode:'points', blend:true → Blend One One, count=262144 fixed), blend reads it. Reads its own prior 'global_' output so it persists frame-to-frame (runtime double-buffers/ping-pongs; reference 04 §10.2/§10.7). NOT an isStateSurface (no _xyz/_vel/_rgba suffix, no 'state') but feedback read+write of the same key keeps it alive."
+    },
+    "global_flow3d_blended": {
+      "width": { "param": "volumeSize", "default": 32, "inputOverride": "inputTex3d" },
+      "height": { "param": "volumeSize", "power": 2, "default": 1024, "inputOverride": "inputTex3d" },
+      "format": "rgba16f",
+      "is3D": true,
+      "_atlas": { "sliceSize": "volumeSize", "atlasWidth": "volumeSize", "atlasHeight": "volumeSize^2", "mapping": "atlasY = y_voxel + z_voxel*volumeSize" },
+      "_role": "Output volume (outputTex3d). blend writes input-volume*inputIntensity + trail clamped to [0,1] here. Consumed downstream by render3d/renderLit3d (raymarch) or another 3D filter."
+    }
+  },
+  "feedback": {
+    "_comment": "3D / RENDER tier agent-based flow field (hardest tier: MRT agent state in 2D textures, points-scatter deposit into a 3D VOLUME ATLAS, feedback). 5 passes per frame: agent (program 'agent', fullscreen over the 512x512 state grid, MRT drawBuffers:3 → outState1/2/3), diffuse (program 'diffuse', fullscreen over the trail atlas, decays by intensity/100), copy (program 'copy', fullscreen blit of decayed trail to the post-swap write buffer), deposit (program 'deposit', drawMode:'points', count=262144 FIXED, blend:true → Blend One One; vertex stage Loads agent 3D position from state1, maps to atlas NDC (atlasY = y + floor(z)*volSize), scatters state2.rgb), blend (program 'blend', fullscreen over the atlas, writes input-volume*inputIntensity + trail → blended output volume). Volumes are PRIVATE 'global_' atlas surfaces sized (volumeSize) x (volumeSize^2), rgba16f (NOT the shared 64x4096 vol0..7). The atlas (u,v)->(x,y,z) mapping x=u, y=v%volSize, z=v/volSize is reproduced exactly in sampleVolume (manual 8-tap Load+lerp trilinear) and the deposit vertex stage. BEHAVIOR was a compile-time #define in the reference; ported as an int uniform branched at runtime. `time` (agent.wgsl binding 7) is the engine global normalized time. geoBuffer (outputGeo) is declared but written by a downstream render3d/renderLit3d raymarch, not here. The deposit pass is DrawProcedural(Points, 262144); its vertex stage Loads agent state (SM4.5); D3D points = 1px matching reference gl_PointSize=1. No '_iteration' uniform; no repeat.",
+    "persistent": ["global_flow3d_state1", "global_flow3d_state2", "global_flow3d_state3", "global_flow3d_trail", "global_flow3d_blended"],
+    "transient": [],
+    "stateSurfaces": ["global_flow3d_state1", "global_flow3d_state2", "global_flow3d_state3"],
+    "volumeAtlas": { "surfaces": ["global_flow3d_trail", "global_flow3d_blended", "volumeCache", "geoBuffer"], "atlasWidth": "volumeSize", "atlasHeight": "volumeSize^2", "mapping": "atlasY = y_voxel + z_voxel*volumeSize", "format": "rgba16f" },
+    "mrt": { "pass": "agent", "outputs": ["outState1", "outState2", "outState3"], "drawBuffers": 3 },
+    "scatter": { "pass": "deposit", "drawMode": "points", "count": 262144, "blend": ["one", "one"], "target": "global_flow3d_trail" },
+    "outputGeo": "geoBuffer",
+    "outputTex3d": "global_flow3d_blended"
+  },
+  "_shaderGraph": "SKIPPED — 3D / multi-pass / geometry (points-scatter) effect. Per PORTING-GUIDE it ships as a runtime-rendered Texture2D volume atlas, not a Shader Graph Custom Function node."
+}

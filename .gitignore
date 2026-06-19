@@ -1,0 +1,32 @@
+# Unity-generated (a consuming project's; never committed from the package)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.booproj
+*.pidb
+*.suo
+*.tmp
+*.DS_Store
+
+# Node tooling (tools/, parity/)
+node_modules/
+package-lock.json
+.npm/
+
+# Parity outputs (regenerate with the harness)
+parity/out/
+parity/golden/
+parity/**/*.png
+*.report.json
+
+# generated parity sweep/corpus outputs (regenerable via export-graph / batch-golden)
+parity/corpus-out/
+parity/out/

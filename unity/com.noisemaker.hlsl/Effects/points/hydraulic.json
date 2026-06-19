@@ -1,0 +1,115 @@
+{
+  "name": "Hydraulic",
+  "namespace": "points",
+  "func": "hydraulic",
+  "tags": ["sim"],
+  "description": "Hydraulic erosion flow simulation (gradient descent)",
+  "paramAliases": {},
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "globals": {
+    "stride": {
+      "type": "float",
+      "default": 10,
+      "uniform": "stride",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "ui": { "label": "stride", "control": "slider", "category": "agents" }
+    },
+    "quantize": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "quantize",
+      "ui": { "label": "quantize", "control": "checkbox", "category": "agents" }
+    },
+    "inverse": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "inverse",
+      "ui": { "label": "inverse", "control": "checkbox", "category": "agents" }
+    },
+    "inputWeight": {
+      "type": "float",
+      "default": 100,
+      "uniform": "inputWeight",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "ui": { "label": "input weight", "control": "slider", "category": "agents" }
+    }
+  },
+  "uniformLayouts": {
+    "agent": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "stride": { "slot": 0, "components": "w" },
+      "quantize": { "slot": 1, "components": "x" },
+      "inverse": { "slot": 1, "components": "y" },
+      "inputWeight": { "slot": 1, "components": "z" }
+    },
+    "passthrough": {
+      "resolution": { "slot": 0, "components": "xy" }
+    }
+  },
+  "passes": [
+    {
+      "name": "agent",
+      "program": "agent",
+      "drawBuffers": 3,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba",
+        "inputTex": "inputTex"
+      },
+      "uniforms": {
+        "stride": "stride",
+        "quantize": "quantize",
+        "inverse": "inverse",
+        "inputWeight": "inputWeight"
+      },
+      "outputs": {
+        "outXYZ": "global_xyz",
+        "outVel": "global_vel",
+        "outRGBA": "global_rgba"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      }
+    }
+  ],
+  "textures": {
+    "global_xyz": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT SHARED agent state, ALLOCATED & SEEDED by pointsEmit upstream (NOT by this effect — definition.js declares textures:{}). Layout [x, y, z, alive]: x,y normalized coords [0,1], w=1.0 alive flag. rgba32f full float; one texel == one agent (state texture is stateSize x stateSize). Read AND written by the agent pass (MRT outXYZ@SV_Target0); the runtime ping-pongs and persists it frame-to-frame (isStateSurface suffix _xyz)."
+    },
+    "global_vel": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT SHARED agent state, ALLOCATED & SEEDED by pointsEmit upstream. Layout [vx, vy, vz, seed]: velocity stored in NORMALIZED space (vx/resolution.x) for compatibility with physical()/pointsRender; w=per-agent seed (0 => first-spawn, initialized via hash2(agent_id+99999)). rgba32f full float. Read AND written by the agent pass (MRT outVel@SV_Target1); ping-ponged and persisted frame-to-frame (isStateSurface suffix _vel)."
+    },
+    "global_rgba": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT SHARED agent state, ALLOCATED & SEEDED by pointsEmit upstream. Layout [r, g, b, a] agent color, passed through unchanged by hydraulic. rgba32f full float. Read AND written by the agent pass (MRT outRGBA@SV_Target2); ping-ponged and persisted frame-to-frame (isStateSurface suffix _rgba)."
+    }
+  },
+  "feedback": {
+    "_comment": "Agent-update middleware (Common Agent Architecture). State lives in three PERSISTENT 'global_' state surfaces global_xyz / global_vel / global_rgba that are OWNED & SEEDED by pointsEmit upstream in the chain (pointsEmit().hydraulic().pointsRender()). This effect declares NO local textures (definition.js textures:{}). The 'agent' pass is fullscreen over the state texture (one texel == one agent), reads all three state surfaces + inputTex, and writes NEW state to all three via MRT (drawBuffers:3, outXYZ@SV_Target0 / outVel@SV_Target1 / outRGBA@SV_Target2). Inputs == outputs (same global_ keys), so the runtime ping-pongs each per write (ref 04 §10.2/§10.7) and they PERSIST frame-to-frame (isStateSurface: suffix _xyz/_vel/_rgba). The 'passthrough' pass is a fullscreen copy of inputTex to outputTex for 2D chain continuity. NO deposit/scatter pass (no drawMode:'points', no count/countUniform) — the points-scatter deposit lives in the separate pointsRender effect, not here. No 'repeat:' passes (no _iteration uniform). State surfaces are rgba32f (full float).",
+    "persistent": ["global_xyz", "global_vel", "global_rgba"],
+    "transient": [],
+    "ownedByUpstream": ["global_xyz", "global_vel", "global_rgba"],
+    "mrt": true,
+    "mrtPass": "agent",
+    "mrtTargets": { "outXYZ": 0, "outVel": 1, "outRGBA": 2 },
+    "drawMode": null,
+    "count": null,
+    "countUniform": null
+  }
+}

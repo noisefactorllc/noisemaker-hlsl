@@ -1,0 +1,49 @@
+{
+  "name": "Vignette",
+  "namespace": "filter",
+  "func": "vignette",
+  "tags": ["lens"],
+  "description": "Radial vignette darkening edges",
+  "paramAliases": {},
+  "globals": {
+    "brightness": {
+      "type": "float",
+      "default": 0,
+      "uniform": "vignetteBrightness",
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    },
+    "alpha": {
+      "type": "float",
+      "default": 1,
+      "uniform": "alpha",
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "vignette",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "vignetteBrightness": "brightness",
+        "alpha": "alpha"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

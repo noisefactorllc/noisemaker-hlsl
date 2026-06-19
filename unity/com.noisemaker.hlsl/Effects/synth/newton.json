@@ -1,0 +1,148 @@
+{
+  "name": "Newton",
+  "namespace": "synth",
+  "func": "newton",
+  "tags": ["fractal"],
+  "description": "Newton fractal explorer with deep zoom",
+  "paramAliases": {},
+  "globals": {
+    "poi": {
+      "type": "int",
+      "default": 5,
+      "uniform": "poi",
+      "choices": {
+        "manual": 0,
+        "triplePoint3": 1,
+        "spiralJunction3": 2,
+        "starCenter5": 3,
+        "pentaSpiral5": 4,
+        "hexWeb6": 5,
+        "octoFlower8": 6
+      }
+    },
+    "outputMode": {
+      "type": "int",
+      "default": 2,
+      "uniform": "outputMode",
+      "choices": {
+        "iteration": 0,
+        "rootIndex": 1,
+        "blended": 2
+      }
+    },
+    "iterations": {
+      "type": "int",
+      "default": 100,
+      "uniform": "iterations",
+      "min": 10,
+      "max": 500
+    },
+    "degree": {
+      "type": "int",
+      "default": 3,
+      "uniform": "degree",
+      "min": 3,
+      "max": 8
+    },
+    "relaxation": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "relaxation",
+      "min": 0.5,
+      "max": 2.0
+    },
+    "tolerance": {
+      "type": "float",
+      "default": 0.001,
+      "uniform": "tolerance",
+      "min": 0.0001,
+      "max": 0.01
+    },
+    "centerX": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "centerHiX",
+      "min": -3,
+      "max": 3
+    },
+    "centerY": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "centerHiY",
+      "min": -3,
+      "max": 3
+    },
+    "rotation": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotation",
+      "min": -180,
+      "max": 180
+    },
+    "zoomSpeed": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "zoomSpeed",
+      "min": 0,
+      "max": 5
+    },
+    "zoomDepth": {
+      "type": "float",
+      "default": 0,
+      "uniform": "zoomDepth",
+      "min": 0,
+      "max": 14
+    },
+    "degreeSpeed": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "degreeSpeed",
+      "min": 0.0,
+      "max": 1.0
+    },
+    "degreeRange": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "degreeRange",
+      "min": 0.0,
+      "max": 3.0
+    },
+    "relaxSpeed": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "relaxSpeed",
+      "min": 0.0,
+      "max": 1.0
+    },
+    "relaxRange": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "relaxRange",
+      "min": 0.0,
+      "max": 0.5
+    },
+    "invert": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "invert"
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "newton",
+      "inputs": {},
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {}
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

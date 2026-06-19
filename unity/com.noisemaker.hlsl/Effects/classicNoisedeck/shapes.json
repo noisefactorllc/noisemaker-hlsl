@@ -1,0 +1,188 @@
+{
+  "name": "Shapes",
+  "namespace": "classicNoisedeck",
+  "func": "shapes",
+  "tags": ["geometric"],
+  "description": "Interference patterns from geometric shapes",
+  "paramAliases": { "loopAAmp": "speedA", "loopBAmp": "speedB" },
+  "globals": {
+    "loopAOffset": {
+      "type": "int",
+      "default": 40,
+      "uniform": "loopAOffset",
+      "define": "LOOP_A_OFFSET",
+      "choices": {
+        "circle": 10,
+        "triangle": 20,
+        "diamond": 30,
+        "square": 40,
+        "pentagon": 50,
+        "hexagon": 60,
+        "heptagon": 70,
+        "octagon": 80,
+        "nonagon": 90,
+        "decagon": 100,
+        "hendecagon": 110,
+        "dodecagon": 120,
+        "horizontalScan": 200,
+        "verticalScan": 210,
+        "noiseConstant": 300,
+        "noiseLinear": 310,
+        "noiseHermite": 320,
+        "noiseCatmullRom3x3": 330,
+        "noiseCatmullRom4x4": 340,
+        "noiseBSpline3x3": 350,
+        "noiseBSpline4x4": 360,
+        "noiseSimplex": 370,
+        "noiseSine": 380,
+        "rings": 400,
+        "sine": 410
+      }
+    },
+    "loopBOffset": {
+      "type": "int",
+      "default": 30,
+      "uniform": "loopBOffset",
+      "define": "LOOP_B_OFFSET",
+      "choices": {
+        "circle": 10,
+        "triangle": 20,
+        "diamond": 30,
+        "square": 40,
+        "pentagon": 50,
+        "hexagon": 60,
+        "heptagon": 70,
+        "octagon": 80,
+        "nonagon": 90,
+        "decagon": 100,
+        "hendecagon": 110,
+        "dodecagon": 120,
+        "horizontalScan": 200,
+        "verticalScan": 210,
+        "noiseConstant": 300,
+        "noiseLinear": 310,
+        "noiseHermite": 320,
+        "noiseCatmullRom3x3": 330,
+        "noiseCatmullRom4x4": 340,
+        "noiseBSpline3x3": 350,
+        "noiseBSpline4x4": 360,
+        "noiseSimplex": 370,
+        "noiseSine": 380,
+        "rings": 400,
+        "sine": 410
+      }
+    },
+    "loopAScale": {
+      "type": "float",
+      "default": 1,
+      "uniform": "loopAScale",
+      "min": 1,
+      "max": 100
+    },
+    "loopBScale": {
+      "type": "float",
+      "default": 1,
+      "uniform": "loopBScale",
+      "min": 1,
+      "max": 100
+    },
+    "speedA": {
+      "type": "float",
+      "default": 50,
+      "uniform": "speedA",
+      "min": -100,
+      "max": 100
+    },
+    "speedB": {
+      "type": "float",
+      "default": 50,
+      "uniform": "speedB",
+      "min": -100,
+      "max": 100
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "uniform": "seed",
+      "min": 1,
+      "max": 100
+    },
+    "wrap": {
+      "type": "boolean",
+      "default": true,
+      "uniform": "wrap"
+    },
+    "palette": {
+      "type": "palette",
+      "default": 46,
+      "uniform": "palette"
+    },
+    "paletteMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "paletteMode"
+    },
+    "paletteOffset": {
+      "type": "vec3",
+      "default": [0.83, 0.6, 0.63],
+      "uniform": "paletteOffset"
+    },
+    "paletteAmp": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteAmp"
+    },
+    "paletteFreq": {
+      "type": "vec3",
+      "default": [1, 1, 1],
+      "uniform": "paletteFreq"
+    },
+    "palettePhase": {
+      "type": "vec3",
+      "default": [0.3, 0.1, 0],
+      "uniform": "palettePhase"
+    },
+    "cyclePalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "cyclePalette",
+      "choices": {
+        "off": 0,
+        "forward": 1,
+        "backward": -1
+      }
+    },
+    "rotatePalette": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotatePalette",
+      "min": 0,
+      "max": 100
+    },
+    "repeatPalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "repeatPalette",
+      "min": 1,
+      "max": 10
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "shapes",
+      "inputs": {},
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {}
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

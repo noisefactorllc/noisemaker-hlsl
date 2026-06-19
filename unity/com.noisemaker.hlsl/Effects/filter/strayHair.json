@@ -1,0 +1,62 @@
+{
+  "name": "Stray Hair",
+  "namespace": "filter",
+  "func": "strayHair",
+  "tags": ["noise"],
+  "description": "Stray hair overlay",
+  "paramAliases": {},
+  "globals": {
+    "density": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "uniform": "density"
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "uniform": "seed"
+    },
+    "alpha": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "uniform": "alpha"
+    }
+  },
+  "passes": [
+    {
+      "name": "blend",
+      "program": "strayHairBlend",
+      "inputs": {
+        "inputTex": "inputTex",
+        "overlayTex": "overlayTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "alpha": 0.5
+      }
+    }
+  ],
+  "textures": {
+    "overlayTex": {
+      "width": "screen",
+      "height": "screen",
+      "format": "rgba8"
+    },
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

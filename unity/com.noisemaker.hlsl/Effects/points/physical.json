@@ -1,0 +1,140 @@
+{
+  "name": "Physical",
+  "namespace": "points",
+  "func": "physical",
+  "tags": ["sim"],
+  "description": "Physics-based particle simulation with wind and gravity forces",
+  "paramAliases": {},
+  "globals": {
+    "stateSize": {
+      "type": "int",
+      "default": 256,
+      "uniform": "stateSize",
+      "ui": { "control": false },
+      "_role": "Sizing-only (state texture edge). Inherited from pointsEmit; NOT read by the shader (the agent shader derives state dims from the bound state texture). Used by resolveDimension via the {param:'stateSize'} state-texture specs below."
+    },
+    "gravity": {
+      "type": "float",
+      "default": 0.05,
+      "uniform": "gravity",
+      "min": -2,
+      "max": 2,
+      "step": 0.01,
+      "ui": { "label": "gravity", "control": "slider", "category": "physics" }
+    },
+    "wind": {
+      "type": "float",
+      "default": 0,
+      "uniform": "wind",
+      "min": -2,
+      "max": 2,
+      "step": 0.01,
+      "ui": { "label": "wind", "control": "slider", "category": "physics" }
+    },
+    "energy": {
+      "type": "float",
+      "default": 0.5,
+      "uniform": "energy",
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "ui": { "label": "energy", "control": "slider", "category": "physics" }
+    },
+    "drag": {
+      "type": "float",
+      "default": 0.15,
+      "uniform": "drag",
+      "min": 0,
+      "max": 0.2,
+      "step": 0.005,
+      "ui": { "label": "drag", "control": "slider", "category": "physics" }
+    },
+    "deviation": {
+      "type": "float",
+      "default": 0.75,
+      "uniform": "deviation",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "ui": { "label": "deviation", "control": "slider", "category": "physics" }
+    },
+    "wander": {
+      "type": "float",
+      "default": 0.25,
+      "uniform": "wander",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "ui": { "label": "wander", "control": "slider", "category": "physics" }
+    }
+  },
+  "uniformLayouts": {
+    "agent": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "time": { "slot": 0, "components": "z" },
+      "gravity": { "slot": 0, "components": "w" },
+      "wind": { "slot": 1, "components": "x" },
+      "energy": { "slot": 1, "components": "y" },
+      "drag": { "slot": 1, "components": "z" },
+      "deviation": { "slot": 1, "components": "w" },
+      "wander": { "slot": 2, "components": "x" }
+    },
+    "passthrough": {
+      "resolution": { "slot": 0, "components": "xy" }
+    }
+  },
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "passes": [
+    {
+      "name": "agent",
+      "program": "agent",
+      "drawBuffers": 3,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba"
+      },
+      "uniforms": {
+        "gravity": "gravity",
+        "wind": "wind",
+        "energy": "energy",
+        "drag": "drag",
+        "deviation": "deviation",
+        "wander": "wander"
+      },
+      "outputs": {
+        "color": "global_xyz",
+        "color1": "global_vel",
+        "color2": "global_rgba"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "color": "outputTex"
+      }
+    }
+  ],
+  "textures": {},
+  "feedback": {
+    "_comment": "Agent-based middleware in a particle pipeline (pointsEmit -> physical -> pointsRender). Physical does NOT create, deposit, or scatter agents -- it has NO drawMode 'points' pass, NO diffuse pass, NO trail texture. State lives in PERSISTENT 'global_'-prefixed textures created by pointsEmit and SHARED across the pipeline (definition.js textures:{} is EMPTY -- physical does not own them). The runtime scopes them per particle pipeline (global_xyz_<pipelineId>, etc.) and treats them as state surfaces: isStateSurface matches the _xyz/_vel/_rgba suffix, so they persist frame-to-frame WITHOUT an end-of-frame swap (ref 04 §10.7); within-frame writes ping-pong (§10.2). The agent pass is MRT (drawBuffers:3) writing all three in one pass: global_xyz=[x,y,z,alive], global_vel=[vx,vy,vz,seed], global_rgba=[r,g,b,a]. Out-of-bounds agents are flagged alive=0 (pointsEmit respawns them next frame). State format MUST be rgba32f (full float) per reference. No drawMode/count/countUniform/blend/repeat anywhere in this effect. The agent pass renders into the stateSize texture but the agent body never reads `resolution` (the WGSL Uniforms.resolution member is unused), so no resolution hazard.",
+    "persistent": ["global_xyz", "global_vel", "global_rgba"],
+    "transient": [],
+    "ownedByEffect": false,
+    "createdBy": "pointsEmit",
+    "stateFormat": "rgba32f",
+    "stateTextureSpecs": {
+      "global_xyz": { "width": { "param": "stateSize" }, "height": { "param": "stateSize" }, "format": "rgba32f" },
+      "global_vel": { "width": { "param": "stateSize" }, "height": { "param": "stateSize" }, "format": "rgba32f" },
+      "global_rgba": { "width": { "param": "stateSize" }, "height": { "param": "stateSize" }, "format": "rgba32f" }
+    },
+    "mrt": true,
+    "deposit": false
+  }
+}

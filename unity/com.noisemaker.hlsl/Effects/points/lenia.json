@@ -1,0 +1,191 @@
+{
+  "name": "Lenia",
+  "namespace": "points",
+  "func": "lenia",
+  "tags": ["sim"],
+  "description": "Particle Lenia artificial life simulation",
+  "paramAliases": {},
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "globals": {
+    "muK": {
+      "type": "float",
+      "default": 25.0,
+      "uniform": "muK",
+      "min": 1.0,
+      "max": 30.0,
+      "step": 0.5,
+      "ui": { "label": "kernel μ", "control": "slider", "category": "kernel" }
+    },
+    "sigmaK": {
+      "type": "float",
+      "default": 5.0,
+      "uniform": "sigmaK",
+      "min": 0.1,
+      "max": 10.0,
+      "step": 0.1,
+      "ui": { "label": "kernel σ", "control": "slider", "category": "kernel" }
+    },
+    "muG": {
+      "type": "float",
+      "default": 0.25,
+      "uniform": "muG",
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.01,
+      "ui": { "label": "growth μ", "control": "slider", "category": "growth" }
+    },
+    "sigmaG": {
+      "type": "float",
+      "default": 0.15,
+      "uniform": "sigmaG",
+      "min": 0.01,
+      "max": 0.5,
+      "step": 0.01,
+      "ui": { "label": "growth σ", "control": "slider", "category": "growth" }
+    },
+    "repulsion": {
+      "type": "float",
+      "default": 0.5,
+      "uniform": "repulsion",
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "ui": { "label": "repulsion", "control": "slider", "category": "motion" }
+    },
+    "dt": {
+      "type": "float",
+      "default": 0.25,
+      "uniform": "dt",
+      "min": 0.01,
+      "max": 0.5,
+      "step": 0.01,
+      "ui": { "label": "time step", "control": "slider", "category": "motion" }
+    },
+    "searchRadius": {
+      "type": "float",
+      "default": 25.0,
+      "uniform": "searchRadius",
+      "min": 5.0,
+      "max": 40.0,
+      "step": 1.0,
+      "ui": { "label": "search radius", "control": "slider", "category": "kernel" }
+    },
+    "depositAmount": {
+      "type": "float",
+      "default": 3.6,
+      "uniform": "depositAmount",
+      "min": 0.1,
+      "max": 5.0,
+      "step": 0.1,
+      "ui": { "label": "deposit", "control": "slider", "category": "kernel" }
+    }
+  },
+  "uniformLayouts": {
+    "deposit": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "depositAmount": { "slot": 0, "components": "z" }
+    },
+    "convolve": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "muK": { "slot": 0, "components": "z" },
+      "sigmaK": { "slot": 0, "components": "w" },
+      "searchRadius": { "slot": 1, "components": "x" }
+    },
+    "agentField": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "muG": { "slot": 0, "components": "z" },
+      "sigmaG": { "slot": 0, "components": "w" },
+      "repulsion": { "slot": 1, "components": "x" },
+      "dt": { "slot": 1, "components": "y" }
+    },
+    "clear": {
+      "resolution": { "slot": 0, "components": "xy" }
+    },
+    "passthrough": {}
+  },
+  "passes": [
+    {
+      "name": "clear",
+      "program": "clear",
+      "inputs": {},
+      "outputs": { "color": "global_lenia_density" }
+    },
+    {
+      "name": "deposit",
+      "program": "deposit",
+      "drawMode": "points",
+      "countUniform": "stateSize",
+      "blend": true,
+      "inputs": { "xyzTex": "global_xyz" },
+      "uniforms": { "depositAmount": "depositAmount" },
+      "outputs": { "color": "global_lenia_density" }
+    },
+    {
+      "name": "convolve",
+      "program": "convolve",
+      "inputs": { "densityTex": "global_lenia_density" },
+      "uniforms": { "muK": "muK", "sigmaK": "sigmaK", "searchRadius": "searchRadius" },
+      "outputs": { "color": "global_lenia_field" }
+    },
+    {
+      "name": "agent",
+      "program": "agentField",
+      "drawBuffers": 3,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba",
+        "fieldTex": "global_lenia_field"
+      },
+      "uniforms": { "muG": "muG", "sigmaG": "sigmaG", "repulsion": "repulsion", "dt": "dt" },
+      "outputs": {
+        "color": "global_xyz",
+        "color1": "global_vel",
+        "color2": "global_rgba"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": { "inputTex": "inputTex" },
+      "outputs": { "color": "outputTex" }
+    }
+  ],
+  "textures": {
+    "global_xyz": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT agent state: [x, y, z, alive_flag], x,y normalized [0,1]. Double-buffered; isStateSurface (name ends _xyz) → persisted (NOT swapped) end-of-frame so the sim continues from the last buffer. Read by deposit (VS Load) + agentField (Load); rewritten by agentField via MRT SV_Target0. Created elsewhere (pointsEmit); rgba32f full-float per reference state-texture rule.",
+      "_note": "Sizing comes from the particle pipeline stateSize (set by pointsEmit), not this effect. NOT a private texture of lenia."
+    },
+    "global_vel": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT agent state: [vx, vy, age, seed]. Double-buffered; isStateSurface (name ends _vel) → persisted end-of-frame. Read by agentField (Load); rewritten by agentField via MRT SV_Target1. Created by pointsEmit."
+    },
+    "global_rgba": {
+      "format": "rgba32f",
+      "_role": "PERSISTENT agent state: [r, g, b, a] agent color. Double-buffered; isStateSurface (name ends _rgba) → persisted end-of-frame. Read by agentField (Load); rewritten unchanged by agentField via MRT SV_Target2. Created by pointsEmit."
+    },
+    "global_lenia_density": {
+      "width": "50%",
+      "height": "50%",
+      "format": "rgba16f",
+      "_role": "TRANSIENT private accumulation (recomputed each frame): r=summed agent deposits. Cleared (clear), scattered into additively (deposit, Blend One One), read by convolve. Half-resolution. Double-buffered global surface but NOT isStateSurface (no _xyz/_vel/_rgba/_trail/state) → swapped (not persisted)."
+    },
+    "global_lenia_field": {
+      "width": "50%",
+      "height": "50%",
+      "format": "rgba16f",
+      "_role": "TRANSIENT private field (recomputed each frame): r=convolved U field. Written by convolve, sampled by agentField. Half-resolution."
+    }
+  },
+  "feedback": {
+    "_comment": "Agent / multi-pass / MRT / points-scatter sim. PERSISTENT state lives in three 'global_' particle surfaces global_xyz/global_vel/global_rgba (created by an upstream pointsEmit, sized by stateSize). They are isStateSurface (names end _xyz/_vel/_rgba) → end-of-frame the runtime PERSISTS their final read/write bindings (no swap, ref 04 §10.7) so the simulation carries state across frames. The agentField pass reads all three (textureLoad) + the field and rewrites all three via MRT (SV_Target0/1/2 = outXYZ/outVel/outRGBA) — in-place feedback (within-frame ping-pong, §10.2). The two private textures global_lenia_density and global_lenia_field are TRANSIENT (recomputed each frame: clear → deposit → convolve → sample); they are double-buffered globals but NOT state surfaces, so they swap rather than persist. The deposit pass uses drawMode:'points' with count = stateSize*stateSize (one DrawProcedural Points vertex per agent texel; vertex-stage reads global_xyz via SV_VertexID) and additive Blend One One. No '_iteration' uniform is injected; no repeat. MRT true (3 attachments on agentField).",
+    "persistent": ["global_xyz", "global_vel", "global_rgba"],
+    "transient": ["global_lenia_density", "global_lenia_field"],
+    "mrt": true,
+    "mrtPass": "agentField",
+    "scatter": { "pass": "deposit", "drawMode": "points", "count": "stateSize*stateSize", "blend": "One One" }
+  }
+}

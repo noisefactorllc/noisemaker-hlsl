@@ -1,0 +1,70 @@
+{
+  "name": "Pinch",
+  "namespace": "filter",
+  "func": "pinch",
+  "tags": ["distort"],
+  "description": "Pinch distortion toward center",
+  "paramAliases": {},
+  "globals": {
+    "strength": {
+      "type": "float",
+      "default": 75,
+      "uniform": "strength",
+      "min": 0,
+      "max": 100
+    },
+    "aspectLens": {
+      "type": "boolean",
+      "default": true,
+      "uniform": "aspectLens"
+    },
+    "wrap": {
+      "type": "int",
+      "default": 0,
+      "uniform": "wrap",
+      "choices": {
+        "mirror": 0,
+        "repeat": 1,
+        "clamp": 2
+      }
+    },
+    "rotation": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotation",
+      "min": -180,
+      "max": 180
+    },
+    "antialias": {
+      "type": "boolean",
+      "default": true,
+      "uniform": "antialias"
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "pinch",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "strength": "strength",
+        "aspectLens": "aspectLens",
+        "wrap": "wrap",
+        "rotation": "rotation",
+        "antialias": "antialias"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

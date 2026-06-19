@@ -1,0 +1,185 @@
+{
+  "name": "ShapeMixer",
+  "namespace": "classicNoisedeck",
+  "func": "shapeMixer",
+  "tags": ["blend", "geometric"],
+  "description": "Shape-based mixing",
+  "paramAliases": {},
+  "globals": {
+    "tex": {
+      "type": "surface",
+      "default": "none"
+    },
+    "blendMode": {
+      "type": "int",
+      "default": 2,
+      "uniform": "blendMode",
+      "choices": {
+        "add": 0,
+        "divide": 1,
+        "max": 2,
+        "min": 3,
+        "mix": 4,
+        "mod": 5,
+        "multiply": 6,
+        "reflect": 7,
+        "refract": 8,
+        "subtract": 9
+      }
+    },
+    "loopOffset": {
+      "type": "int",
+      "default": 10,
+      "define": "LOOP_OFFSET",
+      "choices": {
+        "none": 0,
+        "circle": 10,
+        "triangle": 20,
+        "diamond": 30,
+        "square": 40,
+        "pentagon": 50,
+        "hexagon": 60,
+        "heptagon": 70,
+        "octagon": 80,
+        "horizontalScan": 200,
+        "verticalScan": 210,
+        "noiseConstant": 300,
+        "noiseLinear": 310,
+        "noiseHermite": 320,
+        "noiseBSpline3x3": 350,
+        "noiseSimplex": 370,
+        "noiseSine": 380,
+        "rings": 400,
+        "sine": 410
+      }
+    },
+    "loopScale": {
+      "type": "float",
+      "default": 80,
+      "uniform": "loopScale",
+      "min": 1,
+      "max": 100
+    },
+    "wrap": {
+      "type": "boolean",
+      "default": true,
+      "uniform": "wrap"
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "uniform": "seed",
+      "min": 1,
+      "max": 100
+    },
+    "animate": {
+      "type": "int",
+      "default": 1,
+      "uniform": "animate",
+      "choices": {
+        "off": 0,
+        "forward": 1,
+        "backward": -1
+      }
+    },
+    "palette": {
+      "type": "int",
+      "default": 41,
+      "uniform": "palette"
+    },
+    "paletteMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "paletteMode"
+    },
+    "paletteOffset": {
+      "type": "vec3",
+      "default": [0.83, 0.6, 0.63],
+      "uniform": "paletteOffset"
+    },
+    "paletteAmp": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteAmp"
+    },
+    "paletteFreq": {
+      "type": "vec3",
+      "default": [1, 1, 1],
+      "uniform": "paletteFreq"
+    },
+    "palettePhase": {
+      "type": "vec3",
+      "default": [0.3, 0.1, 0],
+      "uniform": "palettePhase"
+    },
+    "cyclePalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "cyclePalette",
+      "choices": {
+        "off": 0,
+        "forward": 1,
+        "backward": -1
+      }
+    },
+    "rotatePalette": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotatePalette",
+      "min": 0,
+      "max": 100
+    },
+    "repeatPalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "repeatPalette",
+      "min": 1,
+      "max": 10
+    },
+    "levels": {
+      "type": "int",
+      "default": 0,
+      "uniform": "levels",
+      "min": 0,
+      "max": 32
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "shapeMixer",
+      "inputs": {
+        "inputTex": "inputTex",
+        "tex": "tex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "blendMode": "blendMode",
+        "LOOP_OFFSET": "loopOffset",
+        "loopScale": "loopScale",
+        "wrap": "wrap",
+        "seed": "seed",
+        "animate": "animate",
+        "palette": "palette",
+        "paletteMode": "paletteMode",
+        "paletteOffset": "paletteOffset",
+        "paletteAmp": "paletteAmp",
+        "paletteFreq": "paletteFreq",
+        "palettePhase": "palettePhase",
+        "cyclePalette": "cyclePalette",
+        "rotatePalette": "rotatePalette",
+        "repeatPalette": "repeatPalette",
+        "levels": "levels"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

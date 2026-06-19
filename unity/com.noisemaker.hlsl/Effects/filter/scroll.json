@@ -1,0 +1,74 @@
+{
+  "name": "Scroll",
+  "namespace": "filter",
+  "func": "scroll",
+  "tags": ["transform"],
+  "description": "Scrolling offset animation",
+  "paramAliases": {},
+  "globals": {
+    "x": {
+      "type": "float",
+      "default": 0,
+      "uniform": "x",
+      "min": -10,
+      "max": 10
+    },
+    "y": {
+      "type": "float",
+      "default": 0,
+      "uniform": "y",
+      "min": -10,
+      "max": 10
+    },
+    "speedX": {
+      "type": "float",
+      "default": 1,
+      "uniform": "speedX",
+      "min": -10,
+      "max": 10
+    },
+    "speedY": {
+      "type": "float",
+      "default": 1,
+      "uniform": "speedY",
+      "min": -10,
+      "max": 10
+    },
+    "wrap": {
+      "type": "int",
+      "default": 1,
+      "uniform": "wrap",
+      "choices": {
+        "mirror": 0,
+        "repeat": 1,
+        "clamp": 2
+      }
+    }
+  },
+  "passes": [
+    {
+      "name": "main",
+      "program": "scroll",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "color": "outputTex"
+      },
+      "uniforms": {
+        "x": "x",
+        "y": "y",
+        "speedX": "speedX",
+        "speedY": "speedY",
+        "wrap": "wrap"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

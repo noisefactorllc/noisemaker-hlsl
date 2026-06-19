@@ -1,0 +1,156 @@
+{
+  "name": "Shape3D",
+  "namespace": "synth3d",
+  "func": "shape3d",
+  "tags": ["3d", "geometric"],
+  "description": "3D polyhedral shape generator",
+  "paramAliases": {},
+  "defaultProgram": "search synth3d, filter3d, render\n\nshape3d(speedA: -2, speedB: 2)\n.render3d(threshold: 0.75)\n.write(o0)",
+  "globals": {
+    "volumeSize": {
+      "type": "int",
+      "default": 64,
+      "uniform": "volumeSize",
+      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
+      "randChoices": [16, 32, 64],
+      "ui": { "label": "volume size", "control": "dropdown" }
+    },
+    "colorMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "colorMode",
+      "choices": { "mono": 0, "rgb": 1 },
+      "ui": { "label": "color mode", "control": "dropdown" }
+    },
+    "loopAOffset": {
+      "type": "int",
+      "default": 40,
+      "uniform": "loopAOffset",
+      "choices": {
+        "Platonic Solids:": null,
+        "tetrahedron": 10,
+        "cube": 20,
+        "octahedron": 30,
+        "dodecahedron": 40,
+        "icosahedron": 50,
+        "Other Primitives:": null,
+        "sphere": 100,
+        "torus": 110,
+        "cylinder": 120,
+        "cone": 130,
+        "capsule": 140
+      },
+      "ui": { "label": "loop a", "control": "dropdown" }
+    },
+    "loopBOffset": {
+      "type": "int",
+      "default": 30,
+      "uniform": "loopBOffset",
+      "choices": {
+        "Platonic Solids:": null,
+        "tetrahedron": 10,
+        "cube": 20,
+        "octahedron": 30,
+        "dodecahedron": 40,
+        "icosahedron": 50,
+        "Other Primitives:": null,
+        "sphere": 100,
+        "torus": 110,
+        "cylinder": 120,
+        "cone": 130,
+        "capsule": 140
+      },
+      "ui": { "label": "loop b", "control": "dropdown" }
+    },
+    "loopAScale": {
+      "type": "float",
+      "default": 1,
+      "uniform": "loopAScale",
+      "min": 1,
+      "max": 100,
+      "ui": { "label": "a scale", "control": "slider" }
+    },
+    "loopBScale": {
+      "type": "float",
+      "default": 1,
+      "uniform": "loopBScale",
+      "min": 1,
+      "max": 100,
+      "ui": { "label": "b scale", "control": "slider" }
+    },
+    "speedA": {
+      "type": "int",
+      "default": 1,
+      "uniform": "speedA",
+      "min": -5,
+      "max": 5,
+      "zero": 0,
+      "ui": { "label": "speed a", "control": "slider" }
+    },
+    "speedB": {
+      "type": "int",
+      "default": 1,
+      "uniform": "speedB",
+      "min": -5,
+      "max": 5,
+      "zero": 0,
+      "ui": { "label": "speed b", "control": "slider" }
+    }
+  },
+  "uniformLayouts": {
+    "precompute": {
+      "loopAOffset": { "uniform": "loopAOffset" },
+      "loopBOffset": { "uniform": "loopBOffset" },
+      "loopAScale": { "uniform": "loopAScale" },
+      "loopBScale": { "uniform": "loopBScale" },
+      "speedA": { "uniform": "speedA" },
+      "speedB": { "uniform": "speedB" },
+      "volumeSize": { "uniform": "volumeSize" },
+      "time": { "uniform": "time", "_engineGlobal": true }
+    }
+  },
+  "passes": [
+    {
+      "name": "precompute",
+      "program": "precompute",
+      "drawBuffers": 2,
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 64 },
+        "height": { "param": "volumeSize", "power": 2, "default": 4096 }
+      },
+      "inputs": {},
+      "outputs": {
+        "color": "volumeCache",
+        "geoOut": "geoBuffer"
+      }
+    }
+  ],
+  "textures": {
+    "volumeCache": {
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "is3D": false,
+      "_role": "3D-VOLUME ATLAS (outputTex3d). 2D RenderTexture of size volumeSize x volumeSize^2 (default 64 x 4096 = 64 stacked 64x64 z-slices). Atlas texel (x,yAtlas) maps to voxel (x, yAtlas%volumeSize, yAtlas/volumeSize). Stores the scalar shape field in rgba=(d,d,d,1). Written by SV_Target0 of the precompute pass; consumed downstream by render/render3d (raymarch). See reference 04 §8 vol0..7 / 10 §3.7 §4.2.",
+      "_atlas": { "sliceSize": 64, "atlasHeightFactor": "volumeSize", "voxelMap": "x=x, y=yAtlas%volumeSize, z=floor(yAtlas/volumeSize)" }
+    },
+    "geoBuffer": {
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "is3D": false,
+      "_role": "GEOMETRY/normal ATLAS (outputGeo). Same atlas layout/size as volumeCache. xyz = packed normal (normalize(-gradient)*0.5+0.5), w = scalar field value d (the depth/field slot). Written by SV_Target1 of the precompute pass; consumed downstream for lit raymarch (render/renderLit3d). See reference 04 §8 geo buffers (xyz=normal, w=depth)."
+    }
+  },
+  "outputTex3d": "volumeCache",
+  "outputGeo": "geoBuffer",
+  "volume": {
+    "_comment": "3D / RENDER tier volume-write generator (reference 04 §8, 10 §3.7). Single MRT pass 'precompute' (drawBuffers:2) FILLS a 2D atlas RenderTexture representing a volumeSize^3 voxel volume (default 64^3 -> 64x4096). The fragment maps atlas (u,v)=fragCoord -> voxel (x, v%volumeSize, v/volumeSize), evaluates a polyhedral/primitive SDF-driven periodic scalar field, and writes the field to volumeCache (SV_Target0) and a packed analytical-gradient normal + field to geoBuffer (SV_Target1). NO raymarch here: a downstream render/render3d (or renderLit3d) raymarches volumeCache/geoBuffer into a 2D image. No input texture. `time` is the engine global (normalized 0..1) consumed for the seamless speed loop; speedA/speedB are floor()ed in-shader. colorMode is declared in globals but UNUSED by the precompute shader (field is always written mono).",
+    "kind": "volume-write",
+    "atlasSliceSize": 64,
+    "atlasDims": { "width": "volumeSize", "height": "volumeSize^2", "defaultWidth": 64, "defaultHeight": 4096 },
+    "mrt": true,
+    "raymarch": false,
+    "outputs": ["volumeCache (outputTex3d)", "geoBuffer (outputGeo)"]
+  }
+}

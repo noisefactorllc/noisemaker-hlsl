@@ -1,0 +1,47 @@
+{
+  "name": "ChromaticAberration",
+  "namespace": "filter",
+  "func": "chromaticAberration",
+  "tags": ["distort", "lens"],
+  "description": "Color fringing effect simulating lens aberration",
+  "paramAliases": { "aberrationAmt": "aberration" },
+  "globals": {
+    "aberration": {
+      "type": "float",
+      "default": 50,
+      "uniform": "aberrationAmt",
+      "min": 0,
+      "max": 100
+    },
+    "passthru": {
+      "type": "float",
+      "default": 50,
+      "uniform": "passthru",
+      "min": 0,
+      "max": 100
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "chromaticAberration",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "aberrationAmt": "aberration",
+        "passthru": "passthru"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

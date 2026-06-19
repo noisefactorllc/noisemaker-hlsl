@@ -1,0 +1,174 @@
+{
+  "name": "Flock",
+  "namespace": "points",
+  "func": "flock",
+  "tags": ["sim"],
+  "description": "2D \"Boids\" flocking agent simulation",
+  "paramAliases": {},
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "globals": {
+    "separation": {
+      "type": "float",
+      "default": 2.0,
+      "uniform": "separation",
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "ui": { "label": "separation", "control": "slider", "category": "boids" }
+    },
+    "alignment": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "alignment",
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "ui": { "label": "alignment", "control": "slider", "category": "boids" }
+    },
+    "cohesion": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "cohesion",
+      "min": 0,
+      "max": 5,
+      "step": 0.1,
+      "ui": { "label": "cohesion", "control": "slider", "category": "boids" }
+    },
+    "perceptionRadius": {
+      "type": "float",
+      "default": 50,
+      "uniform": "perceptionRadius",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "ui": { "label": "perception", "control": "slider", "category": "boids" }
+    },
+    "separationRadius": {
+      "type": "float",
+      "default": 25,
+      "uniform": "separationRadius",
+      "min": 5,
+      "max": 100,
+      "step": 1,
+      "ui": { "label": "sep radius", "control": "slider", "category": "boids" }
+    },
+    "maxSpeed": {
+      "type": "float",
+      "default": 4.0,
+      "uniform": "maxSpeed",
+      "min": 0.5,
+      "max": 10,
+      "step": 0.1,
+      "ui": { "label": "max speed", "control": "slider", "category": "motion" }
+    },
+    "maxForce": {
+      "type": "float",
+      "default": 0.3,
+      "uniform": "maxForce",
+      "min": 0.01,
+      "max": 1.0,
+      "step": 0.01,
+      "ui": { "label": "max force", "control": "slider", "category": "motion" }
+    },
+    "boundaryMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "boundaryMode",
+      "choices": { "wrap": 0, "softWall": 1 },
+      "ui": { "label": "boundary", "control": "dropdown", "category": "motion" }
+    },
+    "wallMargin": {
+      "type": "float",
+      "default": 50,
+      "uniform": "wallMargin",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "ui": { "label": "wall margin", "control": "slider", "category": "motion" }
+    },
+    "noiseWeight": {
+      "type": "float",
+      "default": 0.1,
+      "uniform": "noiseWeight",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "ui": { "label": "noise", "control": "slider", "category": "motion" }
+    }
+  },
+  "uniformLayouts": {
+    "agent": {
+      "resolution": { "slot": 0, "components": "xy" },
+      "time": { "slot": 0, "components": "z" },
+      "separation": { "slot": 0, "components": "w" },
+      "alignment": { "slot": 1, "components": "x" },
+      "cohesion": { "slot": 1, "components": "y" },
+      "perceptionRadius": { "slot": 1, "components": "z" },
+      "separationRadius": { "slot": 1, "components": "w" },
+      "maxSpeed": { "slot": 2, "components": "x" },
+      "maxForce": { "slot": 2, "components": "y" },
+      "boundaryMode": { "slot": 2, "components": "z" },
+      "wallMargin": { "slot": 2, "components": "w" },
+      "noiseWeight": { "slot": 3, "components": "x" }
+    },
+    "passthrough": {
+      "resolution": { "slot": 0, "components": "xy" }
+    }
+  },
+  "passes": [
+    {
+      "name": "agent",
+      "program": "agent",
+      "drawBuffers": 3,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba"
+      },
+      "uniforms": {
+        "separation": "separation",
+        "alignment": "alignment",
+        "cohesion": "cohesion",
+        "perceptionRadius": "perceptionRadius",
+        "separationRadius": "separationRadius",
+        "maxSpeed": "maxSpeed",
+        "maxForce": "maxForce",
+        "boundaryMode": "boundaryMode",
+        "wallMargin": "wallMargin",
+        "noiseWeight": "noiseWeight"
+      },
+      "outputs": {
+        "color": "global_xyz",
+        "color1": "global_vel",
+        "color2": "global_rgba"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "color": "outputTex"
+      }
+    }
+  ],
+  "textures": {},
+  "feedback": {
+    "_comment": "Agent-based simulation (Common Agent Architecture middleware). State lives in THREE PERSISTENT 'global_' particle-state surfaces that flock does NOT declare itself (its `textures` is {}); they are created upstream by pointsEmit and INHERITED through the particle pipeline (expander §6.1: isParticleTex matches global_(xyz|vel|rgba)). Layout: global_xyz=[x,y,z,alive], global_vel=[vx,vy,age,seed], global_rgba=[r,g,b,a]; positions normalized [0,1]. These are rgba32f (full float) and persist frame-to-frame (ref 04 §10.7: isStateSurface matches the bare names xyz|vel|rgba → end-of-frame PERSISTENCE, not display swap). The 'agent' pass reads all three (xyzTex/velTex/rgbaTex) and writes all three via MRT (drawBuffers:3, attachments color/color1/color2 → outputXyz/outputVel/outputRgba → global_xyz/global_vel/global_rgba); the runtime ping-pongs read/write of each global within the frame. The 'passthrough' pass is a fullscreen color blit unrelated to agent state. No deposit (drawMode:'points') pass and no diffuse pass — scatter/render is in the separate pointsRender effect. No '_iteration' uniform, no repeat.",
+    "persistent": ["global_xyz", "global_vel", "global_rgba"],
+    "transient": [],
+    "stateFormat": {
+      "global_xyz": "[x, y, z, alive] (x,y normalized [0,1], w=1 alive)",
+      "global_vel": "[vx, vy, age, seed]",
+      "global_rgba": "[r, g, b, a]"
+    },
+    "stateFormatNote": "global_xyz/global_vel/global_rgba are rgba32f, created by pointsEmit (not by flock).",
+    "mrt": true,
+    "mrtPass": "agent",
+    "mrtOutputs": ["global_xyz", "global_vel", "global_rgba"]
+  }
+}

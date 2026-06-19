@@ -1,0 +1,242 @@
+{
+  "name": "Points Billboard Render",
+  "namespace": "render",
+  "func": "pointsBillboardRender",
+  "tags": ["agents"],
+  "openCategories": ["source", "visual"],
+  "description": "Render particles as billboard sprites",
+  "paramAliases": { "rotationVariation": "rotationVar" },
+  "globals": {
+    "shapeMode": {
+      "type": "int",
+      "default": 1,
+      "uniform": "shapeMode",
+      "choices": {
+        "texture": 0,
+        "circle": 1,
+        "ring": 2,
+        "square": 3,
+        "diamond": 4,
+        "triangle": 5,
+        "star": 6,
+        "soft": 7
+      },
+      "randMin": 1,
+      "ui": { "label": "shape", "control": "dropdown", "category": "source" }
+    },
+    "tex": {
+      "type": "surface",
+      "default": "none",
+      "ui": {
+        "label": "sprite",
+        "category": "source",
+        "enabledBy": { "param": "shapeMode", "eq": 0 }
+      }
+    },
+    "depositOpacity": {
+      "type": "float",
+      "default": 20.0,
+      "min": 1.0,
+      "max": 100.0,
+      "uniform": "depositOpacity",
+      "ui": { "label": "opacity", "control": "slider", "category": "visual" }
+    },
+    "pointSize": {
+      "type": "float",
+      "default": 8.0,
+      "min": 1.0,
+      "max": 64.0,
+      "uniform": "pointSize",
+      "ui": { "label": "point size", "control": "slider", "category": "visual" }
+    },
+    "sizeVariation": {
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "sizeVariation",
+      "ui": { "label": "size variation", "control": "slider", "category": "visual" }
+    },
+    "rotationVar": {
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "rotationVar",
+      "ui": { "label": "rot variation", "control": "slider", "category": "visual" }
+    },
+    "seed": {
+      "type": "int",
+      "default": 42.0,
+      "min": 0.0,
+      "max": 1000.0,
+      "uniform": "seed",
+      "ui": { "label": "seed", "control": "slider", "category": "visual" }
+    },
+    "density": {
+      "type": "float",
+      "default": 50.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "density",
+      "ui": { "label": "density", "control": "slider", "category": "visual" }
+    },
+    "intensity": {
+      "type": "float",
+      "default": 75.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "intensity",
+      "ui": { "label": "trail intensity", "control": "slider", "category": "visual" }
+    },
+    "inputIntensity": {
+      "type": "float",
+      "default": 10.15,
+      "min": 0.0,
+      "max": 100.0,
+      "randMin": 50,
+      "uniform": "inputIntensity",
+      "ui": { "label": "input mix", "control": "slider", "category": "visual" }
+    },
+    "viewMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "viewMode",
+      "choices": { "flat": 0, "ortho": 1 },
+      "ui": { "label": "view", "control": "dropdown", "category": "view" }
+    },
+    "rotateX": {
+      "type": "float",
+      "default": 0.3,
+      "uniform": "rotateX",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate x", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "rotateY": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotateY",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate y", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "rotateZ": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotateZ",
+      "min": 0,
+      "max": 6.283185,
+      "step": 0.01,
+      "ui": { "label": "rotate z", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "viewScale": {
+      "type": "float",
+      "default": 0.8,
+      "uniform": "viewScale",
+      "min": 0.1,
+      "max": 10,
+      "step": 0.01,
+      "ui": { "label": "zoom", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "posX": {
+      "type": "float",
+      "default": 0,
+      "uniform": "posX",
+      "min": -50,
+      "max": 50,
+      "step": 0.1,
+      "ui": { "label": "pos x", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    },
+    "posY": {
+      "type": "float",
+      "default": 0,
+      "uniform": "posY",
+      "min": -50,
+      "max": 50,
+      "step": 0.1,
+      "ui": { "label": "pos y", "control": "slider", "category": "view", "enabledBy": "viewMode" }
+    }
+  },
+  "passes": [
+    {
+      "name": "diffuse",
+      "program": "diffuse",
+      "inputs": { "trailTex": "global_billboard_trail" },
+      "uniforms": { "intensity": "intensity" },
+      "outputs": { "fragColor": "global_billboard_trail" }
+    },
+    {
+      "name": "copy",
+      "program": "copy",
+      "inputs": { "sourceTex": "global_billboard_trail" },
+      "outputs": { "fragColor": "global_billboard_trail" }
+    },
+    {
+      "name": "deposit",
+      "program": "deposit",
+      "drawMode": "billboards",
+      "count": "input",
+      "blend": true,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "rgbaTex": "global_rgba",
+        "spriteTex": "tex"
+      },
+      "uniforms": {
+        "shapeMode": "shapeMode",
+        "depositOpacity": "depositOpacity",
+        "density": "density",
+        "pointSize": "pointSize",
+        "sizeVariation": "sizeVariation",
+        "rotationVar": "rotationVar",
+        "seed": "seed",
+        "viewMode": "viewMode",
+        "rotateX": "rotateX",
+        "rotateY": "rotateY",
+        "rotateZ": "rotateZ",
+        "viewScale": "viewScale",
+        "posX": "posX",
+        "posY": "posY"
+      },
+      "outputs": { "fragColor": "global_billboard_trail" }
+    },
+    {
+      "name": "blend",
+      "program": "blend",
+      "inputs": {
+        "inputTex": "inputTex",
+        "trailTex": "global_billboard_trail"
+      },
+      "uniforms": { "inputIntensity": "inputIntensity" },
+      "outputs": { "fragColor": "outputTex" }
+    }
+  ],
+  "textures": {
+    "global_billboard_trail": {
+      "width": "100%",
+      "height": "100%",
+      "format": "rgba16f",
+      "_role": "PERSISTENT visual trail accumulation surface (rgb=deposited billboard color, a from deposit). diffuse multiplies it by clamp(intensity/100) (persistence; no blur), copy blits it to the post-swap write buffer (ping-pong correction so HW blending is correct), deposit additively scatters camera-facing billboard quads (SDF shapes or sprite texture) into it (drawMode:'billboards', blend:true -> Blend One One, count='input' = stateSize*stateSize from xyzTex dims; each agent = 6 verts/2 triangles), blend alpha-composites it over the scaled pipeline input. Reads its own prior 'global_' output so it persists frame-to-frame (runtime double-buffers/ping-pongs; reference 04 §10.2/§10.7). Declared as a private effect texture (not a state-surface; no _xyz/_vel/_rgba suffix, no 'state') but the feedback read+write of the same 'global_' key keeps it alive."
+    },
+    "global_xyz": {
+      "format": "rgba32f",
+      "_external": true,
+      "_role": "PERSISTENT agent state-surface ([x, y, z, alive]; for 2D systems xy in [0,1] with z near 0, for 3D attractors xyz roughly +/-40). Produced upstream by pointsEmit (sized stateSize x stateSize). READ-ONLY here: the deposit VERTEX stage Loads pos.xyz (for the 2D/3D view transform) and pos.w (alive cull, pos.w >= 0.5). isStateSurface=true (suffix '_xyz')."
+    },
+    "global_rgba": {
+      "format": "rgba32f",
+      "_external": true,
+      "_role": "PERSISTENT agent state-surface ([r, g, b, a] agent color from pointsEmit). READ-ONLY here: the deposit VERTEX stage Loads col and emits it as the billboard tint (col.rgb, col.a). isStateSurface=true (suffix '_rgba')."
+    }
+  },
+  "feedback": {
+    "_comment": "Agent-consumer multi-pass effect with a BILLBOARD scatter (camera-facing sprite quads; hardest 3D/RENDER tier). State lives in PERSISTENT 'global_' surfaces. global_xyz/global_rgba (rgba32f) are agent state-surfaces created upstream by pointsEmit (sized stateSize x stateSize) and matched by isStateSurface (suffix '_xyz'/'_rgba'); pointsBillboardRender only READS them (deposit vertex stage). global_billboard_trail (rgba16f, full-res, private) is the visual trail feedback surface: diffuse multiplies by clamp(intensity/100) (program 'diffuse', no blur), copy blits it to the post-swap write buffer (program 'copy'), deposit additively scatters billboard quads into it (drawMode:'billboards', blend:true resolves to Blend One One, count='input' = stateSize*stateSize derived from xyzTex dims; the runtime issues DrawProcedural(Triangles, count*6) — 6 verts/2 triangles per agent), blend alpha-composites it over the scaled input into outputTex. The deposit VERTEX stage Loads agent xyz/rgba (SM4.5), culls dead/density-failing/out-of-range agents to clip (2,2,0,1), maps the agent center to clip (2D: pos.xy*2-1; 3D: rotateX/Y/Z + ortho), expands a per-particle size-varied + rotated quad (pointSize in px -> clip via 2/resolution), and emits a 0..1 spriteUV varying. The fragment stage renders an SDF shape (shapeMode 1..6), a gaussian 'soft' (7), or samples the sprite texture (shapeMode 0), tinted by agent color and scaled by depositOpacity/100. No '_iteration' uniform; no repeat. seed (typed int) is injected as a float and added inside the sin-hash.",
+    "persistent": ["global_billboard_trail", "global_xyz", "global_rgba"],
+    "transient": [],
+    "stateSurfaces": ["global_xyz", "global_rgba"],
+    "scatter": { "pass": "deposit", "drawMode": "billboards", "count": "input", "countResolves": "stateSize*stateSize", "vertsPerAgent": 6, "blend": ["one", "one"] }
+  }
+}

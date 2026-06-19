@@ -1,0 +1,158 @@
+{
+  "name": "ColorLab",
+  "namespace": "classicNoisedeck",
+  "func": "colorLab",
+  "tags": ["color"],
+  "description": "Color manipulation lab",
+  "paramAliases": {},
+  "globals": {
+    "colorMode": {
+      "type": "int",
+      "default": 2,
+      "uniform": "colorMode",
+      "choices": { "mono": 0, "linearRgb": 1, "srgbDefault": 2, "oklab": 3, "palette": 4 }
+    },
+    "palette": {
+      "type": "palette",
+      "default": 46,
+      "uniform": "palette"
+    },
+    "paletteMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "paletteMode"
+    },
+    "paletteOffset": {
+      "type": "vec3",
+      "default": [0.83, 0.6, 0.63],
+      "uniform": "paletteOffset"
+    },
+    "paletteAmp": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteAmp"
+    },
+    "paletteFreq": {
+      "type": "vec3",
+      "default": [1.0, 1.0, 1.0],
+      "uniform": "paletteFreq"
+    },
+    "palettePhase": {
+      "type": "vec3",
+      "default": [0.3, 0.1, 0.0],
+      "uniform": "palettePhase"
+    },
+    "cyclePalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "cyclePalette",
+      "choices": { "off": 0, "forward": 1, "backward": -1 }
+    },
+    "rotatePalette": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "uniform": "rotatePalette"
+    },
+    "repeatPalette": {
+      "type": "int",
+      "default": 1,
+      "min": 1,
+      "max": 10,
+      "uniform": "repeatPalette"
+    },
+    "hueRotation": {
+      "type": "float",
+      "default": 0,
+      "min": 0,
+      "max": 360,
+      "uniform": "hueRotation"
+    },
+    "hueRange": {
+      "type": "float",
+      "default": 100,
+      "min": 0,
+      "max": 200,
+      "uniform": "hueRange"
+    },
+    "saturation": {
+      "type": "float",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "uniform": "saturation"
+    },
+    "invert": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "invert"
+    },
+    "brightness": {
+      "type": "float",
+      "default": 0,
+      "min": -100,
+      "max": 100,
+      "uniform": "brightness"
+    },
+    "contrast": {
+      "type": "float",
+      "default": 50,
+      "min": 0,
+      "max": 100,
+      "uniform": "contrast"
+    },
+    "levels": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 32,
+      "uniform": "levels"
+    },
+    "dither": {
+      "type": "int",
+      "default": 0,
+      "uniform": "dither",
+      "choices": { "none": 0, "threshold": 1, "random": 2, "randomTime": 3, "bayer": 4 }
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "colorLab",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "colorMode": 2,
+        "palette": 46,
+        "paletteMode": 0,
+        "paletteOffset": [0.83, 0.6, 0.63],
+        "paletteAmp": [0.5, 0.5, 0.5],
+        "paletteFreq": [1.0, 1.0, 1.0],
+        "palettePhase": [0.3, 0.1, 0.0],
+        "cyclePalette": 1,
+        "rotatePalette": 0,
+        "repeatPalette": 1,
+        "hueRotation": 0,
+        "hueRange": 100,
+        "saturation": 0,
+        "invert": 0,
+        "brightness": 0,
+        "contrast": 50,
+        "levels": 0,
+        "dither": 0
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

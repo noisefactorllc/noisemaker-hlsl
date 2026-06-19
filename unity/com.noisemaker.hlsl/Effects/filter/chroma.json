@@ -1,0 +1,55 @@
+{
+  "name": "Chroma",
+  "namespace": "filter",
+  "func": "chroma",
+  "tags": ["color", "util"],
+  "description": "Isolate specific hue range with feathering",
+  "paramAliases": {},
+  "globals": {
+    "targetHue": {
+      "type": "float",
+      "default": 0.33,
+      "min": 0,
+      "max": 1,
+      "uniform": "targetHue"
+    },
+    "range": {
+      "type": "float",
+      "default": 0.25,
+      "min": 0,
+      "max": 0.5,
+      "uniform": "range"
+    },
+    "feather": {
+      "type": "float",
+      "default": 0.05,
+      "min": 0,
+      "max": 0.25,
+      "uniform": "feather"
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "chroma",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "targetHue": 0.33,
+        "range": 0.25,
+        "feather": 0.05
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "Colorspace",
+  "namespace": "filter",
+  "func": "colorspace",
+  "tags": ["color", "util"],
+  "description": "Deprecated: use 'adjust' instead. Interpret RGB as HSV, OKLab, or OKLCH and convert",
+  "paramAliases": {},
+  "globals": {
+    "mode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "mode",
+      "choices": {
+        "hsv": 0,
+        "oklab": 1,
+        "oklch": 2
+      }
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "colorspace",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "mode": 0
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

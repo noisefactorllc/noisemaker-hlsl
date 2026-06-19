@@ -1,0 +1,146 @@
+{
+  "name": "Grade",
+  "namespace": "filter",
+  "func": "grade",
+  "tags": ["color"],
+  "description": "Professional multi-stage color grading pipeline",
+  "paramAliases": { "vignetteHighlightProtect": "vigHiProtect" },
+  "globals": {
+    "preset": { "type": "int", "default": 0, "uniform": "preset" },
+    "alpha": { "type": "float", "default": 1, "uniform": "alpha", "min": 0, "max": 1, "step": 0.01 },
+    "temperature": { "type": "float", "default": 0, "uniform": "temperature", "min": -1, "max": 1, "step": 0.01 },
+    "tint": { "type": "float", "default": 0, "uniform": "tint", "min": -1, "max": 1, "step": 0.01 },
+    "exposure": { "type": "float", "default": 0, "uniform": "exposure", "min": -4, "max": 4, "step": 0.05 },
+    "contrast": { "type": "float", "default": 0, "uniform": "contrast", "min": -1, "max": 1, "step": 0.01 },
+    "highlights": { "type": "float", "default": 0, "uniform": "highlights", "min": -1, "max": 1, "step": 0.01 },
+    "shadows": { "type": "float", "default": 0, "uniform": "shadows", "min": -1, "max": 1, "step": 0.01 },
+    "whites": { "type": "float", "default": 0, "uniform": "whites", "min": -1, "max": 1, "step": 0.01 },
+    "blacks": { "type": "float", "default": 0, "uniform": "blacks", "min": -1, "max": 1, "step": 0.01 },
+    "saturation": { "type": "float", "default": 1, "uniform": "saturation", "min": 0, "max": 2, "step": 0.01 },
+    "vibrance": { "type": "float", "default": 0, "uniform": "vibrance", "min": -1, "max": 1, "step": 0.01 },
+    "fadedFilm": { "type": "float", "default": 0, "uniform": "fadedFilm", "min": 0, "max": 1, "step": 0.01 },
+    "shadowTint": { "type": "vec3", "default": [0.5, 0.5, 0.5], "uniform": "shadowTint" },
+    "highlightTint": { "type": "vec3", "default": [0.5, 0.5, 0.5], "uniform": "highlightTint" },
+    "splitToneBalance": { "type": "float", "default": 0, "uniform": "splitToneBalance", "min": -1, "max": 1, "step": 0.01 },
+    "curveShadows": { "type": "float", "default": 0, "uniform": "curveShadows", "min": -1, "max": 1, "step": 0.01 },
+    "curveMidtones": { "type": "float", "default": 0, "uniform": "curveMidtones", "min": -1, "max": 1, "step": 0.01 },
+    "curveHighlights": { "type": "float", "default": 0, "uniform": "curveHighlights", "min": -1, "max": 1, "step": 0.01 },
+    "wheelShadows": { "type": "vec3", "default": [0.5, 0.5, 0.5], "uniform": "wheelShadows" },
+    "wheelMidtones": { "type": "vec3", "default": [0.5, 0.5, 0.5], "uniform": "wheelMidtones" },
+    "wheelHighlights": { "type": "vec3", "default": [0.5, 0.5, 0.5], "uniform": "wheelHighlights" },
+    "wheelBalance": { "type": "float", "default": 0, "uniform": "wheelBalance", "min": -1, "max": 1, "step": 0.01 },
+    "hslEnable": { "type": "int", "default": 0, "uniform": "hslEnable", "min": 0, "max": 1, "step": 1 },
+    "hslHueCenter": { "type": "float", "default": 0, "uniform": "hslHueCenter", "min": 0, "max": 1, "step": 0.01 },
+    "hslHueRange": { "type": "float", "default": 0.1, "uniform": "hslHueRange", "min": 0, "max": 0.5, "step": 0.01 },
+    "hslSatMin": { "type": "float", "default": 0, "uniform": "hslSatMin", "min": 0, "max": 1, "step": 0.01 },
+    "hslSatMax": { "type": "float", "default": 1, "uniform": "hslSatMax", "min": 0, "max": 1, "step": 0.01 },
+    "hslLumMin": { "type": "float", "default": 0, "uniform": "hslLumMin", "min": 0, "max": 1, "step": 0.01 },
+    "hslLumMax": { "type": "float", "default": 1, "uniform": "hslLumMax", "min": 0, "max": 1, "step": 0.01 },
+    "hslFeather": { "type": "float", "default": 0.1, "uniform": "hslFeather", "min": 0, "max": 0.5, "step": 0.01 },
+    "hslHueShift": { "type": "float", "default": 0, "uniform": "hslHueShift", "min": -0.5, "max": 0.5, "step": 0.01 },
+    "hslSatAdjust": { "type": "float", "default": 0, "uniform": "hslSatAdjust", "min": -1, "max": 1, "step": 0.01 },
+    "hslLumAdjust": { "type": "float", "default": 0, "uniform": "hslLumAdjust", "min": -1, "max": 1, "step": 0.01 },
+    "vignetteAmount": { "type": "float", "default": 0, "uniform": "vignetteAmount", "min": -1, "max": 1, "step": 0.01 },
+    "vignetteMidpoint": { "type": "float", "default": 0.5, "uniform": "vignetteMidpoint", "min": 0, "max": 1, "step": 0.01 },
+    "vignetteRoundness": { "type": "float", "default": 0, "uniform": "vignetteRoundness", "min": -1, "max": 1, "step": 0.01 },
+    "vignetteFeather": { "type": "float", "default": 0.5, "uniform": "vignetteFeather", "min": 0, "max": 1, "step": 0.01 },
+    "vigHiProtect": { "type": "float", "default": 0, "uniform": "vigHiProtect", "min": 0, "max": 1, "step": 0.01 }
+  },
+  "passes": [
+    {
+      "name": "primary",
+      "program": "primary",
+      "inputs": { "inputTex": "inputTex" },
+      "outputs": { "fragColor": "_primaryTex" },
+      "uniforms": {
+        "temperature": "temperature",
+        "tint": "tint",
+        "exposure": "exposure",
+        "contrast": "contrast",
+        "highlights": "highlights",
+        "shadows": "shadows",
+        "whites": "whites",
+        "blacks": "blacks",
+        "saturation": "saturation",
+        "curveShadows": "curveShadows",
+        "curveMidtones": "curveMidtones",
+        "curveHighlights": "curveHighlights"
+      }
+    },
+    {
+      "name": "creative",
+      "program": "creative",
+      "inputs": { "inputTex": "_primaryTex" },
+      "outputs": { "fragColor": "_creativeTex" },
+      "uniforms": {
+        "vibrance": "vibrance",
+        "fadedFilm": "fadedFilm",
+        "splitToneBalance": "splitToneBalance",
+        "shadowTint": "shadowTint",
+        "highlightTint": "highlightTint"
+      }
+    },
+    {
+      "name": "wheels",
+      "program": "wheels",
+      "inputs": { "inputTex": "_creativeTex" },
+      "outputs": { "fragColor": "_wheelsTex" },
+      "uniforms": {
+        "wheelBalance": "wheelBalance",
+        "wheelShadows": "wheelShadows",
+        "wheelMidtones": "wheelMidtones",
+        "wheelHighlights": "wheelHighlights"
+      }
+    },
+    {
+      "name": "hslSecondary",
+      "program": "hslSecondary",
+      "inputs": { "inputTex": "_wheelsTex" },
+      "outputs": { "fragColor": "_hslTex" },
+      "uniforms": {
+        "hslEnable": "hslEnable",
+        "hslHueCenter": "hslHueCenter",
+        "hslHueRange": "hslHueRange",
+        "hslSatMin": "hslSatMin",
+        "hslSatMax": "hslSatMax",
+        "hslLumMin": "hslLumMin",
+        "hslLumMax": "hslLumMax",
+        "hslFeather": "hslFeather",
+        "hslHueShift": "hslHueShift",
+        "hslSatAdjust": "hslSatAdjust",
+        "hslLumAdjust": "hslLumAdjust"
+      }
+    },
+    {
+      "name": "lut",
+      "program": "lut",
+      "inputs": { "inputTex": "_hslTex" },
+      "outputs": { "fragColor": "_lutTex" },
+      "uniforms": {
+        "preset": "preset",
+        "alpha": "alpha"
+      }
+    },
+    {
+      "name": "vignette",
+      "program": "vignette",
+      "inputs": { "inputTex": "_lutTex" },
+      "outputs": { "fragColor": "outputTex" },
+      "uniforms": {
+        "vignetteAmount": "vignetteAmount",
+        "vignetteMidpoint": "vignetteMidpoint",
+        "vignetteRoundness": "vignetteRoundness",
+        "vignetteFeather": "vignetteFeather",
+        "vigHiProtect": "vigHiProtect"
+      }
+    }
+  ],
+  "textures": {
+    "_primaryTex": { "width": "input", "height": "input", "format": "rgba16float" },
+    "_creativeTex": { "width": "input", "height": "input", "format": "rgba16float" },
+    "_wheelsTex": { "width": "input", "height": "input", "format": "rgba16float" },
+    "_hslTex": { "width": "input", "height": "input", "format": "rgba16float" },
+    "_lutTex": { "width": "input", "height": "input", "format": "rgba16float" },
+    "outputTex": { "width": "input", "height": "input", "format": "rgba16float" }
+  }
+}

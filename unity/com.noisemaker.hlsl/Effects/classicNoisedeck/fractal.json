@@ -1,0 +1,202 @@
+{
+  "name": "Fractal",
+  "namespace": "classicNoisedeck",
+  "func": "fractal",
+  "paramAliases": {
+    "fractalType": "type",
+    "backgroundColor": "bgColor",
+    "backgroundOpacity": "bgAlpha"
+  },
+  "globals": {
+    "type": {
+      "type": "int",
+      "default": 0,
+      "uniform": "type",
+      "choices": {
+        "julia": 0,
+        "newton": 1,
+        "mandelbrot": 2
+      }
+    },
+    "symmetry": {
+      "type": "int",
+      "default": 0,
+      "uniform": "symmetry"
+    },
+    "zoomAmt": {
+      "type": "float",
+      "default": 0,
+      "uniform": "zoomAmt",
+      "min": 0,
+      "max": 130
+    },
+    "rotation": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotation",
+      "min": -180,
+      "max": 180
+    },
+    "speed": {
+      "type": "float",
+      "default": 30,
+      "uniform": "speed",
+      "min": 0,
+      "max": 100
+    },
+    "offsetX": {
+      "type": "float",
+      "default": 70,
+      "uniform": "offsetX",
+      "min": -100,
+      "max": 100
+    },
+    "offsetY": {
+      "type": "float",
+      "default": 50,
+      "uniform": "offsetY",
+      "min": -100,
+      "max": 100
+    },
+    "centerX": {
+      "type": "float",
+      "default": 0,
+      "uniform": "centerX",
+      "min": -100,
+      "max": 100
+    },
+    "centerY": {
+      "type": "float",
+      "default": 0,
+      "uniform": "centerY",
+      "min": -100,
+      "max": 100
+    },
+    "mode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "mode",
+      "choices": {
+        "iter": 0,
+        "z": 1
+      }
+    },
+    "iterations": {
+      "type": "int",
+      "default": 50,
+      "uniform": "iterations",
+      "min": 1,
+      "max": 50
+    },
+    "colorMode": {
+      "type": "int",
+      "default": 4,
+      "uniform": "colorMode",
+      "choices": {
+        "mono": 0,
+        "palette": 4,
+        "hsv": 6
+      }
+    },
+    "paletteMode": {
+      "type": "int",
+      "default": 0,
+      "uniform": "paletteMode"
+    },
+    "paletteOffset": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteOffset"
+    },
+    "paletteAmp": {
+      "type": "vec3",
+      "default": [0.5, 0.5, 0.5],
+      "uniform": "paletteAmp"
+    },
+    "paletteFreq": {
+      "type": "vec3",
+      "default": [1, 1, 1],
+      "uniform": "paletteFreq"
+    },
+    "palettePhase": {
+      "type": "vec3",
+      "default": [0, 0, 0],
+      "uniform": "palettePhase"
+    },
+    "cyclePalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "cyclePalette",
+      "choices": {
+        "off": 0,
+        "forward": 1,
+        "backward": -1
+      }
+    },
+    "rotatePalette": {
+      "type": "float",
+      "default": 0,
+      "uniform": "rotatePalette",
+      "min": 0,
+      "max": 100
+    },
+    "repeatPalette": {
+      "type": "int",
+      "default": 1,
+      "uniform": "repeatPalette",
+      "min": 1,
+      "max": 10
+    },
+    "hueRange": {
+      "type": "float",
+      "default": 100,
+      "uniform": "hueRange",
+      "min": 1,
+      "max": 100
+    },
+    "levels": {
+      "type": "int",
+      "default": 0,
+      "uniform": "levels",
+      "min": 0,
+      "max": 32
+    },
+    "bgColor": {
+      "type": "color",
+      "default": [0.0, 0.0, 0.0],
+      "uniform": "bgColor"
+    },
+    "bgAlpha": {
+      "type": "float",
+      "default": 100,
+      "uniform": "bgAlpha",
+      "min": 0,
+      "max": 100
+    },
+    "cutoff": {
+      "type": "float",
+      "default": 0,
+      "uniform": "cutoff",
+      "min": 0,
+      "max": 100
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "fractal",
+      "inputs": {},
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {}
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

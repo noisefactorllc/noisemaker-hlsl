@@ -1,0 +1,145 @@
+{
+  "name": "Flythrough3D",
+  "namespace": "synth3d",
+  "func": "flythrough3d",
+  "tags": ["3d", "fractal"],
+  "description": "3D fractal flythrough with camera-relative volume",
+  "paramAliases": { "fractalType": "type" },
+  "globals": {
+    "volumeSize": {
+      "type": "int",
+      "default": 64,
+      "uniform": "volumeSize",
+      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
+      "randChoices": [16, 32, 64],
+      "ui": { "label": "volume size", "control": "dropdown" }
+    },
+    "type": {
+      "type": "int",
+      "default": 0,
+      "uniform": "noiseType",
+      "choices": { "mandelbulb": 0, "mandelbox": 1 },
+      "ui": { "label": "fractal type", "control": "dropdown" },
+      "_role": "GPU uniform renamed type->noiseType because 'type' is a WGSL reserved keyword."
+    },
+    "power": {
+      "type": "float",
+      "default": 8.0,
+      "min": -3.0,
+      "max": 16,
+      "uniform": "power",
+      "ui": { "label": "power/scale", "control": "slider", "category": "fractal" },
+      "_role": "Mandelbulb spherical-coordinate exponent; for Mandelbox repurposed as the scale parameter."
+    },
+    "iterations": {
+      "type": "int",
+      "default": 12,
+      "min": 4,
+      "max": 24,
+      "uniform": "iterations",
+      "ui": { "label": "iterations", "control": "slider", "category": "fractal" }
+    },
+    "bailout": {
+      "type": "float",
+      "default": 4.0,
+      "min": 1,
+      "max": 16,
+      "uniform": "bailout",
+      "ui": { "label": "bailout", "control": "slider", "category": "fractal" }
+    },
+    "speed": {
+      "type": "float",
+      "default": 0.2,
+      "min": 0,
+      "max": 1.0,
+      "zero": 0,
+      "uniform": "speed",
+      "ui": { "label": "speed", "control": "slider", "category": "camera" }
+    },
+    "voiSize": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2.0,
+      "uniform": "voiSize",
+      "ui": { "label": "view size", "control": "slider", "category": "camera" }
+    },
+    "seed": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "uniform": "seed",
+      "ui": { "control": false },
+      "_role": "Bound to the GPU as f32 (WGSL var<uniform> seed: f32); the HLSL declares 'float seed'."
+    }
+  },
+  "uniformLayouts": {
+    "precompute": {
+      "time": { "_source": "engine global" },
+      "volumeSize": {},
+      "noiseType": {},
+      "power": {},
+      "iterations": {},
+      "bailout": {},
+      "speed": {},
+      "voiSize": {},
+      "seed": {}
+    }
+  },
+  "passes": [
+    {
+      "name": "precompute",
+      "program": "precompute",
+      "drawBuffers": 2,
+      "drawMode": "triangles",
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 64 },
+        "height": { "param": "volumeSize", "power": 2, "default": 4096 }
+      },
+      "inputs": {},
+      "uniforms": {
+        "volumeSize": "volumeSize",
+        "noiseType": "noiseType",
+        "power": "power",
+        "iterations": "iterations",
+        "bailout": "bailout",
+        "speed": "speed",
+        "voiSize": "voiSize",
+        "seed": "seed"
+      },
+      "outputs": {
+        "color": "volumeCache",
+        "geoOut": "geoBuffer"
+      }
+    }
+  ],
+  "textures": {
+    "volumeCache": {
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "is3D": false,
+      "atlas": { "slices": 64, "sliceWidth": 64, "sliceHeight": 64, "atlasWidth": 64, "atlasHeight": 4096 },
+      "_role": "VOLUME atlas (2D RenderTexture 64x4096 = 64 slices of 64x64). MRT SV_Target0 (color). Holds the camera-relative fractal density field: r=normalizedDist, g=trap, b=iterRatio, a=1. Atlas (u,v)->(vx,vy,vz): vx=px.x, vy=px.y%volumeSize, vz=px.y/volumeSize. Raymarched downstream by render3d/renderLit3d."
+    },
+    "geoBuffer": {
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "is3D": false,
+      "atlas": { "slices": 64, "sliceWidth": 64, "sliceHeight": 64, "atlasWidth": 64, "atlasHeight": 4096 },
+      "_role": "GEO buffer atlas (same 64x4096 layout). MRT SV_Target1 (geoOut): xyz = normal*0.5+0.5 (encoded surface normal), w = normalizedDist (depth/density). Bounds-rejected voxels write (0.5,0.5,0.5,0.0)."
+    }
+  },
+  "outputTex3d": "volumeCache",
+  "outputGeo": "geoBuffer",
+  "render3d": {
+    "_comment": "3D / RENDER tier VOLUME GENERATOR. Single pass 'precompute' is a fullscreen draw over the volume atlas RenderTexture (64x4096, rgba16f). The render target dimensions ARE the atlas dims, so the runtime sets the pass viewport to {width:volumeSize, height:volumeSize^2} and binds TWO MRT color attachments (drawBuffers:2): volumeCache (SV_Target0/color) and geoBuffer (SV_Target1/geoOut). Each atlas texel maps to a (vx,vy,vz) voxel via the WGSL mapping (vx=fragCoord.x, vy=fragCoord.y%volumeSize, vz=fragCoord.y/volumeSize); the fragment samples camera-relative fractal world space and writes density + encoded normal/depth. NM_FragCoord uses _NM_Resolution.xy = the atlas size (NOT screen) since the atlas is the render target; tileOffset/fullResolution are NOT used by the voxel math. This effect performs NO raymarch — a downstream render3d/renderLit3d effect (separate definition) raymarches volumeCache+geoBuffer into a 2D image. The volume defaults: volumeSize=64 (atlas 64x4096), with x16/x32/x64/x128 choices producing 16x256 / 32x1024 / 64x4096 / 128x16384 atlases respectively. 'time' is the engine global (normalized 0..1). 'seed' is bound as f32. NO feedback/state surfaces (the atlas is fully regenerated each frame). NO drawMode/count/repeat. Per reference 04 §8: vol0..7 are the user volume surfaces; the runtime maps outputTex3d->vol slot and outputGeo->geo slot.",
+    "tier": "volume-generator",
+    "raymarch": false,
+    "mrt": { "pass": "precompute", "outputs": ["color", "geoOut"], "drawBuffers": 2 },
+    "atlas": { "width": "volumeSize", "height": "volumeSize^2", "slices": "volumeSize", "format": "rgba16f" },
+    "surfaces": { "volume": "volumeCache (outputTex3d)", "geo": "geoBuffer (outputGeo)" }
+  }
+}

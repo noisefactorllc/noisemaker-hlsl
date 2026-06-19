@@ -1,0 +1,142 @@
+{
+  "name": "Noise3D",
+  "namespace": "synth3d",
+  "func": "noise3d",
+  "tags": ["3d", "noise"],
+  "description": "3D simplex noise volume",
+  "paramAliases": {},
+  "outputGeo": "geoBuffer",
+  "outputTex3d": "volumeCache",
+  "globals": {
+    "volumeSize": {
+      "type": "int",
+      "default": 64,
+      "uniform": "volumeSize",
+      "choices": { "x16": 16, "x32": 32, "x64": 64, "x128": 128 },
+      "randChoices": [16, 32, 64],
+      "ui": { "label": "volume size", "control": "dropdown" }
+    },
+    "scale": {
+      "type": "float",
+      "default": 3,
+      "min": 0,
+      "max": 100,
+      "uniform": "scale",
+      "ui": { "label": "scale" }
+    },
+    "octaves": {
+      "type": "int",
+      "default": 1,
+      "min": 1,
+      "max": 6,
+      "define": "OCTAVES",
+      "_hlslUniform": "OCTAVES",
+      "_note": "Reference bakes this as a compile-time #define / WGSL const (perf-only: lets the optimizer unroll the fbm4D octave loop). HLSL declares it as an int uniform 'OCTAVES' and bounds the loop at runtime ([loop]); values identical. Default 1 when unset.",
+      "ui": { "label": "octaves" }
+    },
+    "colorMode": {
+      "type": "int",
+      "default": 0,
+      "define": "COLOR_MODE",
+      "_hlslUniform": "COLOR_MODE",
+      "_note": "Reference bakes this as a compile-time #define / WGSL const (perf-only DCE of the RGB branch's two extra fbm4D calls). HLSL declares it as an int uniform 'COLOR_MODE' and branches at runtime. Default 0 (mono) when unset.",
+      "choices": { "mono": 0, "rgb": 1 },
+      "ui": { "label": "color mode", "control": "dropdown" }
+    },
+    "ridges": {
+      "type": "boolean",
+      "default": false,
+      "define": "RIDGES",
+      "_hlslUniform": "RIDGES",
+      "_note": "Reference bakes this as a compile-time #define / WGSL const (perf-only DCE of a per-octave branch). HLSL declares it as an int uniform 'RIDGES' (1/0) tested != 0 at runtime. Default 0 (false) when unset.",
+      "ui": { "label": "ridges" }
+    },
+    "seed": {
+      "type": "int",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "uniform": "seed",
+      "ui": { "label": "seed" }
+    },
+    "speed": {
+      "type": "int",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "zero": 0,
+      "uniform": "speed",
+      "ui": { "label": "speed" }
+    }
+  },
+  "uniformLayouts": {
+    "precompute": {
+      "time": { "slot": 0, "components": "x" },
+      "scale": { "slot": 0, "components": "y" },
+      "seed": { "slot": 0, "components": "z" },
+      "volumeSize": { "slot": 0, "components": "w" },
+      "speed": { "slot": 1, "components": "x" },
+      "_note": "WGSL binds time/scale/seed/volumeSize/speed as separate uniform buffers (@binding 0..4), not a packed vec4 array. OCTAVES/COLOR_MODE/RIDGES are injected consts (compile-time) in the reference and are NOT in the buffer; in the HLSL port they are the int uniforms OCTAVES/COLOR_MODE/RIDGES set per frame. This slot map is illustrative; the HLSL backend sets all params as individual named uniforms by reference name."
+    }
+  },
+  "passes": [
+    {
+      "name": "precompute",
+      "program": "precompute",
+      "drawBuffers": 2,
+      "viewport": {
+        "width": { "param": "volumeSize", "default": 64 },
+        "height": { "param": "volumeSize", "power": 2, "default": 4096 }
+      },
+      "inputs": {},
+      "uniforms": {
+        "scale": "scale",
+        "seed": "seed",
+        "volumeSize": "volumeSize",
+        "speed": "speed",
+        "OCTAVES": "octaves",
+        "COLOR_MODE": "colorMode",
+        "RIDGES": "ridges"
+      },
+      "outputs": {
+        "color": "volumeCache",
+        "geoOut": "geoBuffer"
+      },
+      "_role": "VOLUME-WRITE (MRT, drawBuffers:2). Renders at the ATLAS viewport (volumeSize x volumeSize^2 = 64 x 4096 by default), NOT screen resolution. Fragment maps atlas pixel (x,y) -> voxel (x, y%volSize, y/volSize), writes noise density to SV_Target0 (color->volumeCache) and encoded normal+density to SV_Target1 (geoOut->geoBuffer). NM_FragCoord must yield atlas pixel coords (runtime binds _NM_Resolution = viewport/atlas size for this pass)."
+    }
+  ],
+  "textures": {
+    "volumeCache": {
+      "is3D": true,
+      "atlasWidth": 64,
+      "atlasHeight": 4096,
+      "volumeSliceSize": 64,
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "_role": "VOLUME atlas (vol-tier surface, reference 04 §8). 2D RenderTexture sized volumeSize x volumeSize^2 (default 64 x 4096 == 64 slices of 64x64), rgba16f LINEAR. Holds voxel density: COLOR_MODE 0 -> rgb=density, COLOR_MODE 1 -> r/g/b = three w-offset noise channels; a=1. Atlas (u,v) -> voxel (x = u, y = v%volSize, z = v/volSize). Exposed downstream as outputTex3d for render3d/renderLit3d raymarch. Width/height resolve from the volumeSize param (resolveDimension: param->64, param^2->4096; reference 04 §9)."
+    },
+    "geoBuffer": {
+      "is3D": true,
+      "atlasWidth": 64,
+      "atlasHeight": 4096,
+      "volumeSliceSize": 64,
+      "width": { "param": "volumeSize", "default": 64 },
+      "height": { "param": "volumeSize", "power": 2, "default": 4096 },
+      "format": "rgba16f",
+      "_role": "GEO atlas (geo-tier surface, reference 04 §8: xyz=normal, w=depth/density). Same atlas dims/format as volumeCache. Written by the precompute MRT (SV_Target1/geoOut): xyz = analytic surface normal encoded *0.5+0.5, w = noise density. Exposed downstream as outputGeo for lit raymarch. Out-of-bounds voxels write (0.5,0.5,0.5,0.0) = neutral normal, zero density."
+    }
+  },
+  "render3d": {
+    "_comment": "FIRST 3D / RENDER-TIER port. Single VOLUME-WRITE fullscreen pass with MRT (drawBuffers:2). No feedback, no geometry/scatter, no raymarch in THIS effect (it only fills the atlas; render3d/renderLit3d raymarchs it downstream). Atlas layout per reference 04 §8 / reference 10 §3: a 2D RenderTexture volumeSize x volumeSize^2 (default 64 x 4096), 64 slices of 64x64, rgba16f LINEAR. Atlas pixel->voxel mapping reproduced exactly: x = pixel.x, y = pixel.y % volSize, z = pixel.y / volSize (int % and /). The viewport for this pass is the atlas size, not the screen — the runtime must set the viewport AND _NM_Resolution to the atlas dimensions so NM_FragCoord recovers integer voxel addressing. OCTAVES/COLOR_MODE/RIDGES were compile-time injected consts in WGSL/GLSL (perf-only: unroll/DCE); the HLSL port models them as runtime int uniforms (PORTING-GUIDE 'Compile-time defines'). 'time' is normalized 0..1 (engine global); w = time*speed*W_PERIOD with W_PERIOD=4 gives a seamless time loop via lattice-level w wrap (nm_mod, NOT fmod). No '_iteration' uniform; no repeat.",
+    "tier": "volume-write",
+    "atlas": { "sliceSize": 64, "atlasWidth": 64, "atlasHeight": 4096, "slices": 64, "format": "rgba16f" },
+    "voxelMapping": "x = pixel.x; y = pixel.y % volSize; z = pixel.y / volSize",
+    "mrt": { "pass": "precompute", "outputs": ["color", "geoOut"], "drawBuffers": 2 },
+    "volumeSurfaces": ["volumeCache"],
+    "geoSurfaces": ["geoBuffer"],
+    "raymarch": false,
+    "geometry": false,
+    "scatter": false
+  }
+}

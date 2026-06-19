@@ -1,0 +1,52 @@
+{
+  "name": "Fibers",
+  "namespace": "filter",
+  "func": "fibers",
+  "tags": ["noise"],
+  "description": "Chaotic fiber texture overlay",
+  "paramAliases": {},
+  "globals": {
+    "density": {
+      "type": "float",
+      "default": 0.5,
+      "min": 0,
+      "max": 1
+    },
+    "seed": {
+      "type": "int",
+      "default": 1,
+      "min": 1,
+      "max": 100
+    },
+    "alpha": {
+      "type": "float",
+      "default": 0.5,
+      "uniform": "alpha",
+      "min": 0,
+      "max": 1
+    }
+  },
+  "passes": [
+    {
+      "name": "blend",
+      "program": "fibersBlend",
+      "inputs": {
+        "inputTex": "inputTex",
+        "overlayTex": "overlayTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "alpha": "alpha"
+      }
+    }
+  ],
+  "textures": {
+    "overlayTex": {
+      "width": "screen",
+      "height": "screen",
+      "format": "rgba8"
+    }
+  }
+}

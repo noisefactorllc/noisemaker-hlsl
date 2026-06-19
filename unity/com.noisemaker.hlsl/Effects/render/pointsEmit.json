@@ -1,0 +1,123 @@
+{
+  "name": "Points Emit",
+  "namespace": "render",
+  "func": "pointsEmit",
+  "tags": ["agents"],
+  "description": "Initialize and maintain agent state for particle systems",
+  "paramAliases": {},
+  "outputXyz": "global_xyz",
+  "outputVel": "global_vel",
+  "outputRgba": "global_rgba",
+  "globals": {
+    "stateSize": {
+      "type": "int",
+      "default": 256,
+      "min": 64,
+      "max": 2048,
+      "uniform": "stateSize",
+      "ui": { "label": "state size", "control": "dropdown" },
+      "choices": {
+        "x64": 64,
+        "x128": 128,
+        "x256": 256,
+        "x512": 512,
+        "x1024": 1024,
+        "x2048": 2048
+      },
+      "randChoices": [64, 128, 256, 512]
+    },
+    "layout": {
+      "type": "int",
+      "default": 0,
+      "uniform": "layout",
+      "ui": { "label": "layout", "control": "dropdown" },
+      "choices": {
+        "random": 0,
+        "grid": 1,
+        "center": 2,
+        "ring": 3,
+        "clusters": 4,
+        "spiral": 5
+      }
+    },
+    "seed": {
+      "type": "int",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 100.0,
+      "uniform": "seed",
+      "ui": { "label": "seed", "control": "slider" }
+    },
+    "attrition": {
+      "type": "float",
+      "default": 0.0,
+      "min": 0.0,
+      "max": 10.0,
+      "uniform": "attrition",
+      "ui": { "label": "attrition", "control": "slider" }
+    },
+    "resetState": {
+      "type": "boolean",
+      "default": false,
+      "uniform": "resetState",
+      "ui": { "control": "button", "buttonLabel": "reset", "label": "reset" }
+    }
+  },
+  "passes": [
+    {
+      "name": "init",
+      "program": "init",
+      "drawBuffers": 3,
+      "inputs": {
+        "xyzTex": "global_xyz",
+        "velTex": "global_vel",
+        "rgbaTex": "global_rgba",
+        "inputTex": "inputTex"
+      },
+      "uniforms": {
+        "layoutMode": "layout",
+        "attrition": "attrition",
+        "resetState": "resetState"
+      },
+      "outputs": {
+        "outXYZ": "global_xyz",
+        "outVel": "global_vel",
+        "outRGBA": "global_rgba"
+      }
+    },
+    {
+      "name": "passthrough",
+      "program": "passthrough",
+      "inputs": { "inputTex": "inputTex" },
+      "outputs": { "fragColor": "outputTex" }
+    }
+  ],
+  "textures": {
+    "global_xyz": {
+      "width": { "param": "stateSize", "default": 256 },
+      "height": { "param": "stateSize", "default": 256 },
+      "format": "rgba32f",
+      "_role": "PERSISTENT agent state-surface ([x, y, z=0, alive], positions normalized [0,1]). CREATED here (outputXyz alias). init writes it via MRT (SV_Target0): on respawn -> float4(newPos, 1.0); else passes through the prior value. Read back next frame to decide respawn-vs-persist (w<0.5 => dead). Sized stateSize x stateSize (256=65k, 512=262k, 1024=1M, 2048=4M agents). isStateSurface=true (suffix '_xyz') => end-of-frame bindings persist with NO swap. Consumed downstream by agent sims (physarum/flock/...) and pointsRender/pointsBillboardRender (VS reads pos via Texture2D.Load)."
+    },
+    "global_vel": {
+      "width": { "param": "stateSize", "default": 256 },
+      "height": { "param": "stateSize", "default": 256 },
+      "format": "rgba32f",
+      "_role": "PERSISTENT agent state-surface ([0, 0, rotRand, strideRand]). CREATED here (outputVel alias). init writes it via MRT (SV_Target1): on respawn -> float4(0,0,rotRand,strideRand) with rotRand=hash(agentSeed+100)[0,1], strideRand=hash(agentSeed+101)-0.5[-0.5,0.5]; else passes through. isStateSurface=true (suffix '_vel'). NOTE definition.js declares this rgba32f, but the WGSL emits 0,0,rotRand,strideRand."
+    },
+    "global_rgba": {
+      "width": { "param": "stateSize", "default": 256 },
+      "height": { "param": "stateSize", "default": 256 },
+      "format": "rgba8",
+      "_role": "PERSISTENT agent state-surface ([r, g, b, a] agent color). CREATED here (outputRgba alias). init writes it via MRT (SV_Target2): color sampled from inputTex at newPos (Load), or white if inputTex alpha==0; else passes through. isStateSurface=true (suffix '_rgba'). FORMAT rgba8 (definition.js) -> Unity ARGB32 (unorm). The MRT attachment 2 is 8-bit unorm while attachments 0/1 are rgba32f; the runtime MUST support a mixed-format MRT framebuffer for the init pass."
+    }
+  },
+  "feedback": {
+    "_comment": "Agent-state initializer (3D/RENDER tier middleware). Two FULLSCREEN passes, NO geometry: init (MRT3, drawBuffers:3) writes the three PERSISTENT 'global_' state-surfaces created here, then passthrough copies the pipeline input to outputTex. global_xyz/global_vel/global_rgba are isStateSurface by suffix ('_xyz'/'_vel'/'_rgba') => end-of-frame bindings persist with NO swap (agents continue from last frame); init reads its OWN prior 'global_' outputs (xyzTex/velTex/rgbaTex bound to the same keys it writes) to choose respawn-vs-persist, so the runtime double-buffers/ping-pongs these per write (reference 04 §10.2/§10.7). Respawn fires when resetState (injected 1/0) is set, when pPos.w<0.5 (dead/uninitialized), at t<0.01 on the first frame, or by random attrition (% per frame). Layout modes 0..5: random/grid/center/ring/clusters/spiral. No '_iteration' uniform; no repeat. Downstream agent sims and pointsRender/pointsBillboardRender consume these surfaces.",
+    "persistent": ["global_xyz", "global_vel", "global_rgba"],
+    "transient": [],
+    "stateSurfaces": ["global_xyz", "global_vel", "global_rgba"],
+    "mrt": { "pass": "init", "outputs": ["outXYZ", "outVel", "outRGBA"], "drawBuffers": 3, "mixedFormats": ["rgba32f", "rgba32f", "rgba8"] },
+    "scatter": null
+  }
+}

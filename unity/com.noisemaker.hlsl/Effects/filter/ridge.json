@@ -1,0 +1,40 @@
+{
+  "name": "Ridge",
+  "namespace": "filter",
+  "func": "ridge",
+  "tags": ["edges"],
+  "description": "Ridge/crease enhancement",
+  "paramAliases": {},
+  "globals": {
+    "level": {
+      "type": "float",
+      "default": 0.5,
+      "uniform": "level",
+      "min": 0,
+      "max": 1,
+      "step": 0.01
+    }
+  },
+  "passes": [
+    {
+      "name": "main",
+      "program": "ridge",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "level": "level"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

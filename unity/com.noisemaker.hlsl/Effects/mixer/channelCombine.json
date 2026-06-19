@@ -1,0 +1,68 @@
+{
+  "name": "ChannelCombine",
+  "namespace": "mixer",
+  "func": "channelCombine",
+  "tags": ["color"],
+  "description": "Combine separate surface inputs into R, G, B channels",
+  "globals": {
+    "rTex": {
+      "type": "surface",
+      "default": "none"
+    },
+    "gTex": {
+      "type": "surface",
+      "default": "none"
+    },
+    "bTex": {
+      "type": "surface",
+      "default": "none"
+    },
+    "rLevel": {
+      "type": "float",
+      "default": 100,
+      "uniform": "rLevel",
+      "min": 0,
+      "max": 100
+    },
+    "gLevel": {
+      "type": "float",
+      "default": 100,
+      "uniform": "gLevel",
+      "min": 0,
+      "max": 100
+    },
+    "bLevel": {
+      "type": "float",
+      "default": 100,
+      "uniform": "bLevel",
+      "min": 0,
+      "max": 100
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "channelCombine",
+      "inputs": {
+        "rTex": "rTex",
+        "gTex": "gTex",
+        "bTex": "bTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "rLevel": "rLevel",
+        "gLevel": "gLevel",
+        "bLevel": "bLevel"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}

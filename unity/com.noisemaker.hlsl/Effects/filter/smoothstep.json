@@ -1,0 +1,47 @@
+{
+  "name": "Smoothstep",
+  "namespace": "filter",
+  "func": "smoothstep",
+  "tags": ["edges", "util"],
+  "description": "Smooth Hermite interpolation between edges",
+  "paramAliases": {},
+  "globals": {
+    "edge0": {
+      "type": "float",
+      "default": 0.0,
+      "uniform": "edge0",
+      "min": 0,
+      "max": 1
+    },
+    "edge1": {
+      "type": "float",
+      "default": 1.0,
+      "uniform": "edge1",
+      "min": 0,
+      "max": 1
+    }
+  },
+  "passes": [
+    {
+      "name": "render",
+      "program": "smoothstep",
+      "inputs": {
+        "inputTex": "inputTex"
+      },
+      "outputs": {
+        "fragColor": "outputTex"
+      },
+      "uniforms": {
+        "edge0": "edge0",
+        "edge1": "edge1"
+      }
+    }
+  ],
+  "textures": {
+    "outputTex": {
+      "width": "input",
+      "height": "input",
+      "format": "rgba16f"
+    }
+  }
+}
