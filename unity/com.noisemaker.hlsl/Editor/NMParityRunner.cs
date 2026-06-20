@@ -241,6 +241,160 @@ namespace Noisemaker.Hlsl.Editor
             EditorApplication.Exit(0);
         }
 
+        // ---- TEMP DIAGNOSTIC: compile a DSL and dump the normalized graph JSON -----
+        // -nmDsl <dslFile> -nmOut <jsonFile>. Render-free; used to diff the C#-compiled
+        // graph (uniforms/texture sizing) against the reference export-graph oracle.
+        public static void CompileDslDumpFromCommandLine()
+        {
+            string dslPath = GetArg("-nmDsl");
+            string outPath = GetArg("-nmOut");
+            if (string.IsNullOrEmpty(dslPath) || !File.Exists(dslPath) || string.IsNullOrEmpty(outPath))
+            {
+                Debug.LogError("[NMParity] -nmDsl <file> -nmOut <file> required.");
+                EditorApplication.Exit(2);
+                return;
+            }
+            try
+            {
+                EffectRegistry reg = LoadRegistryFromPackage();
+                RenderGraph graph = DslCompiler.Compile(File.ReadAllText(dslPath), reg);
+                File.WriteAllText(outPath, DslCompiler.ToNormalizedJson(graph));
+                Debug.Log("[NMParity] dumped graph -> " + outPath);
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[NMParity] dump failed: " + e);
+                EditorApplication.Exit(1);
+            }
+        }
+
+        // ---- TEMP DIAGNOSTIC: render N frames, dump a named texture's RAW float32 -----
+        // -nmDsl <dsl> -nmTex <texId> -nmOut <f32> [-nmSize -nmTime -nmFrames -nmTimeStep].
+        // Used to read the navierStokes VELOCITY state (global_ns_velocity_chain_1, .rg)
+        // and compare it to the reference frame-by-frame (the dye display hides velocity).
+        public static void DumpVelocityFromCommandLine()
+        {
+            string dslPath = GetArg("-nmDsl");
+            string outPath = GetArg("-nmOut");
+            string texId = GetArg("-nmTex") ?? "global_ns_velocity_chain_1";
+            int size = ParseIntArg("-nmSize", 256);
+            float time = ParseFloatArg("-nmTime", 0.25f);
+            int frames = ParseIntArg("-nmFrames", 8);
+            float timeStep = ParseFloatArg("-nmTimeStep", 0f);
+            if (string.IsNullOrEmpty(dslPath) || !File.Exists(dslPath))
+            { Debug.LogError("[NMVel] -nmDsl required"); EditorApplication.Exit(2); return; }
+            try
+            {
+                PreloadPackageShaders();
+                EffectRegistry reg = LoadRegistryFromPackage();
+                RenderGraph graph = DslCompiler.Compile(File.ReadAllText(dslPath), reg);
+                int logEvery = ParseIntArg("-nmLogEvery", 0);
+                var pipe = new NMPipeline(graph);
+                pipe.Init(size, size);
+                for (int i = 0; i < frames; i++)
+                {
+                    pipe.Render(timeStep > 0f ? (time + i * timeStep) % 1f : time);
+                    if (logEvery > 0 && (i + 1) % logEvery == 0)
+                    {
+                        RenderTexture mt = pipe.ResolveRead(texId);
+                        if (mt != null)
+                        {
+                            RenderTexture pv = RenderTexture.active; RenderTexture.active = mt;
+                            var mtex = new Texture2D(mt.width, mt.height, TextureFormat.RGBAFloat, false);
+                            mtex.ReadPixels(new Rect(0, 0, mt.width, mt.height), 0, 0); mtex.Apply();
+                            RenderTexture.active = pv;
+                            Color[] mp = mtex.GetPixels(); float mx = 0f, sm = 0f;
+                            for (int k = 0; k < mp.Length; k++) { float mg = Mathf.Sqrt(mp[k].r*mp[k].r + mp[k].g*mp[k].g); if (mg > mx) mx = mg; sm += mg; }
+                            Debug.Log("[NMVel] frame " + (i+1) + " " + texId + " maxMag=" + mx.ToString("G6") + " meanMag=" + (sm/mp.Length).ToString("G6"));
+                            UnityEngine.Object.DestroyImmediate(mtex);
+                        }
+                    }
+                }
+                RenderTexture rt = pipe.ResolveRead(texId);
+                if (rt == null) { Debug.LogError("[NMVel] no texture " + texId); pipe.Dispose(); EditorApplication.Exit(1); return; }
+                RenderTexture prev = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBAFloat, false);
+                tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0); tex.Apply();
+                RenderTexture.active = prev;
+                Color[] px = tex.GetPixels();
+                float maxMag = 0f, sumMag = 0f;
+                for (int i = 0; i < px.Length; i++)
+                { float m = Mathf.Sqrt(px[i].r * px[i].r + px[i].g * px[i].g); if (m > maxMag) maxMag = m; sumMag += m; }
+                Debug.Log("[NMVel] " + texId + " " + rt.width + "x" + rt.height + " frames=" + frames +
+                          " maxVelMag=" + maxMag.ToString("G6") + " meanVelMag=" + (sumMag / px.Length).ToString("G6"));
+                if (!string.IsNullOrEmpty(outPath))
+                {
+                    float[] flat = new float[px.Length * 4];
+                    for (int i = 0; i < px.Length; i++) { flat[i*4]=px[i].r; flat[i*4+1]=px[i].g; flat[i*4+2]=px[i].b; flat[i*4+3]=px[i].a; }
+                    byte[] bytes = new byte[flat.Length * 4];
+                    System.Buffer.BlockCopy(flat, 0, bytes, 0, bytes.Length);
+                    File.WriteAllBytes(outPath, bytes);
+                    Debug.Log("[NMVel] dumped float32 rgba -> " + outPath);
+                }
+                pipe.Dispose();
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e) { Debug.LogError("[NMVel] failed: " + e); EditorApplication.Exit(1); }
+        }
+
+        // ---- TEMP DIAGNOSTIC: render with advancing time, dump a PNG every K frames ----
+        // -nmDsl <dsl> -nmOut <prefix> -nmFrames N -nmTimeStep T -nmSnapshotEvery K [-nmSize].
+        // Writes <prefix>_f<frame>.png. Per-frame GPU sync (1px readback every 16 frames)
+        // reproduces the live demo's per-frame-present sync, so the unsynced-batch GPU
+        // artifact does NOT occur and any divergence captured is REAL.
+        public static void RenderSnapshotsFromCommandLine()
+        {
+            string dslPath = GetArg("-nmDsl");
+            string outPrefix = GetArg("-nmOut");
+            int size = ParseIntArg("-nmSize", 256);
+            float time = ParseFloatArg("-nmTime", 0f);
+            int frames = ParseIntArg("-nmFrames", 1800);
+            float timeStep = ParseFloatArg("-nmTimeStep", 0.0016666667f);
+            int snapEvery = ParseIntArg("-nmSnapshotEvery", 300);
+            if (string.IsNullOrEmpty(dslPath) || !File.Exists(dslPath) || string.IsNullOrEmpty(outPrefix))
+            { Debug.LogError("[NMSnap] -nmDsl -nmOut required"); EditorApplication.Exit(2); return; }
+            try
+            {
+                PreloadPackageShaders();
+                EffectRegistry reg = LoadRegistryFromPackage();
+                RenderGraph graph = DslCompiler.Compile(File.ReadAllText(dslPath), reg);
+                var output = new RenderTexture(size, size, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear)
+                { useMipMap = false, autoGenerateMips = false, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+                output.Create();
+                var pipe = new NMPipeline(graph);
+                pipe.Init(size, size);
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPrefix + "_x.png")));
+                var sync1 = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
+                for (int i = 0; i < frames; i++)
+                {
+                    pipe.Render(timeStep > 0f ? (time + i * timeStep) % 1f : time);
+                    int fn = i + 1;
+                    if (fn % 16 == 0) { RenderTexture o = pipe.GetOutput(); if (o != null) { RenderTexture pv = RenderTexture.active; RenderTexture.active = o; sync1.ReadPixels(new Rect(0,0,1,1),0,0); sync1.Apply(); RenderTexture.active = pv; } }
+                    if (fn % snapEvery == 0)
+                    {
+                        pipe.PresentTo(output);
+                        RenderTexture pv2 = RenderTexture.active; RenderTexture.active = output;
+                        var tex = new Texture2D(size, size, TextureFormat.RGBAFloat, false, true);
+                        tex.ReadPixels(new Rect(0, 0, size, size), 0, 0); tex.Apply(false);
+                        RenderTexture.active = pv2;
+                        var rgba = new Texture2D(size, size, TextureFormat.RGBA32, false, true);
+                        var sp = tex.GetPixels(); var dst = new Color32[sp.Length];
+                        for (int k = 0; k < sp.Length; k++) dst[k] = new Color32(ToByte(sp[k].r), ToByte(sp[k].g), ToByte(sp[k].b), ToByte(sp[k].a));
+                        rgba.SetPixels32(dst); rgba.Apply(false);
+                        File.WriteAllBytes(outPrefix + "_f" + fn + ".png", rgba.EncodeToPNG());
+                        UnityEngine.Object.DestroyImmediate(tex); UnityEngine.Object.DestroyImmediate(rgba);
+                        Debug.Log("[NMSnap] wrote " + outPrefix + "_f" + fn + ".png");
+                    }
+                }
+                UnityEngine.Object.DestroyImmediate(sync1);
+                pipe.Dispose(); UnityEngine.Object.DestroyImmediate(output);
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e) { Debug.LogError("[NMSnap] failed: " + e); EditorApplication.Exit(1); }
+        }
+
         // Build an EffectRegistry from the package's shipped Effects/*.json (the converted
         // reference definitions). Mirrors canvas.js effect registration.
         private static EffectRegistry LoadRegistryFromPackage()
@@ -345,11 +499,32 @@ namespace Noisemaker.Hlsl.Editor
 
         private static void BuildAndRender(RenderGraph graph, RenderTexture output, int size, float normalizedTime)
         {
-            // Build the runtime pipeline, warm 8 deterministic frames (so feedback/
+            // Build the runtime pipeline, warm N deterministic frames (so feedback/
             // state surfaces settle), present renderSurface -> output, dispose.
+            // -nmFrames overrides the default 8 (for sustained sim stability checks).
+            // -nmTimeStep > 0 ADVANCES normalized time per frame (matches the live demo's
+            // animated input: normalized=(Time.time/dur)%1); 0 = fixed time (deterministic).
+            int frames = ParseIntArg("-nmFrames", 8);
+            float timeStep = ParseFloatArg("-nmTimeStep", 0f);
+            // -nmSyncEvery K: force a CPU-GPU sync every K frames (a 1px readback). The
+            // live demo presents each frame (an implicit per-frame sync); a tight unsynced
+            // render loop here instead lets the RT pool recycle persistent state textures
+            // over many frames, which collapses iterative sims to black (a HARNESS artifact,
+            // not a sim bug). Syncing reproduces the live demo's per-frame-synced behaviour.
+            int syncEvery = ParseIntArg("-nmSyncEvery", 0);
             var pipeline = new NMPipeline(graph);
             pipeline.Init(size, size);
-            for (int i = 0; i < 8; i++) pipeline.Render(normalizedTime);
+            Texture2D sync1 = syncEvery > 0 ? new Texture2D(1, 1, TextureFormat.RGBAFloat, false) : null;
+            for (int i = 0; i < frames; i++)
+            {
+                pipeline.Render(timeStep > 0f ? (normalizedTime + i * timeStep) % 1f : normalizedTime);
+                if (sync1 != null && (i + 1) % syncEvery == 0)
+                {
+                    RenderTexture o = pipeline.GetOutput();
+                    if (o != null) { RenderTexture pv = RenderTexture.active; RenderTexture.active = o; sync1.ReadPixels(new Rect(0, 0, 1, 1), 0, 0); sync1.Apply(); RenderTexture.active = pv; }
+                }
+            }
+            if (sync1 != null) UnityEngine.Object.DestroyImmediate(sync1);
             pipeline.PresentTo(output);
             pipeline.Dispose();
         }

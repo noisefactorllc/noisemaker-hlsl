@@ -172,8 +172,19 @@ PBRDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
     }
 
     // Density-based culling.
+    // PARITY (large-stateSize precision): the reference is frac(particleID*GR), GR=golden
+    // ratio. At big clouds (stateSize 1024 -> 1M agents) the raw product particleID*GR
+    // exceeds float32's fractional precision (step ~0.06 near 6.5e5), so frac() quantizes
+    // into ~16 buckets and Metal passes ~8x too many agents vs GLSL/ANGLE — over-depositing
+    // the billboard trail ~7x, which feeds garbage (HDR/out-of-[0,1]) into the write
+    // surface; a downstream consumer (e.g. navierStokes reading it as a force/dye input)
+    // then blows out. Compute frac(particleID*GR) precisely via a hi/lo split so the
+    // product magnitudes stay small and frac is exact for IDs up to millions.
     float cullThreshold  = density / 100.0;
-    float particleRandom = frac((float)particleID * 0.618033988749895);
+    float pidf   = (float)particleID;
+    float pidHi  = floor(pidf / 4096.0);
+    float pidLo  = pidf - pidHi * 4096.0;
+    float particleRandom = frac(pidHi * frac(4096.0 * 0.618033988749895) + pidLo * 0.618033988749895);
     if (particleRandom > cullThreshold)
     {
         o.positionCS = float4(2.0, 2.0, 0.0, 1.0);

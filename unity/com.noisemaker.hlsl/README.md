@@ -4,6 +4,11 @@ Live procedural textures from the Noisemaker Polymorphic DSL, rendered in Unity 
 HLSL. Pixel-identical to the JS/WebGPU reference engine. Usable as a standalone
 renderer or as Shader Graph building blocks.
 
+> **🚧 WIP — very early development.** This project is in **very early development and is
+> not recommended for general use** until it has been fully tested, performance has been
+> addressed, and detailed integration guidance is provided. Treat all current output as
+> provisional.
+
 Compatible with the **Built-in**, **URP**, and **HDRP** render pipelines — the engine
 only uses `CommandBuffer` Blits and `DrawProcedural`, no pipeline-specific hooks.
 

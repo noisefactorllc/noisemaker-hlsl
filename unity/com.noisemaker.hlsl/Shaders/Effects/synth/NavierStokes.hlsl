@@ -153,9 +153,15 @@ float4 frag_nsSplat(NMVaryings i) : SV_Target
     if (iForce > 0.0 || iDye > 0.0)
     {
         float2 texel = float2(1.0, 1.0) / texSize;
-        float lc = ns_lum(inputTex.SampleLevel(sampler_inputTex, uv, 0.0).rgb);
-        float lr = ns_lum(inputTex.SampleLevel(sampler_inputTex, uv + float2(texel.x, 0.0), 0.0).rgb);
-        float lu = ns_lum(inputTex.SampleLevel(sampler_inputTex, uv + float2(0.0, texel.y), 0.0).rgb);
+        // PARITY (HDR-input guard): the reference nsSplat reads lum(texture(inputTex,uv).rgb)
+        // UNCLAMPED, but its input surface is always in [0,1], so clamping is a no-op for the
+        // golden. The C# particle pipeline (pointsBillboardRender's additive rgba16f trail) can
+        // hand navierStokes an out-of-[0,1] HDR surface; at velocityDecay≈100 (zero dissipation)
+        // the unbounded dye injection then saturates to a white-out. Clamp the input read to
+        // [0,1] so the force/dye injection is bounded exactly as it is for the reference.
+        float lc = ns_lum(clamp(inputTex.SampleLevel(sampler_inputTex, uv, 0.0).rgb, 0.0, 1.0));
+        float lr = ns_lum(clamp(inputTex.SampleLevel(sampler_inputTex, uv + float2(texel.x, 0.0), 0.0).rgb, 0.0, 1.0));
+        float lu = ns_lum(clamp(inputTex.SampleLevel(sampler_inputTex, uv + float2(0.0, texel.y), 0.0).rgb, 0.0, 1.0));
         float2 grad = float2(lr - lc, lu - lc);
         vel = vel + grad * iForce * 50.0;
         dye = dye + lc * iDye * dt * 60.0;
@@ -497,7 +503,9 @@ float4 frag_ns(NMVaryings i) : SV_Target
     float blend = clamp(inputIntensityU, 0.0, 100.0) * 0.01;
     if (blend > 0.0)
     {
-        float3 inputColor = inputTex.SampleLevel(sampler_inputTex, pos / resolutionU, 0.0).rgb;
+        // PARITY (HDR-input guard): same rationale as nsSplat — bound an out-of-[0,1]
+        // particle-field input so the display blend cannot leak HDR into the output.
+        float3 inputColor = clamp(inputTex.SampleLevel(sampler_inputTex, pos / resolutionU, 0.0).rgb, 0.0, 1.0);
         outCol = lerp(outCol, inputColor, float3(blend, blend, blend));
     }
 

@@ -32,17 +32,21 @@ function pngChunk (type, data) { const len = Buffer.alloc(4); len.writeUInt32BE(
 function encodePng (w, h, rgba) { const sig = Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]); const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(w,0); ihdr.writeUInt32BE(h,4); ihdr[8]=8; ihdr[9]=6; const raw = Buffer.alloc(h*(1+w*4)); for (let y=0;y<h;y++){ const di=y*(1+w*4); raw[di]=0; rgba.copy(raw, di+1, y*w*4, (y+1)*w*4) } return Buffer.concat([sig, pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(raw)), pngChunk('IEND', Buffer.alloc(0))]) }
 
 function parseArgs (argv) {
-  const o = { size: 256, time: 0.25, backend: 'webgl2' }; const pos = []
+  const o = { size: 256, time: 0.25, backend: 'webgl2', frames: 8, timestep: 0 }; const pos = []
   for (let i = 0; i < argv.length; i++) { const a = argv[i]
     if (a === '--size') o.size = parseInt(argv[++i], 10)
     else if (a === '--time') o.time = parseFloat(argv[++i])
     else if (a === '--backend') o.backend = argv[++i]
+    else if (a === '--frames') o.frames = parseInt(argv[++i], 10)
+    else if (a === '--timestep') o.timestep = parseFloat(argv[++i])
+    else if (a === '--veltex') o.veltex = argv[++i]   // read this surface's raw float32 (velocity .rg) instead of comparing the display
+    else if (a === '--veldump') o.veldump = argv[++i] // path to write the raw float32 rgba
     else pos.push(a) }
   o.manifest = pos[0]; o.outDir = pos[1]; return o
 }
 
 // Drive the demo to load one DSL and read back o0 as linear-quantised RGBA8 top-down.
-async function renderOne (page, dsl, size, time, lastId) {
+async function renderOne (page, dsl, size, time, lastId, frames = 8, timestep = 0, veltex = null) {
   const baselineId = lastId
   await page.evaluate((src) => {
     const ed = document.getElementById('dsl-editor'); const run = document.getElementById('dsl-run-btn')
@@ -96,7 +100,7 @@ async function renderOne (page, dsl, size, time, lastId) {
   // Together these make the golden the SAME clean N-frames-from-zero render the
   // Unity side does, and removes the warm-up pollution + cross-effect leakage that
   // made stateful goldens bimodal.
-  await page.evaluate(({ t, frames }) => {
+  await page.evaluate(({ t, frames, ts }) => {
     const p = window.__noisemakerRenderingPipeline
     if (window.__noisemakerSetPausedTime) window.__noisemakerSetPausedTime(t)
     if (p) {
@@ -140,8 +144,10 @@ async function renderOne (page, dsl, size, time, lastId) {
       p.lastTime = 0
     }
     const r = window.__noisemakerCanvasRenderer
-    for (let i = 0; i < frames; i++) { if (p && p.render) p.render(t); else if (r && r.render) r.render(t) }
-  }, { t: time, frames: 8 })
+    // ts>0 ADVANCES time per frame (animated input — reproduces the live demo's
+    // normalized=(Time.time/dur)%1); ts=0 keeps the fixed-time deterministic render.
+    for (let i = 0; i < frames; i++) { const tt = ts > 0 ? (t + i * ts) % 1 : t; if (p && p.render) p.render(tt); else if (r && r.render) r.render(tt) }
+  }, { t: time, frames, ts: timestep })
   const result = await page.evaluate(() => {
     const pipeline = window.__noisemakerRenderingPipeline
     const gl = pipeline?.backend?.gl
@@ -165,7 +171,31 @@ async function renderOne (page, dsl, size, time, lastId) {
   const { width, height, pixels } = result
   const topDown = Buffer.alloc(width*height*4)
   for (let y=0;y<height;y++) for (let x=0;x<width;x++) { const s=((height-1-y)*width+x)*4, d=(y*width+x)*4; topDown[d]=pixels[s]; topDown[d+1]=pixels[s+1]; topDown[d+2]=pixels[s+2]; topDown[d+3]=pixels[s+3] }
-  return { png: encodePng(width, height, topDown), graphId: result.graphId }
+
+  // VELOCITY READBACK: read a named state surface's RAW float32 (.rg = velocity) for
+  // frame-by-frame comparison vs the C# port (the dye display hides the velocity field).
+  let vel = null
+  if (veltex) {
+    vel = await page.evaluate((name) => {
+      const pipeline = window.__noisemakerRenderingPipeline
+      const gl = pipeline?.backend?.gl
+      const surface = pipeline?.surfaces?.get(name)
+      if (!gl || !surface) return { error: 'no surface ' + name }
+      const info = pipeline.backend.textures?.get(surface.read)
+      if (!info?.handle) return { error: 'no handle for ' + surface.read }
+      const { handle, width, height } = info
+      const fbo = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, handle, 0)
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fbo); return { error: 'FBO incomplete' } }
+      const buf = new Float32Array(width*height*4)
+      gl.finish(); gl.readPixels(0,0,width,height,gl.RGBA,gl.FLOAT,buf)
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.deleteFramebuffer(fbo)
+      let maxMag=0, sumMag=0
+      for (let i=0;i<width*height;i++){ const m=Math.hypot(buf[i*4],buf[i*4+1]); if(m>maxMag)maxMag=m; sumMag+=m }
+      return { width, height, floats: Array.from(buf), maxMag, meanMag: sumMag/(width*height) }
+    }, veltex)
+  }
+  return { png: encodePng(width, height, topDown), graphId: result.graphId, vel }
 }
 
 async function main () {
@@ -213,9 +243,16 @@ async function main () {
         // graph.json (no browser needed; uses the reference compiler).
         try { const g = await exportGraph(dsl); writeFileSync(join(o.outDir, `${it.name}.graph.json`), JSON.stringify(g, null, 2) + '\n') }
         catch (e) { process.stderr.write(`[batch] ${it.name} GRAPH-FAIL ${e?.message || e}\n`); fail++; continue }
-        const { png, graphId } = await renderOne(page, dsl, o.size, o.time, lastId)
+        const { png, graphId, vel } = await renderOne(page, dsl, o.size, o.time, lastId, o.frames, o.timestep, o.veltex)
         lastId = graphId
         writeFileSync(join(o.outDir, `${it.name}.golden.png`), png)
+        if (vel) {
+          if (vel.error) process.stderr.write(`[batch] ${it.name} VEL-FAIL ${vel.error}\n`)
+          else {
+            process.stdout.write(`[vel] ${it.name} ${vel.width}x${vel.height} maxVelMag=${vel.maxMag.toPrecision(6)} meanVelMag=${vel.meanMag.toPrecision(6)}\n`)
+            if (o.veldump) { const f = new Float32Array(vel.floats); writeFileSync(o.veldump, Buffer.from(f.buffer)) }
+          }
+        }
         process.stdout.write(`OK ${it.name}\n`); ok++
       } catch (e) { process.stderr.write(`[batch] ${it.name} GOLDEN-FAIL ${e?.message || e}\n`); fail++ }
     }
