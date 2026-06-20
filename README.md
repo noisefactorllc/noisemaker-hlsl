@@ -13,9 +13,6 @@ standalone renderer and as **Shader Graph (material) nodes**.
 > (`navierStokes`, `reactionDiffusion`, feedback) and agent / particle systems, plus
 > the live-display color pipeline. Treat all current output as provisional.
 
-> ProgramState and UI bindings from the reference are intentionally out of scope.
-> The reference engine in `../shaders` is the ground truth; this tree never modifies it.
-
 ## Layout
 
 ```
