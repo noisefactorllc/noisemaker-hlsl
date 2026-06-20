@@ -633,8 +633,18 @@ namespace Noisemaker.Hlsl.Compiler
                     pass.InheritsVolumeSize = true;
                 int? drawBuffers = NullableInt(passDef, "drawBuffers");
                 if (drawBuffers.HasValue) pass.DrawBuffers = drawBuffers;
-                int? count = NullableInt(passDef, "count");
-                if (count.HasValue) pass.Count = count;
+                // count may be a NUMBER (literal vertex count) OR a STRING mode
+                // ("input"/"auto"/"screen") per reference webgl2.js points draw. A string
+                // count must be preserved in CountMode (NullableInt only accepts numbers
+                // and would otherwise silently drop "input", collapsing the deposit scatter
+                // to the 1000 default and rendering the trail far too sparse). Mirrors
+                // GraphLoader's count handling so the live-DSL path matches the graph.json
+                // path. (The pointsRender/flow3d deposit passes use count:"input".)
+                JsonValue countVal = passDef.Get("count");
+                if (countVal != null && countVal.Kind == JsonKind.Number)
+                    pass.Count = (int)countVal.AsNumber;
+                else if (countVal != null && countVal.Kind == JsonKind.String)
+                    pass.CountMode = countVal.AsString;
                 JsonValue blend = passDef.Get("blend");
                 pass.Blend = blend != null && blend.Kind == JsonKind.Bool && blend.AsBool;
                 JsonValue repeat = passDef.Get("repeat");
