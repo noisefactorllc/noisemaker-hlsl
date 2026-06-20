@@ -102,3 +102,13 @@ multi-statement programs, `read(oN)` / mid-chain `.write()`, `let` bindings, mul
 
 `tools/convert-definitions.mjs` regenerates all effect-definition JSONs automatically; the
 per-effect port path is documented in [PORTING-GUIDE.md](PORTING-GUIDE.md).
+
+## Contributing
+
+Issues and pull requests are welcome. Please review the [Code of Conduct](CODE_OF_CONDUCT.md) before opening changes.
+
+## License
+
+noisemaker-hlsl is released under the [MIT License](LICENSE). Use of the Noisemaker and Noise Factor names in derivative products is subject to the [Trademark Policy](TRADEMARK.md).
+
+Copyright © 2026 Noise Factor LLC
