@@ -89,6 +89,169 @@ namespace Noisemaker.Hlsl.Editor
             }
         }
 
+        // ---- Cubemap entry (6-face TextureCube; reference renderCubemap) --------
+        // Renders the graph 6 times (one per cube face), assembles a TextureCube via
+        // NMPipeline.RenderCubemap, then reads back each face to a PNG named
+        // <outPrefix>_<face>.png (face in px,nx,py,ny,pz,nz) for per-face parity vs the
+        // reference renderCubemap() face buffers.
+        //   -nmGraph <graph.json> -nmOut <prefix> -nmSize 256 -nmTime 0.25 [-nmSurface o0]
+        public static void RenderCubemapFromCommandLine()
+        {
+            string graphPath = GetArg("-nmGraph");
+            string outPrefix = GetArg("-nmOut");
+            int size = ParseIntArg("-nmSize", 256);
+            float time = ParseFloatArg("-nmTime", 0.25f);
+            string surface = GetArg("-nmSurface");  // null -> graph.RenderSurface
+
+            if (string.IsNullOrEmpty(graphPath) || string.IsNullOrEmpty(outPrefix))
+            {
+                Debug.LogError("[NMParity] -nmGraph and -nmOut (prefix) are required.");
+                EditorApplication.Exit(2);
+                return;
+            }
+
+            try
+            {
+                PreloadPackageShaders();
+                RenderGraph graph = RenderGraph.FromJson(File.ReadAllText(graphPath));
+                if (graph == null) throw new Exception("RenderGraph.FromJson returned null");
+
+                var pipeline = new NMPipeline(graph);
+                pipeline.Init(size, size);
+                RenderTexture cube = pipeline.RenderCubemap(size, surface, time);
+
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPrefix + "_px.png")));
+                var tex = new Texture2D(size, size, TextureFormat.RGBAFloat, false, /*linear*/ true);
+                var rgba32 = new Texture2D(size, size, TextureFormat.RGBA32, false, /*linear*/ true);
+                for (int f = 0; f < NMCubeCamera.FaceCount; f++)
+                {
+                    // Read back this cube face: bind it as the active target, ReadPixels.
+                    RenderTexture prev = RenderTexture.active;
+                    Graphics.SetRenderTarget(cube, 0, (CubemapFace)f);
+                    tex.ReadPixels(new Rect(0, 0, size, size), 0, 0);
+                    tex.Apply(false);
+                    RenderTexture.active = prev;
+
+                    // Quantise linear float -> 8-bit (no gamma), matching the golden.
+                    var src = tex.GetPixels();
+                    var dst = new Color32[src.Length];
+                    for (int i = 0; i < src.Length; i++)
+                        dst[i] = new Color32(ToByte(src[i].r), ToByte(src[i].g), ToByte(src[i].b), ToByte(src[i].a));
+                    rgba32.SetPixels32(dst);
+                    rgba32.Apply(false);
+
+                    string outPath = outPrefix + "_" + NMCubeCamera.FaceNames[f] + ".png";
+                    File.WriteAllBytes(outPath, rgba32.EncodeToPNG());
+                    Debug.Log($"[NMParity] wrote {outPath}");
+                }
+                UnityEngine.Object.DestroyImmediate(tex);
+                UnityEngine.Object.DestroyImmediate(rgba32);
+                cube.Release();
+                UnityEngine.Object.DestroyImmediate(cube);
+                pipeline.Dispose();
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NMParity] FAILED: {e}");
+                EditorApplication.Exit(1);
+            }
+        }
+
+        // ---- Cube equirect entry (verify Unity cube-sampling seamlessness) ------
+        // Renders the cube (NMPipeline.RenderCubemap), then projects it to an
+        // equirectangular PNG by sampling the TextureCube with Unity's HARDWARE cube
+        // sampler (Hidden/Noisemaker/NMCubeEquirect). Compare against the reference
+        // equirect (parity/cube-equirect-ref.mjs): a match means seamless + correctly
+        // oriented under Unity's D3D convention.
+        //   -nmGraph <graph.json> -nmOut <equirect.png> -nmSize 256 -nmTime 0.25
+        //   [-nmSurface o0] [-nmEqW 512] [-nmEqH 256] [-nmFlipY 0|1]
+        public static void RenderCubeEquirectFromCommandLine()
+        {
+            string graphPath = GetArg("-nmGraph");
+            string outPath = GetArg("-nmOut");
+            int size = ParseIntArg("-nmSize", 256);
+            float time = ParseFloatArg("-nmTime", 0.25f);
+            string surface = GetArg("-nmSurface");
+            int eqW = ParseIntArg("-nmEqW", 512);
+            int eqH = ParseIntArg("-nmEqH", 256);
+            bool flipU = ParseIntArg("-nmFlipU", 1) != 0;
+            bool flipV = ParseIntArg("-nmFlipV", 1) != 0;
+
+            if (string.IsNullOrEmpty(graphPath) || string.IsNullOrEmpty(outPath))
+            {
+                Debug.LogError("[NMParity] -nmGraph and -nmOut are required.");
+                EditorApplication.Exit(2);
+                return;
+            }
+
+            try
+            {
+                PreloadPackageShaders();
+                RenderGraph graph = RenderGraph.FromJson(File.ReadAllText(graphPath));
+                if (graph == null) throw new Exception("RenderGraph.FromJson returned null");
+
+                Shader eqShader = FindPackageShaderByName("Hidden/Noisemaker/NMCubeEquirect");
+                if (eqShader == null) throw new Exception("NMCubeEquirect shader not found");
+
+                var pipeline = new NMPipeline(graph);
+                pipeline.Init(size, size);
+                RenderTexture cube = pipeline.RenderCubemap(size, surface, time, flipU, flipV);
+
+                var eqRT = new RenderTexture(eqW, eqH, 0, RenderTextureFormat.ARGBHalf,
+                    RenderTextureReadWrite.Linear) { name = "NMEquirect", wrapMode = TextureWrapMode.Clamp };
+                eqRT.Create();
+                var mat = new Material(eqShader);
+                mat.SetTexture("_NMCube", cube);
+                mat.SetVector("_Res", new Vector4(eqW, eqH, 0f, 0f));
+                mat.SetFloat("_Debug", ParseIntArg("-nmDebug", 0) != 0 ? 1f : 0f);
+                Graphics.Blit(null, eqRT, mat);
+
+                var prev = RenderTexture.active;
+                RenderTexture.active = eqRT;
+                var tex = new Texture2D(eqW, eqH, TextureFormat.RGBAFloat, false, /*linear*/ true);
+                tex.ReadPixels(new Rect(0, 0, eqW, eqH), 0, 0);
+                tex.Apply(false);
+                RenderTexture.active = prev;
+
+                var rgba32 = new Texture2D(eqW, eqH, TextureFormat.RGBA32, false, /*linear*/ true);
+                var src = tex.GetPixels();
+                var dst = new Color32[src.Length];
+                for (int i = 0; i < src.Length; i++)
+                    dst[i] = new Color32(ToByte(src[i].r), ToByte(src[i].g), ToByte(src[i].b), ToByte(src[i].a));
+                rgba32.SetPixels32(dst);
+                rgba32.Apply(false);
+                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
+                File.WriteAllBytes(outPath, rgba32.EncodeToPNG());
+                Debug.Log($"[NMParity] wrote {outPath} ({eqW}x{eqH} equirect, flipU={flipU} flipV={flipV})");
+
+                UnityEngine.Object.DestroyImmediate(tex);
+                UnityEngine.Object.DestroyImmediate(rgba32);
+                UnityEngine.Object.DestroyImmediate(mat);
+                eqRT.Release(); UnityEngine.Object.DestroyImmediate(eqRT);
+                cube.Release(); UnityEngine.Object.DestroyImmediate(cube);
+                pipeline.Dispose();
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[NMParity] FAILED: {e}");
+                EditorApplication.Exit(1);
+            }
+        }
+
+        // Load a package shader by its Shader.name (Shader.Find can't see package
+        // shaders in batchmode; resolve via AssetDatabase like PreloadPackageShaders).
+        private static Shader FindPackageShaderByName(string name)
+        {
+            foreach (string g in AssetDatabase.FindAssets("t:Shader", new[] { "Packages/com.noisemaker.hlsl" }))
+            {
+                Shader s = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(g));
+                if (s != null && s.name == name) return s;
+            }
+            return null;
+        }
+
         // ---- Batch entry --------------------------------------------------------
         // Renders MANY graphs in ONE editor session (avoids ~25s startup per graph).
         // -nmManifest <file>: each non-empty line is "<graphJson>\t<outPng>".

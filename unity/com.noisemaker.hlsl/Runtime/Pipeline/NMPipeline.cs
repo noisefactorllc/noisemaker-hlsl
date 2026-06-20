@@ -484,6 +484,87 @@ namespace Noisemaker.Hlsl
             Graphics.Blit(src, dst);
         }
 
+        // ---- seamless cubemap rendering (reference pipeline.renderCubemap) ------
+        // Render the full graph 6 times — once per cube face — and assemble a Unity
+        // TextureCube (a RenderTexture with dimension=Cube). Mirrors the reference
+        // pipeline.renderCubemap (cubeCamera.js CUBE_FACE_BASES): per face, set the
+        // cubeBasis mat3 on every pass that declares it, render at faceSize, then copy
+        // the chosen surface's output into that cube face. GL face order +X,-X,+Y,-Y,
+        // +Z,-Z == UnityEngine.CubemapFace indices. The caller owns the returned RT.
+        //
+        // Each face re-renders the WHOLE graph (volume generation included) with only
+        // cubeBasis changed — exactly as the reference does. Only the cube effects
+        // (renderCubemap3D/Surface) declare a cubeBasis uniform; for any other graph
+        // this simply renders identical content into all 6 faces.
+        public RenderTexture RenderCubemap(int faceSize, string surfaceName, float time,
+            bool flipU = true, bool flipV = true)
+        {
+            int prevW = _width, prevH = _height;
+            if (_width != faceSize || _height != faceSize) Resize(faceSize, faceSize);
+
+            string surf = string.IsNullOrEmpty(surfaceName) ? Graph.RenderSurface : surfaceName;
+
+            var cube = new RenderTexture(faceSize, faceSize, 0,
+                RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear)
+            {
+                name = "NMCubemap",
+                dimension = UnityEngine.Rendering.TextureDimension.Cube,
+                useMipMap = false,
+                autoGenerateMips = false,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            cube.Create();
+
+            // Reference faces are rendered with cubeCamera's (right,up,forward) basis and
+            // stored top-down; Unity samples cube faces with the D3D (sc,tc) convention,
+            // whose in-face axes run opposite the reference's on every face (derived from
+            // the per-face sc/tc table vs cubeCamera). Reconcile with a uniform per-face
+            // flip (flipU/flipV) applied via a Blit before the face copy, so the assembled
+            // TextureCube samples seamlessly under Unity's hardware cube sampler.
+            RenderTexture flipTmp = (flipU || flipV)
+                ? RenderTexture.GetTemporary(faceSize, faceSize, 0,
+                    RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear)
+                : null;
+            Vector2 scale = new Vector2(flipU ? -1f : 1f, flipV ? -1f : 1f);
+            Vector2 offset = new Vector2(flipU ? 1f : 0f, flipV ? 1f : 0f);
+
+            for (int face = 0; face < NMCubeCamera.FaceCount; face++)
+            {
+                SetCubeBasis(NMCubeCamera.FaceBases[face]);
+                Render(time);
+                RenderTexture faceRT = GetOutput(surf);
+                if (faceRT == null) continue;
+                if (flipTmp != null)
+                {
+                    Graphics.Blit(faceRT, flipTmp, scale, offset);
+                    Graphics.CopyTexture(flipTmp, 0, 0, cube, face, 0);
+                }
+                else
+                {
+                    Graphics.CopyTexture(faceRT, 0, 0, cube, face, 0);
+                }
+            }
+
+            if (flipTmp != null) RenderTexture.ReleaseTemporary(flipTmp);
+            if (prevW != faceSize || prevH != faceSize) Resize(prevW, prevH);
+            return cube;
+        }
+
+        // Override the cubeBasis mat3 (9 floats, column-major [right|up|forward]) on
+        // every pass that declares it — mirrors the reference setUniform writing
+        // pass.uniforms['cubeBasis'] each face. The 9-array binds via UniformBinder
+        // (BindMatrix3 -> float4x4). No-op for graphs without a cubeBasis uniform.
+        private void SetCubeBasis(double[] basis9)
+        {
+            for (int i = 0; i < Graph.Passes.Count; i++)
+            {
+                Pass p = Graph.Passes[i];
+                if (p.Uniforms != null && p.Uniforms.ContainsKey("cubeBasis"))
+                    p.Uniforms["cubeBasis"] = UniformValue.Of(basis9);
+            }
+        }
+
         // ---- tiled export (data path present; logic TODO) -----------------
         public void SetTileRegion(Vector2 offset, Vector2 fullResolution, float renderScale)
         {

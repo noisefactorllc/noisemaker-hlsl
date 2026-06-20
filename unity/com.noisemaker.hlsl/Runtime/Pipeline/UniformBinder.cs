@@ -9,7 +9,8 @@
 //
 // Per-pass uniforms + define ints are written onto a single reused MPB
 // (no per-frame allocation). Value kinds handled: number -> float, bool -> float
-// (NMFullscreen tests `> 0.5`), int (defines) -> int, number array -> vec2/3/4.
+// (NMFullscreen tests `> 0.5`), int (defines) -> int, number array -> vec2/3/4
+// (a len-9 array -> mat3, bound as a float4x4 with the 3x3 in the upper-left).
 // String uniforms are member-enum names already resolved to ints upstream; if a
 // raw string survives it is skipped (cannot bind a string to a shader).
 
@@ -104,7 +105,14 @@ namespace Noisemaker.Hlsl
                         mpb.SetFloat(name, v.Bool ? 1f : 0f);
                         break;
                     case UniformValueKind.NumberArray:
-                        BindVector(mpb, name, v.NumberArray);
+                        // A length-9 array is a mat3 — the ONLY matrix uniform in the
+                        // effect set (cubeBasis on renderCubemap3D/Surface; verified no
+                        // other uniform resolves to a 9-element array). Bind it as a
+                        // float4x4 (3x3 upper-left); shorter arrays stay vec2/3/4.
+                        if (v.NumberArray != null && v.NumberArray.Count == 9)
+                            BindMatrix3(mpb, name, v.NumberArray);
+                        else
+                            BindVector(mpb, name, v.NumberArray);
                         break;
                     case UniformValueKind.String:
                         // Should be resolved to int upstream; cannot bind a string.
@@ -133,6 +141,25 @@ namespace Noisemaker.Hlsl
             float z = arr.Count > 2 ? (float)arr[2] : 0f;
             float w = arr.Count > 3 ? (float)arr[3] : 0f;
             mpb.SetVector(name, new Vector4(x, y, z, w));
+        }
+
+        // Bind a mat3 (9 floats, COLUMN-MAJOR [col0|col1|col2] — exactly the layout
+        // the reference uploads via gl.uniformMatrix3fv(loc, /*transpose*/false, value),
+        // e.g. cubeCamera.faceBasisMat3 = [right | up | forward]) as a float4x4 with the
+        // 3x3 in the upper-left and the 4th row/col = identity. Unity guarantees HLSL
+        // `_mRC == csMatrix.mRC`, so the shader recovers the original columns with
+        // cubeBasis._m00_m10_m20 / _m01_m11_m21 / _m02_m12_m22 (see RenderCubemap*.hlsl),
+        // reproducing GLSL's column-vector product cubeBasis * vec3(...) without relying
+        // on HLSL's matrix storage/mul() convention.
+        private static void BindMatrix3(MaterialPropertyBlock mpb, string name,
+            System.Collections.Generic.IReadOnlyList<double> arr)
+        {
+            if (arr == null || arr.Count < 9) return;
+            Matrix4x4 m = Matrix4x4.identity;
+            m.SetColumn(0, new Vector4((float)arr[0], (float)arr[1], (float)arr[2], 0f));
+            m.SetColumn(1, new Vector4((float)arr[3], (float)arr[4], (float)arr[5], 0f));
+            m.SetColumn(2, new Vector4((float)arr[6], (float)arr[7], (float)arr[8], 0f));
+            mpb.SetMatrix(name, m);
         }
 
         // Automation binding (reference/04 §10.4 resolveUniformValue). For an Oscillator
