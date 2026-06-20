@@ -106,7 +106,7 @@ namespace Noisemaker.Hlsl
                         break;
                     case UniformValueKind.NumberArray:
                         // A length-9 array is a mat3 — the ONLY matrix uniform in the
-                        // effect set (cubeBasis on renderCubemap3D/Surface; verified no
+                        // effect set (cubeBasis on renderCubemap3d/Surface; verified no
                         // other uniform resolves to a 9-element array). Bind it as a
                         // float4x4 (3x3 upper-left); shorter arrays stay vec2/3/4.
                         if (v.NumberArray != null && v.NumberArray.Count == 9)

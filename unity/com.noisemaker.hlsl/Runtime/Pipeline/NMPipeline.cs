@@ -494,7 +494,7 @@ namespace Noisemaker.Hlsl
         //
         // Each face re-renders the WHOLE graph (volume generation included) with only
         // cubeBasis changed — exactly as the reference does. Only the cube effects
-        // (renderCubemap3D/Surface) declare a cubeBasis uniform; for any other graph
+        // (renderCubemap3d/Surface) declare a cubeBasis uniform; for any other graph
         // this simply renders identical content into all 6 faces.
         public RenderTexture RenderCubemap(int faceSize, string surfaceName, float time,
             bool flipU = true, bool flipV = true)

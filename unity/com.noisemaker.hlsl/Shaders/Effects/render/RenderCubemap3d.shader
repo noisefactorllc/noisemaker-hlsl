@@ -1,6 +1,6 @@
-Shader "Noisemaker/render/renderCubemap3D"
+Shader "Noisemaker/render/renderCubemap3d"
 {
-    // render/renderCubemap3D — multi-face clone of render3d. ONE pass per frame:
+    // render/renderCubemap3d — multi-face clone of render3d. ONE pass per frame:
     // "render" (passes[0]). It RAYMARCHES a vol-tier volume atlas (volumeCache, a 2D
     // RenderTexture sized volumeSize x volumeSize^2, default 64 x 4096, rgba16f) into
     // ONE seamless cube face. The pass runs at SCREEN resolution (viewport NOT
@@ -36,17 +36,17 @@ Shader "Noisemaker/render/renderCubemap3D"
         // triangle), no blend.
         ZWrite Off ZTest Always Cull Off
 
-        // progName "renderCubemap3D" (passes[0]) — raymarch, MRT (drawBuffers:2)
+        // progName "renderCubemap3d" (passes[0]) — raymarch, MRT (drawBuffers:2)
         Pass
         {
-            Name "renderCubemap3D"
+            Name "renderCubemap3d"
             Blend Off
             HLSLPROGRAM
             #pragma vertex NMVertFullscreen
-            #pragma fragment frag_renderCubemap3D
+            #pragma fragment frag_renderCubemap3d
             #pragma target 4.5
             #pragma exclude_renderers gles
-            #include "RenderCubemap3D.hlsl"
+            #include "RenderCubemap3d.hlsl"
             ENDHLSL
         }
     }

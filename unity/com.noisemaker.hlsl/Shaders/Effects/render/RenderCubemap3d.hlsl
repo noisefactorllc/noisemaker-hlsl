@@ -2,7 +2,7 @@
 #define NM_EFFECT_RENDERCUBEMAP3D_INCLUDED
 
 // =============================================================================
-// RenderCubemap3D.hlsl — render/renderCubemap3D (func: "renderCubemap3D")
+// RenderCubemap3d.hlsl — render/renderCubemap3d (func: "renderCubemap3d")
 //
 // A multi-face clone of render3d: it raymarches the SAME 3D volume atlas
 // (volumeCache) with the SAME isosurface/voxel machinery, lighting and gamma —
@@ -72,7 +72,7 @@ int FILTERING;         // globals.filtering   default 0 (0 isosurface, 1 voxel)
 int INVERT;            // globals.invert      default 0 (boolean 1/0, tested != 0)
 
 // =============================================================================
-// Verbatim constants / helpers (ported inline from renderCubemap3D.wgsl, which is
+// Verbatim constants / helpers (ported inline from renderCubemap3d.wgsl, which is
 // render3d's machinery unchanged). r3d_ -> rc3_.
 // =============================================================================
 static const int   MAX_STEPS = 256;
@@ -437,9 +437,9 @@ float3 rc3_shadeVoxel(float3 p, float3 rd, float3 n, int3 voxel)
 }
 
 // =============================================================================
-// PASS: renderCubemap3D — raymarch the volume atlas to one cube face (frag, MRT x2)
+// PASS: renderCubemap3d — raymarch the volume atlas to one cube face (frag, MRT x2)
 // =============================================================================
-RenderCubemap3dFragmentOutput frag_renderCubemap3D(NMVaryings i)
+RenderCubemap3dFragmentOutput frag_renderCubemap3d(NMVaryings i)
 {
     // select(resolution, fullResolution, fullResolution.x > 0.0)
     float2 fullRes = (fullResolution.x > 0.0) ? fullResolution : resolution;

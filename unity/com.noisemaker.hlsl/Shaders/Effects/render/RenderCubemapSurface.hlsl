@@ -8,7 +8,7 @@
 // the RAW, TRUE color of the field exactly as sampled — front-to-back
 // emission/absorption, with NO lighting and NO gamma. The volume's red channel
 // drives per-step opacity; RGB is the emitted color. (The lit isosurface/voxel
-// "blob in space" view lives in the sibling renderCubemap3D.)
+// "blob in space" view lives in the sibling renderCubemap3d.)
 //
 // Ported PIXEL-IDENTICALLY from the canonical GLSL/WGSL source (golden rule #1).
 // atlasTexel + sampleVolume are render3d's trilinear atlas gather (verbatim); the
@@ -20,7 +20,7 @@
 //   ro  = (0,0,0);  rd = normalize(cubeBasis * vec3(uv.x, -uv.y, 1));// 90° frustum
 // NOTE the 0.5*res.y denominator and the -uv.y (GLSL & WGSL agree; matches the
 // "port the GLSL signs" Y-origin reconciliation — NM_FragCoord + top-down readback
-// align the origin, no extra flip). UNLIKE renderCubemap3D there is NO fullRes<1
+// align the origin, no extra flip). UNLIKE renderCubemap3d there is NO fullRes<1
 // fallback here (the reference Surface shader omits it) — preserve that asymmetry.
 //
 // cubeBasis is the reference mat3 [right | up | forward] (column-major), bound by
