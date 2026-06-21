@@ -50,7 +50,7 @@ Both failures are documented only in source comments. Beyond them, the docs omit
 | `README.md:67`, `parity/README.md:39` | "**8/8** Tier-1 pixel-identical" | **12** parity programs now ship (adds `mashup`, `palette3d`, `renderCubemap3d`, `renderCubemapSurface`) |
 | `ARCHITECTURE.md:62` | "`NMRenderTexture output`" | no such type — it is a `RenderTexture` (`NMRenderer.Output`) |
 | `ARCHITECTURE.md:110-111` | "not yet compiled/rendered" | compiles + renders, verified on `6000.3.16f1` |
-| `ARCHITECTURE.md:64-76` | 3D/mesh/agents/tiled-export "out of scope / staged" | shipped (`RenderCubemap`, `SetTileRegion`, `LoadMeshObj`, populated `points`/`synth3d`/`filter3d`); only the `write3d` compiler lane remains staged |
+| `ARCHITECTURE.md:64-76` | 3D/mesh/agents/tiled-export "out of scope / staged" | shipped (`RenderCubemap`, `SetTileRegion`, `LoadMeshObj`, populated `points`/`synth3d`/`filter3d`); the `read3d`/`write3d`/`textures3d` 3D lane is implemented (graph-verified vs the reference). Genuinely staged: subchain, if/elif, loop-control, MIDI/audio automation, tiled export |
 
 ## Missing sections to add (priority order)
 

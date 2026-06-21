@@ -108,7 +108,8 @@ The runtime was hardened in stages to execute the harder patterns: **feedback/st
 scatter + additive deposit + `rgba32f` state), and **3D/mesh** (64×4096 volume atlas +
 raymarch, OBJ loader + mesh-data textures, loop expansion). The C# DSL frontend handles
 multi-statement programs, `read(oN)` / mid-chain `.write()`, `let` bindings, multi-input
-(mixer) chains, and `loopBegin`/`loopEnd`; `subchain`/`if`/`write3d` remain staged.
+(mixer) chains, `loopBegin`/`loopEnd`, and the 3D lane (`read3d`/`write3d`/`textures3d`,
+graph-verified against the reference); `subchain` and `if`/`elif` remain staged.
 
 `tools/convert-definitions.mjs` regenerates all effect-definition JSONs automatically; the
 per-effect port path is documented in [PORTING-GUIDE.md](PORTING-GUIDE.md).

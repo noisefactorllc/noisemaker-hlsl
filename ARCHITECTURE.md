@@ -64,17 +64,20 @@ RenderTexture (not an SRP camera/feature); presenting it full-screen is the host
 | host API (`getOutput`, `setUniform`, resize) | `Driver/NMRenderer.cs` (MonoBehaviour); `Output` is a `RenderTexture`. |
 
 Shipped since the first cut: 3D volumes & raymarch, mesh rendering, agents/particles,
-and cubemap output (`RenderCubemap` → `TextureCube`). Still out of scope / staged:
-MIDI/audio automation, oscillator automation binding, tiled hi-res export, async/CPU
-texture init (worm tracing), and the `write3d` compiler lane. The graph model carries
-the fields so the rest can be added without reshaping.
+cubemap output (`RenderCubemap` → `TextureCube`), the explicit 3D DSL lane
+(`read3d`/`write3d`/`textures3d`, graph-verified against the reference), and oscillator
+automation binding. Still out of scope / staged: MIDI/audio automation, tiled hi-res
+export, and async/CPU texture init (worm tracing). The graph model carries the fields so
+the rest can be added without reshaping.
 
 ## Compiler (`Compiler/` asmdef) — `Noisemaker.Hlsl.Compiler`
 
 C# port of the DSL frontend (`reference/01,02,03`): `Lexer`, `Parser`, `Ast`,
 `Validator`, `Expander`, `Resources`, plus the enum/alias registries. First cut
-targets linear generator→filter→`write`/`render` chains over the ported effects;
-`subchain`, `if/elif`, loops, 3D, and agents are staged. Parity-critical details
+targets linear generator→filter→`write`/`render` chains over the ported effects.
+Implemented: the 3D lane (`read3d`/`write3d`/`textures3d`), agents/particles, oscillator
+automation, and `loopBegin`/`loopEnd`. Staged: `subchain`, `if`/`elif`, and loop-control
+statements. Parity-critical details
 captured from the specs: constant folding in IEEE `double`, palette index =
 positional key order, global `tempIndex` allocation order, first-match namespace
 resolution. The C# graph output is diffable against the golden path.

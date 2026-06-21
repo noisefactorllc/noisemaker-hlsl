@@ -12,8 +12,9 @@
 //     `prev` resolves to the parent write target (§5.3).
 //   - Tier-1 effects, literal + enum + array + color/vec args, palette.
 // Staged (NotImplementedException + TODO(scope)), FAIL LOUDLY (never silently wrong):
-//   subchain, if/elif, loops, write3d/3D, agents/points hooks, oscillator/midi/audio
-//   args, Func, state-value args.
+//   subchain, if/elif, loop-control (break/continue/return), midi/audio automation args,
+//   Func, state-value args.
+// Implemented: read3d/write3d/3D lane (graph-verified), agents/points, oscillator, loopBegin/End.
 //
 // PARITY-CRITICAL behaviors replicated:
 //  - GLOBAL monotonic tempIndex across all plans; exact `tempIndex++` ORDER defines
