@@ -23,6 +23,8 @@ development (pre-1.0); APIs may change.
   afterward — so the runtime resolves shaders in players with no manual setup. Also a
   *Noisemaker ▸ Builds ▸ Add shaders to Always Included* menu item.
 - In-package `LICENSE.md`.
+- **Quick Start sample** (`Samples~/QuickStart`, registered in `package.json` `samples`):
+  an example MonoBehaviour + a bundled precompiled graph that renders to a material.
 
 ### Changed
 - Renamed `render/renderCubemap3D` → `renderCubemap3d` (lowercase `3d` for func/program/shader;

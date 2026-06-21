@@ -61,6 +61,9 @@ Also note for builds:
 
 ## Getting started (standalone renderer → RenderTexture)
 
+> A ready-to-run **Quick Start** sample (a bundled graph + an example script that renders to
+> a material) is importable from the Package Manager *Samples* tab.
+
 The most reliable input is a **precompiled graph** (`GraphJson`) — it needs no effect
 registry and is the path verified by the parity harness. Export one with the repo's
 `tools/export-graph.mjs`, import the resulting `.json` as a `TextAsset`, and:

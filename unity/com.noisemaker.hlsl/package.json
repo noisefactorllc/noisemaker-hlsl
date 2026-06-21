@@ -10,5 +10,12 @@
   "documentationUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/README.md",
   "changelogUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/CHANGELOG.md",
   "licensesUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/LICENSE.md",
+  "samples": [
+    {
+      "displayName": "Quick Start",
+      "description": "Render a bundled Noisemaker graph to a RenderTexture and display it on a material.",
+      "path": "Samples~/QuickStart"
+    }
+  ],
   "hideInEditor": false
 }
