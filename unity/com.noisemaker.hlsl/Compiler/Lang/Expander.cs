@@ -942,6 +942,7 @@ namespace Noisemaker.Hlsl.Compiler
                 Id = id,
                 PassType = PassType.Blit,
                 Program = "blit",
+                ProgName = "blit",   // bare basename; matches the reference normalized graph (was null)
                 Func = "blit",
                 NodeId = nodeId,
                 StepIndex = stepIndex,
