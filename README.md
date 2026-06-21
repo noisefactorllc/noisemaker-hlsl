@@ -40,33 +40,43 @@ renderSurface`). That is the seam. noisemaker-hlsl produces the same graph two w
 
 - **Golden / offline** — `tools/export-graph.mjs` runs the *unchanged reference*
   `compileGraph` and serialises the graph to JSON (zero graph-construction parity risk).
-- **Live / in-Unity** — the C# `Compiler/` port compiles DSL at runtime, validated by
-  diffing its graph JSON against the golden path.
+- **Live / in-Unity** — the C# `Compiler/` port compiles DSL at runtime; it is *intended*
+  to be validated by diffing its graph JSON against the golden path, but is still early and
+  unverified — prefer the golden `graph.json` for anything you rely on.
 
 Both feed the same `NMPipeline` executor + HLSL shaders, so visual parity depends only
 on the shaders and the executor — see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Quick start (once opened in Unity)
 
-1. Add the package: in a Unity project, *Package Manager → Add package from disk →*
+> Requires **Linear color space** (*Player ▸ Color Space*) and, for player builds, the
+> `Noisemaker/*` shaders added to *Graphics ▸ Always Included Shaders*. See the package
+> README (`unity/com.noisemaker.hlsl/README.md`) for the full, authoritative integration
+> and build guide — the defaults will not "just work" in a build.
+
+1. Add the package: *Package Manager → Add package from disk →*
    `noisemaker-hlsl/unity/com.noisemaker.hlsl/package.json`.
-2. Add an `NMRenderer` component, set its DSL (e.g. `search synth\nnoise().write(o0)\nrender(o0)`).
-3. Read `NMRenderer.Output` (an `ARGBHalf` `RenderTexture`) into any material, or
-   drop a Noisemaker **Custom Function node** into a Shader Graph.
+2. Add an `NMRenderer` component and assign a source: a `GraphJson` TextAsset (exported via
+   `tools/export-graph.mjs`; recommended/verified) **or** a `Dsl` string plus the
+   `EffectDefinitions` TextAssets (live compiler; early/unverified). Then call `Rebuild()`.
+3. Read `NMRenderer.Output` (an `ARGBHalf` `RenderTexture`, valid after the first frame)
+   into any material, or drop a Noisemaker **Custom Function node** into a Shader Graph.
 
 ## Status
 
 **Compiles and renders in Unity 6** (verified on 6000.3.16f1). The C# engine compiles
-clean and all 180 shaders compile; driving `NMParityRunner` in batchmode produced correct
+clean and all 183 effect shaders compile; driving `NMParityRunner` in batchmode produced correct
 output for `solid` (exact `#FF8000` fill), `noise` (multi-octave RGB simplex), and a
 multi-pass `noise → blur` chain (correctly softened — exercises pooled intermediates +
 filter input sampling + per-pass selection). Parity-critical shaders (PCG, noise, cell,
 blend, blur) were additionally hardened by adversarial line-by-line review vs the WGSL.
 
 **Pixel parity verified** via the `parity/` harness (JS/WebGL2 golden in headless Chromium
-↔ Unity candidate ↔ `compare.py`). All **8/8 Tier-1 test programs are pixel-identical**
-(within 1/255 = float→8-bit rounding, SSIM 1.00000): `solid`, `noise`, `cell`, `gradient`,
-`shape`, `osc2d`, the multi-pass `blur`, and the two-surface mixer `blendMode`.
+↔ Unity candidate ↔ `compare.py`). All **12/12 parity programs are pixel-identical**
+(within 1/255 = float→8-bit rounding, SSIM 1.00000): the eight Tier-1 programs (`solid`,
+`noise`, `cell`, `gradient`, `shape`, `osc2d`, the multi-pass `blur`, the two-surface mixer
+`blendMode`) plus the 3D/mixer additions `palette3d`, `mashup`, `renderCubemap3d`, and
+`renderCubemapSurface`.
 
 The Y-flip reconciliation the design anticipated is now solved properly: Unity flips Y once
 per `DrawProcedural` into a RenderTexture, so textures of odd-vs-even render depth ended up
@@ -82,10 +92,11 @@ reserved-word collisions in the (now-removed, MPB-driven) `Properties` blocks, t
 reserved word `point` in `Cell.hlsl`, and `export-graph` starter-op + compile-time-`define`
 promotion. See `parity/README.md` for the runbook.
 
-**Effect coverage: 179 / 180** — every namespace complete:
-`synth` 28/29 · `filter` 90/90 · `mixer` 14/14 · `classicNoisedeck` 20/20 · `points` 10/10 ·
-`synth3d` 7/7 · `filter3d` 1/1 · `render` 9/9. (Only `synth/media`, an external image/video
-input, is out of scope — it belongs to the skipped external-input/UI layer.)
+**Effect coverage: 184 effect definitions** — every namespace complete:
+`synth` 29 · `filter` 90 · `mixer` 15 · `classicNoisedeck` 20 · `points` 10 · `synth3d` 7 ·
+`filter3d` 2 · `render` 11 (the `render` count includes the `loopBegin`/`loopEnd`/`meshLoader`
+control passes). 183 ship a renderable shader; `synth/media` is a definition-only stub (no
+shader — external image/video input is out of scope).
 
 Each ported effect ships an `.hlsl` core, a `.shader`, and a runtime `Effects/*.json`;
 single-pass effects also ship a Shader Graph Custom Function node. Every port is faithful to

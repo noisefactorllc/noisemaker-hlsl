@@ -6,6 +6,9 @@
   "unity": "2021.3",
   "keywords": ["shader", "procedural", "texture", "noise", "dsl", "shadergraph"],
   "author": { "name": "Noisemaker" },
-  "license": "SEE LICENSE IN ../../LICENSE",
+  "license": "MIT",
+  "documentationUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/README.md",
+  "changelogUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/CHANGELOG.md",
+  "licensesUrl": "https://github.com/noisefactorllc/noisemaker-hlsl/blob/main/unity/com.noisemaker.hlsl/LICENSE.md",
   "hideInEditor": false
 }

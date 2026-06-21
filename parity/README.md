@@ -36,8 +36,8 @@ All scripts honor `NM_REFERENCE_ROOT` to relocate the reference repo root
 
 ## Test programs
 
-`programs/*.dsl` — 8 representative Tier-1 effects, each with a fixed `seed: 1` so
-output is deterministic:
+`programs/*.dsl` — 12 representative programs (8 Tier-1 + 4 3D/mixer), each with a fixed
+`seed: 1` so output is deterministic:
 
 | file | effect | shape |
 |---|---|---|
@@ -49,6 +49,10 @@ output is deterministic:
 | `osc2d.dsl`     | `synth/osc2d`    | single-pass oscillator |
 | `blur.dsl`      | `filter/blur`    | multi-pass H/V separable blur over noise |
 | `blendMode.dsl` | `mixer/blendMode`| two-surface blend (o0 → o1) |
+| `palette3d.dsl` | `filter3d/palette3d` | recolor a 3D volume by palette, viewed via render3d |
+| `mashup.dsl` | `mixer/mashup` | luminance-band router (incl. active-when-wired fallback) |
+| `renderCubemap3d.dsl` | `render/renderCubemap3d` | lit cubemap-face volume render (single face) |
+| `renderCubemapSurface.dsl` | `render/renderCubemapSurface` | raw emission/absorption cubemap face |
 
 ## Runbook
 

@@ -47,8 +47,10 @@ so visual parity depends only on the executor + shaders, not on which producer r
 A CommandBuffer-based executor. **All reference effects are render-pass based**
 (`reference/10`: no `type:compute` in any definition; agents/GPGPU use MRT +
 points-scatter + repeat loops), so we mirror the **WebGL2 GPGPU model** rather than
-Unity compute shaders. This keeps the engine render-pipeline-agnostic (Built-in,
-URP, HDRP — it only needs `CommandBuffer.Blit`/`DrawProcedural`).
+Unity compute shaders. This keeps the engine render-pipeline-agnostic by design (it only
+needs `CommandBuffer.Blit`/`DrawProcedural`) — **verified on Built-in (Unity 6); URP/HDRP
+are expected to work but are not yet verified.** It renders to its own offscreen
+RenderTexture (not an SRP camera/feature); presenting it full-screen is the host's job.
 
 | Reference | noisemaker-hlsl |
 |---|---|
@@ -59,12 +61,13 @@ URP, HDRP — it only needs `CommandBuffer.Blit`/`DrawProcedural`).
 | fullscreen triangle VS + default present blit | `Shaders/Include/NMFullscreen.hlsl`, `Shaders/NMBlit.shader`. |
 | per-frame uniform flow | `Pipeline/UniformBinder.cs` → `MaterialPropertyBlock` (named uniforms; see PORTING-GUIDE). |
 | `Pipeline.render(time)` control flow | `Pipeline/NMPipeline.cs` — frame loop, skip/repeat/present, normalized 0..1 time. |
-| host API (`getOutput`, `setUniform`, resize) | `Driver/NMRenderer.cs` (MonoBehaviour) + `NMRenderTexture` output. |
+| host API (`getOutput`, `setUniform`, resize) | `Driver/NMRenderer.cs` (MonoBehaviour); `Output` is a `RenderTexture`. |
 
-Out of scope for the first cut (marked TODO in code): MIDI/audio automation,
-oscillator automation binding, tiled hi-res export, async/CPU texture init
-(worm tracing), 3D volumes & mesh rendering. The graph model carries the fields so
-they can be added without reshaping.
+Shipped since the first cut: 3D volumes & raymarch, mesh rendering, agents/particles,
+and cubemap output (`RenderCubemap` → `TextureCube`). Still out of scope / staged:
+MIDI/audio automation, oscillator automation binding, tiled hi-res export, async/CPU
+texture init (worm tracing), and the `write3d` compiler lane. The graph model carries
+the fields so the rest can be added without reshaping.
 
 ## Compiler (`Compiler/` asmdef) — `Noisemaker.Hlsl.Compiler`
 
@@ -107,5 +110,5 @@ Two integration levels:
   repo's existing `scripts/image_regression.py` conventions).
 
 See `reference/` for the full re-implementer specs of every reference subsystem.
-**Status:** built correct-by-construction; not yet compiled/rendered (no Unity/Node
-in the authoring session). The parity harness is how each piece gets verified.
+**Status:** compiles + renders in Unity 6 (verified on `6000.3.16f1`); each piece is
+verified via the parity harness (12/12 parity programs pixel-identical, SSIM 1.0).
