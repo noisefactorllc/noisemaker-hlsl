@@ -85,6 +85,30 @@ python parity/compare.py \
 
 Loop over all programs with a shell `for` over `parity/programs/*.dsl`.
 
+## Graph parity (live-DSL compiler)
+
+The pixel harness above validates the *shaders + executor* from a precompiled graph. A
+second, **GPU-free** harness validates the **C# live DSL compiler** (`Compiler/`) by
+diffing the graph it produces against the reference `export-graph.mjs` oracle, byte-for-byte:
+
+```
+  DSL ─┬─ tools/export-graph.mjs ─────────────────────► <name>.ref.graph.json ─┐
+       └─ NMParityRunner.CompileDslDumpBatchFromCommandLine (Unity, 1 session)  ├─► graph-diff.py ─► PASS/FAIL
+                                                          <name>.cs.graph.json ─┘
+```
+
+Run it (one Unity session for all programs; no rendering):
+
+```bash
+UNITY=/path/to/Unity UNITY_PROJECT=/path/to/proj ./parity/graph-verify.sh         # all programs
+UNITY=... UNITY_PROJECT=... ./parity/graph-verify.sh noise mashup                 # a subset
+```
+
+`graph-diff.py` compares the normalized graphs structurally, ignoring the per-instance
+`id` hash and `source`; a clean run is `0 deltas`. **Current status: 12/12 programs
+byte-clean** — the C# normalized graph is identical to the reference oracle. This is the
+"diffed against the golden path" validation the live-DSL path was always meant to have.
+
 ## Parity hazards (must match between golden and candidate)
 
 - **Color space** — RTs are `ARGBHalf` + `RenderTextureReadWrite.Linear`; **never
@@ -102,8 +126,10 @@ Loop over all programs with a shell `for` over `parity/programs/*.dsl`.
 ## Files
 
 - `export-and-render.mjs` — golden renderer (graph.json + golden.png).
-- `compare.py` — max-abs-diff + global SSIM gate, JSON report.
-- `programs/*.dsl` — fixed-seed test programs.
-- `../unity/com.noisemaker.hlsl/Editor/NMParityRunner.cs` — Unity candidate renderer.
-- `../tools/export-graph.mjs` — golden graph producer (used by step 1 internally).
+- `compare.py` — max-abs-diff + global SSIM gate, JSON report (pixel parity).
+- `graph-verify.sh` — graph-parity harness (all programs: C# live graph vs the oracle).
+- `graph-diff.py` — structural graph diff (ignores the `id` hash + `source`).
+- `programs/*.dsl` — fixed-seed test programs (pixel + graph parity).
+- `../unity/com.noisemaker.hlsl/Editor/NMParityRunner.cs` — Unity candidate renderer + `CompileDslDumpBatchFromCommandLine` (graph dumper).
+- `../tools/export-graph.mjs` — golden graph producer (used by both harnesses).
 - `../tools/convert-definitions.mjs` — effect-definition regenerator (step 0).

@@ -432,6 +432,42 @@ namespace Noisemaker.Hlsl.Editor
             }
         }
 
+        // ---- Batch DSL->graph dump (graph-parity harness) -----------------------
+        // Compiles MANY DSLs to normalized graph JSON in ONE editor session (the
+        // graph-parity analog of RenderBatchFromCommandLine). -nmManifest <file>: each
+        // non-empty line is "<dslPath>\t<outGraphJson>". Per-program compile failures are
+        // logged (NM-GRAPH-FAIL <dsl>: <msg>) and do not abort the batch; on failure no
+        // output file is written, so the diff step reports it as a candidate-missing FAIL.
+        public static void CompileDslDumpBatchFromCommandLine()
+        {
+            string manifest = GetArg("-nmManifest");
+            if (string.IsNullOrEmpty(manifest) || !File.Exists(manifest))
+            {
+                Debug.LogError("[NMParity] -nmManifest <file> is required.");
+                EditorApplication.Exit(2);
+                return;
+            }
+            EffectRegistry reg = LoadRegistryFromPackage();
+            int ok = 0, fail = 0;
+            foreach (string raw in File.ReadAllLines(manifest))
+            {
+                string line = raw.Trim();
+                if (line.Length == 0 || line.StartsWith("#")) continue;
+                string[] parts = line.Split('\t');
+                if (parts.Length < 2) continue;
+                string dslPath = parts[0], outPath = parts[1];
+                try
+                {
+                    RenderGraph graph = DslCompiler.Compile(File.ReadAllText(dslPath), reg);
+                    File.WriteAllText(outPath, DslCompiler.ToNormalizedJson(graph));
+                    ok++; Debug.Log($"[NMParity] dumped graph -> {outPath}");
+                }
+                catch (Exception e) { fail++; Debug.LogError($"NM-GRAPH-FAIL {dslPath}: {e.Message}"); }
+            }
+            Debug.Log($"[NMParity] graph-dump batch done: {ok} ok, {fail} fail");
+            EditorApplication.Exit(0);
+        }
+
         // ---- TEMP DIAGNOSTIC: render N frames, dump a named texture's RAW float32 -----
         // -nmDsl <dsl> -nmTex <texId> -nmOut <f32> [-nmSize -nmTime -nmFrames -nmTimeStep].
         // Used to read the navierStokes VELOCITY state (global_ns_velocity_chain_1, .rg)
