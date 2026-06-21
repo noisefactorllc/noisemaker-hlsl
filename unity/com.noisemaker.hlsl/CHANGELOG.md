@@ -18,6 +18,10 @@ development (pre-1.0); APIs may change.
 - Integrator documentation: **Requirements**, **Builds & platforms**, **Host API**,
   **Troubleshooting**, **Performance & cost**, and **Lifecycle & memory** sections in the
   package README; `docs/INTEGRATION-DOCS-REVIEW.md`.
+- Build step (`NMShaderInclusionBuildStep`, Editor-only) that auto-adds the `Noisemaker/*`
+  shaders to *Always Included Shaders* during a player build and restores the list
+  afterward — so the runtime resolves shaders in players with no manual setup. Also a
+  *Noisemaker ▸ Builds ▸ Add shaders to Always Included* menu item.
 - In-package `LICENSE.md`.
 
 ### Changed

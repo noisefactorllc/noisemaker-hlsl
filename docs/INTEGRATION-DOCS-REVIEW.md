@@ -73,4 +73,12 @@ The Unity-ecosystem benchmark independently **confirmed** the structural gaps ab
 
 ## Corrections applied (2026-06-20)
 
-The accuracy corrections, the package-README integrator sections (Requirements, runnable Quick Start, Builds, Troubleshooting, Performance, Host API, Lifecycle), the reconciled over-claims, and the ecosystem hygiene files (`LICENSE.md`, `CHANGELOG.md`, `package.json` fields) were applied in the same change set as this review. Items requiring **code** (an `IPreprocessBuild` shader auto-registrar; a `Samples~` scene; URP/HDRP verification; a host texture-input API) are documented as current limitations and tracked for follow-up, not yet implemented.
+The accuracy corrections, the package-README integrator sections (Requirements, runnable Quick Start, Builds, Troubleshooting, Performance, Host API, Lifecycle), the reconciled over-claims, and the ecosystem hygiene files (`LICENSE.md`, `CHANGELOG.md`, `package.json` fields) were applied in the same change set as this review. Follow-up items requiring **code** were then worked through:
+
+- ✅ **Shader build auto-registrar** — shipped as `NMShaderInclusionBuildStep` (adds every
+  `Noisemaker/*` shader to Always Included Shaders during a player build, restores after);
+  verified in batchmode (collects 184 shaders, add→present→restore round-trips cleanly).
+  This resolves the "builds render nothing" blocker.
+- ⏳ **Host texture-input API**, **`Samples~` scene**, **URP/HDRP verification** — see the
+  commit history / `noisemaker-hlsl-integration-readiness` notes for current status; the
+  package remains output-only and verified on Built-in only until those land.

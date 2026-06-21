@@ -42,15 +42,15 @@ Add the package by either route (the package lives in a subfolder, not the repo 
 - **From git:** *Add package from git URL…* →
   `https://github.com/noisefactorllc/noisemaker-hlsl.git?path=unity/com.noisemaker.hlsl#<tag>`.
 
-### Builds & platforms (read this — builds render nothing by default)
+### Builds & platforms
 
-The runtime resolves each effect shader by name via `Shader.Find("Noisemaker/<ns>/<func>")`.
-**Unity strips shaders that no scene/material references**, so in a player build every
-pass fails with "Shader not found" and the output is black. Until an auto-registrar ships,
-you must make the shaders survive the build:
-
-- Add the `Noisemaker/*` shaders to *Project Settings ▸ Graphics ▸ Always Included Shaders*,
-  **or** ship them under a `Resources/` folder, **or** include a `ShaderVariantCollection`.
+The runtime resolves each effect shader by name via `Shader.Find("Noisemaker/<ns>/<func>")`,
+and Unity strips shaders that no scene/material references. The package ships an automatic
+Editor build step (`NMShaderInclusionBuildStep`) that adds every `Noisemaker/*` shader to
+*Always Included Shaders* for the duration of a player build and restores your list
+afterward — so **builds resolve the shaders with no setup**. (To manage it yourself instead,
+run *Noisemaker ▸ Builds ▸ Add shaders to Always Included* once, or ship the shaders in a
+`Resources/` folder. The auto step is skipped only if you strip the Editor assembly.)
 
 Also note for builds:
 - **Build-safe** source paths: `GraphJson` (TextAsset) and `EffectDefinitions` (TextAsset[]).
