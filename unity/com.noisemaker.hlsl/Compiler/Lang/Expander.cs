@@ -384,6 +384,7 @@ namespace Noisemaker.Hlsl.Compiler
         {
             rawValues = new Dictionary<string, double>();
             var pairs = new List<KeyValuePair<string, double>>();
+            var boolDefines = new System.Collections.Generic.HashSet<string>();
             if (effectDef.Globals != null && effectDef.Globals.Kind == JsonKind.Object)
             {
                 var names = new List<string>();
@@ -395,6 +396,7 @@ namespace Noisemaker.Hlsl.Compiler
                     string defineName = StrOf(def, "define");
                     if (defineName == null) continue;
                     string type = StrOf(def, "type");
+                    if (type == "boolean") boolDefines.Add(defineName);  // reference stringifies bool defines as true/false in the program key
                     // value = default, overridden by step.args[globalName]
                     double? value = NumDefault(def);
                     if (step.Args.Has(globalName))
@@ -417,7 +419,8 @@ namespace Noisemaker.Hlsl.Compiler
             foreach (var p in pairs)
             {
                 defines.Add(p.Key, (int)p.Value);
-                sb.Append("__").Append(p.Key).Append("_").Append(JsNumberString(p.Value));
+                string sv = boolDefines.Contains(p.Key) ? (p.Value != 0.0 ? "true" : "false") : JsNumberString(p.Value);
+                sb.Append("__").Append(p.Key).Append("_").Append(sv);
             }
             return sb.ToString();
         }

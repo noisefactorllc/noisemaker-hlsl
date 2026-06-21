@@ -230,11 +230,14 @@ namespace Noisemaker.Hlsl.Compiler
                 if (p.Repeat.IsCount) sb.Append(p.Repeat.Count);
                 else WriteJsonString(sb, p.Repeat.UniformName);
             }
-            if (p.EffectKey != null) { sb.Append(','); WriteString(sb, "effectKey", p.EffectKey); }
+            // Always emit (null when absent) to match the reference normalized graph,
+            // which emits effectKey/scopedParams unconditionally (export-graph normalizePass).
+            sb.Append(','); WriteKey(sb, "effectKey"); WriteJsonString(sb, p.EffectKey);
             if (p.NodeId != null) { sb.Append(','); WriteString(sb, "nodeId", p.NodeId); }
             if (p.StepIndex.HasValue) { sb.Append(','); WriteKey(sb, "stepIndex"); sb.Append(p.StepIndex.Value); }
             if (p.InheritsVolumeSize) { sb.Append(','); WriteKey(sb, "inheritsVolumeSize"); sb.Append("true"); }
-            if (p.ScopedParams != null) { sb.Append(','); WriteKey(sb, "scopedParams"); WriteStringMap(sb, p.ScopedParams); }
+            sb.Append(','); WriteKey(sb, "scopedParams");
+            if (p.ScopedParams != null) WriteStringMap(sb, p.ScopedParams); else sb.Append("null");
             // DSL LOOPS: emit loop-group tagging only when set (0 = none), round-tripped
             // by GraphLoader.ReadPass.
             if (p.LoopGroupId != 0)
@@ -268,12 +271,18 @@ namespace Noisemaker.Hlsl.Compiler
 
         private static void WriteTextureSpec(StringBuilder sb, TextureSpec t)
         {
+            // Field order + usage mirror the reference compiler.js: width, height, format,
+            // usage, [depth], [is3D]. Render textures get the render usage set; is3D (WebGPU
+            // volume) textures get the storage set. format defaults to rgba16f.
             sb.Append('{');
             WriteKey(sb, "width"); WriteDim(sb, t.Width); sb.Append(',');
-            WriteKey(sb, "height"); WriteDim(sb, t.Height);
+            WriteKey(sb, "height"); WriteDim(sb, t.Height); sb.Append(',');
+            WriteString(sb, "format", t.Format ?? "rgba16f"); sb.Append(',');
+            WriteKey(sb, "usage"); sb.Append(t.Is3D
+                ? "[\"storage\",\"sample\",\"copySrc\",\"copyDst\"]"
+                : "[\"render\",\"sample\",\"copySrc\",\"copyDst\"]");
             if (t.Depth != null) { sb.Append(','); WriteKey(sb, "depth"); WriteDim(sb, t.Depth); }
             if (t.Is3D) { sb.Append(','); WriteKey(sb, "is3D"); sb.Append("true"); }
-            if (t.Format != null) { sb.Append(','); WriteString(sb, "format", t.Format); }
             sb.Append('}');
         }
 
@@ -283,7 +292,7 @@ namespace Noisemaker.Hlsl.Compiler
             switch (d.Kind)
             {
                 case DimKind.Number: sb.Append(JsNum(d.Number)); break;
-                case DimKind.Screen: WriteJsonString(sb, "screen"); break;
+                case DimKind.Screen: WriteJsonString(sb, d.ScreenLiteral ?? "screen"); break;
                 case DimKind.Percent: WriteJsonString(sb, JsNum(d.Percent) + "%"); break;
                 case DimKind.Param:
                     sb.Append('{'); WriteKey(sb, "param"); WriteJsonString(sb, d.Param);

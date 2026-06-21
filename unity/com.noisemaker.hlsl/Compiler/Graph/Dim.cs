@@ -29,6 +29,10 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         // Number
         public double Number { get; private set; }
 
+        // Screen variant: the original literal ("screen"/"auto"/"resolution"/unknown),
+        // preserved for byte-faithful re-emit; all resolve to the screen/render size.
+        public string ScreenLiteral { get; private set; }
+
         // Percent: the parsed numerator, e.g. "6.25%" -> 6.25
         public double Percent { get; private set; }
 
@@ -55,8 +59,8 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         public static Dim FromNumber(double n) =>
             new Dim { Kind = DimKind.Number, Number = n };
 
-        public static Dim FromScreen() =>
-            new Dim { Kind = DimKind.Screen };
+        public static Dim FromScreen(string literal = "screen") =>
+            new Dim { Kind = DimKind.Screen, ScreenLiteral = literal };
 
         public static Dim FromPercent(double pct) =>
             new Dim { Kind = DimKind.Percent, Percent = pct };

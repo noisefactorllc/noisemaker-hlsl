@@ -269,16 +269,16 @@ namespace Noisemaker.Hlsl.Compiler.Graph
             if (d.Kind == JsonKind.String)
             {
                 string str = d.AsString;
-                if (str == "screen" || str == "auto") return Dim.FromScreen();
+                if (str == "screen" || str == "auto") return Dim.FromScreen(str);
                 if (str.Length > 0 && str[str.Length - 1] == '%')
                 {
                     // parseFloat semantics: numeric prefix before '%'.
                     string num = str.Substring(0, str.Length - 1);
                     return Dim.FromPercent(ParseDouble(num));
                 }
-                // Unknown string dim: treat as screen fallback (reference falls
-                // through to screenSize for unrecognized specs).
-                return Dim.FromScreen();
+                // Unknown string dim (e.g. "resolution"): preserve the literal for
+                // byte-faithful re-emit; resolves to screenSize at runtime (reference parity).
+                return Dim.FromScreen(str);
             }
 
             if (d.Kind == JsonKind.Object)
