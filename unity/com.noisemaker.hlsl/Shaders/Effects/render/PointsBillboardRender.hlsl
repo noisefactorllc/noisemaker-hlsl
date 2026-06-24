@@ -300,7 +300,15 @@ PBRDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
     // Scale offset and add to center position.
     float2 finalPos = clipPos + rotatedOffset * sizeClip;
 
-    o.positionCS = float4(finalPos, 0.0, 1.0);
+    // Y-orientation parity (CRITICAL): like PointsRender.vert_deposit, this custom
+    // billboard vertex stage MUST counter-flip clip.y by _ProjectionParams.x so the
+    // scattered quads store in the SAME orientation as the fullscreen diffuse/copy/
+    // blend passes (NMVertFullscreen). Without it the deposited billboards land
+    // vertically MIRRORED vs the GLSL golden, so the composited trail/output renders
+    // upside-down. The sprite SDF shapes (circle/ring/square/diamond) and the radial
+    // "soft" falloff are Y-symmetric, so counter-flipping the quad position alone
+    // reproduces the golden. See NMFullscreen.hlsl + PointsRender.hlsl.
+    o.positionCS = float4(finalPos.x, finalPos.y * _ProjectionParams.x, 0.0, 1.0);
     o.color      = float4(col.rgb, col.a);
 
     // Sprite UV coordinates (0..1 range).
