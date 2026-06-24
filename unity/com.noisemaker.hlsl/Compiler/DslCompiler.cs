@@ -220,7 +220,13 @@ namespace Noisemaker.Hlsl.Compiler
             sb.Append('}');
 
             if (p.DrawMode != null) { sb.Append(','); WriteString(sb, "drawMode", p.DrawMode); }
+            // count may be a NUMBER (literal vertex count) or a STRING mode (e.g.
+            // "input" — derive the scatter count from the xyzTex dimensions). The
+            // expander stores the string form in CountMode; the reference oracle emits
+            // it verbatim as `count`. Emit whichever is present so the live-DSL graph
+            // stays byte-identical to the oracle for points/deposit passes (count:"input").
             if (p.Count.HasValue) { sb.Append(','); WriteKey(sb, "count"); sb.Append(p.Count.Value); }
+            else if (p.CountMode != null) { sb.Append(','); WriteString(sb, "count", p.CountMode); }
             if (p.CountUniform != null) { sb.Append(','); WriteString(sb, "countUniform", p.CountUniform); }
             if (p.DrawBuffers.HasValue) { sb.Append(','); WriteKey(sb, "drawBuffers"); sb.Append(p.DrawBuffers.Value); }
             // blend: emit the explicit two-factor array (["src","dst"]) when present
