@@ -96,6 +96,7 @@ float posX;             // globals.posX           default 0
 float posY;             // globals.posY           default 0
 float intensity;        // globals.intensity      default 75
 float inputIntensity;   // globals.inputIntensity default 10.15
+int   blendMode;        // globals.blendMode      default 0 (0=additive, 1=alpha)
 
 // =============================================================================
 // PASS 1: diffuse — decay the existing trail (frag_diffuse, fullscreen).
@@ -109,8 +110,11 @@ float4 frag_diffuse(NMVaryings i) : SV_Target
     float4 trailColor = trailTex.Sample(sampler_trailTex, uv);
 
     // Apply intensity decay (persistence). intensity=100 → no decay, 0 → instant fade.
+    // Clamp to [0,1] each frame to bound unbounded HDR accumulation via additive
+    // deposit blending; also keeps the alpha-composite math stable when trail alpha
+    // would exceed 1.0 (reference a0d8ea14).
     float decay = clamp(intensity / 100.0, 0.0, 1.0);
-    return trailColor * decay;
+    return clamp(trailColor * decay, 0.0, 1.0);
 }
 
 // =============================================================================
@@ -380,8 +384,14 @@ float4 frag_deposit(PBRDepositVaryings i) : SV_Target
 
 // =============================================================================
 // PASS 4: blend — composite trail over scaled input (frag_blend, fullscreen).
-//   WGSL: t = inputIntensity/100; scaledInput = inputColor * t; alpha-composite
-//   trail over scaledInput. size = max(resolution, vec2(1.0)).
+//   WGSL: t = inputIntensity/100; scaledInput = inputColor * t. The composite
+//   depends on blendMode (reference 678154a2):
+//     blendMode==1 (alpha)    : trail stores PREMULTIPLIED values (rgb=color*alpha,
+//                               deposited with ONE/ONE_MINUS_SRC_ALPHA). Use the
+//                               premultiplied OVER operator, then un-premultiply.
+//     blendMode==0 (additive) : trail stores additive sums (deposited ONE/ONE).
+//                               Treat as pseudo-non-premultiplied (legacy formula).
+//   size = max(resolution, vec2(1.0)).
 // =============================================================================
 float4 frag_blend(NMVaryings i) : SV_Target
 {
@@ -391,24 +401,32 @@ float4 frag_blend(NMVaryings i) : SV_Target
     float4 inputColor = inputTex.Sample(sampler_inputTex, uv);
     float4 trailColor = trailTex.Sample(sampler_trailTex, uv);
 
-    // Blend: trail over scaled input using alpha.
     // inputIntensity 0 = trail only, 100 = trail over full input.
     float t = inputIntensity / 100.0;
     float4 scaledInput = inputColor * t;
 
-    // Alpha compositing: trail over input.
-    float outAlpha = trailColor.a + scaledInput.a * (1.0 - trailColor.a);
     float3 outRGB;
-    if (outAlpha > 0.0)
+    float  outAlpha;
+
+    if (blendMode == 1)
     {
-        outRGB = (trailColor.rgb * trailColor.a + scaledInput.rgb * scaledInput.a * (1.0 - trailColor.a)) / outAlpha;
+        // Alpha mode: trail stores premultiplied values (rgb = actual_color * alpha).
+        // Use premultiplied OVER then convert to straight for output.
+        outAlpha = trailColor.a + scaledInput.a * (1.0 - trailColor.a);
+        float3 outRGB_pre = trailColor.rgb + scaledInput.rgb * scaledInput.a * (1.0 - trailColor.a);
+        outRGB = outAlpha > 0.0 ? outRGB_pre / outAlpha : float3(0.0, 0.0, 0.0);
     }
     else
     {
-        outRGB = float3(0.0, 0.0, 0.0);
+        // Additive mode: trail stores additive sums; treat as pseudo-non-premultiplied.
+        outAlpha = trailColor.a + scaledInput.a * (1.0 - trailColor.a);
+        outRGB = outAlpha > 0.0
+            ? (trailColor.rgb * trailColor.a + scaledInput.rgb * scaledInput.a * (1.0 - trailColor.a)) / outAlpha
+            : float3(0.0, 0.0, 0.0);
     }
 
-    return float4(outRGB, outAlpha);
+    // Clamp to [0,1] (reference 77e45a5e): deposit can push alpha > 1 within a frame.
+    return clamp(float4(outRGB, outAlpha), 0.0, 1.0);
 }
 
 #endif // NM_EFFECT_POINTSBILLBOARDRENDER_INCLUDED

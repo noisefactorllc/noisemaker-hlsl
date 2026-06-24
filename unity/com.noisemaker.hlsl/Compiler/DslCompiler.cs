@@ -223,7 +223,19 @@ namespace Noisemaker.Hlsl.Compiler
             if (p.Count.HasValue) { sb.Append(','); WriteKey(sb, "count"); sb.Append(p.Count.Value); }
             if (p.CountUniform != null) { sb.Append(','); WriteString(sb, "countUniform", p.CountUniform); }
             if (p.DrawBuffers.HasValue) { sb.Append(','); WriteKey(sb, "drawBuffers"); sb.Append(p.DrawBuffers.Value); }
-            if (p.Blend) { sb.Append(','); WriteKey(sb, "blend"); sb.Append("true"); }
+            // blend: emit the explicit two-factor array (["src","dst"]) when present
+            // (matches the reference normalized graph, which passes the array through),
+            // else the plain bool true for additive. Absent when not blending.
+            if (p.BlendFactors != null && p.BlendFactors.Length == 2)
+            {
+                sb.Append(','); WriteKey(sb, "blend"); sb.Append('[');
+                WriteJsonString(sb, p.BlendFactors[0]); sb.Append(',');
+                WriteJsonString(sb, p.BlendFactors[1]); sb.Append(']');
+            }
+            else if (p.Blend) { sb.Append(','); WriteKey(sb, "blend"); sb.Append("true"); }
+            // conditions: re-attached from the effect definition (reference exporter does
+            // the same — the expander drops them). { runIf:[{uniform,equals}], skipIf:[...] }.
+            if (p.Conditions != null) { sb.Append(','); WriteKey(sb, "conditions"); WriteConditions(sb, p.Conditions); }
             if (p.Repeat != null)
             {
                 sb.Append(','); WriteKey(sb, "repeat");
@@ -246,6 +258,39 @@ namespace Noisemaker.Hlsl.Compiler
                 sb.Append(','); WriteKey(sb, "loopIterations"); sb.Append(p.LoopIterations);
             }
             sb.Append('}');
+        }
+
+        // Serialize pass conditions { runIf:[{uniform,equals}], skipIf:[...] } to match
+        // the reference normalized graph. Each list is omitted when null.
+        private static void WriteConditions(StringBuilder sb, PassConditions c)
+        {
+            sb.Append('{');
+            bool wrote = false;
+            if (c.RunIf != null)
+            {
+                WriteKey(sb, "runIf"); WriteConditionList(sb, c.RunIf);
+                wrote = true;
+            }
+            if (c.SkipIf != null)
+            {
+                if (wrote) sb.Append(',');
+                WriteKey(sb, "skipIf"); WriteConditionList(sb, c.SkipIf);
+            }
+            sb.Append('}');
+        }
+
+        private static void WriteConditionList(StringBuilder sb, System.Collections.Generic.List<PassCondition> list)
+        {
+            sb.Append('[');
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (i > 0) sb.Append(',');
+                sb.Append('{');
+                WriteKey(sb, "uniform"); WriteJsonString(sb, list[i].Uniform); sb.Append(',');
+                WriteKey(sb, "equals"); sb.Append(JsNum(list[i].EqualsValue));
+                sb.Append('}');
+            }
+            sb.Append(']');
         }
 
         private static void WriteProgram(StringBuilder sb, Program prog)

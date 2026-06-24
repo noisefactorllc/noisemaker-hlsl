@@ -142,7 +142,13 @@ namespace Noisemaker.Hlsl.Compiler.Graph
             // array (["one","one"]) / string ("One One") all mean additive accumulation.
             // GetBool only matched the bool form and dropped the array form (dla),
             // leaving Blend=false. Treat any present non-null/non-false value as truthy.
-            pass.Blend = IsTruthyBlend(p.Get("blend"));
+            JsonValue blendVal = p.Get("blend");
+            pass.Blend = IsTruthyBlend(blendVal);
+            // Capture an explicit two-factor array ["src","dst"] (e.g. ["ONE",
+            // "ONE_MINUS_SRC_ALPHA"] for the alpha deposit; ["one","one"] is additive).
+            pass.BlendFactors = ParseBlendFactors(blendVal);
+            // conditions: { runIf:[{uniform,equals}], skipIf:[...] } (reference/04 §10.3).
+            pass.Conditions = ParseConditions(p.Get("conditions"));
             pass.Repeat = ParseRepeat(p.Get("repeat"));
             JsonValue clear = p.Get("clear");
             pass.Clear = (clear != null && clear.Kind != JsonKind.Null) ? clear : null;
@@ -397,7 +403,7 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         // blend truthiness (reference: `if (pass.blend) { additive }`). JS truthiness:
         // bool true, any non-empty array (["one","one"]), any non-empty string
         // ("One One"), or a non-zero number. null / absent / false / empty / 0 => false.
-        private static bool IsTruthyBlend(JsonValue v)
+        public static bool IsTruthyBlend(JsonValue v)
         {
             if (v == null) return false;
             switch (v.Kind)
@@ -408,6 +414,46 @@ namespace Noisemaker.Hlsl.Compiler.Graph
                 case JsonKind.Number: return v.AsNumber != 0.0;
                 default: return false;
             }
+        }
+
+        // Parse an explicit two-factor blend array ["src","dst"] into a string[2].
+        // null for any non-array form (bool/string/number/absent) — those resolve to
+        // additive ONE/ONE via the Blend bool. Strings are kept verbatim (the backend
+        // normalizes case when routing the alpha shader pass).
+        public static string[] ParseBlendFactors(JsonValue v)
+        {
+            if (v == null || v.Kind != JsonKind.Array) return null;
+            var arr = v.AsArray;
+            if (arr.Count != 2) return null;
+            if (arr[0].Kind != JsonKind.String || arr[1].Kind != JsonKind.String) return null;
+            return new[] { arr[0].AsString, arr[1].AsString };
+        }
+
+        // Parse pass conditions { runIf:[{uniform,equals}], skipIf:[...] }
+        // (reference/04 §10.3 Pipeline.shouldSkipPass). null when absent / not an object.
+        public static PassConditions ParseConditions(JsonValue v)
+        {
+            if (v == null || v.Kind != JsonKind.Object) return null;
+            var runIf = ParseConditionList(v.Get("runIf"));
+            var skipIf = ParseConditionList(v.Get("skipIf"));
+            if (runIf == null && skipIf == null) return null;
+            return new PassConditions { RunIf = runIf, SkipIf = skipIf };
+        }
+
+        private static System.Collections.Generic.List<PassCondition> ParseConditionList(JsonValue v)
+        {
+            if (v == null || v.Kind != JsonKind.Array || v.AsArray.Count == 0) return null;
+            var list = new System.Collections.Generic.List<PassCondition>();
+            foreach (JsonValue el in v.AsArray)
+            {
+                if (el == null || el.Kind != JsonKind.Object) continue;
+                JsonValue u = el.Get("uniform");
+                JsonValue eq = el.Get("equals");
+                if (u == null || u.Kind != JsonKind.String) continue;
+                double equals = (eq != null && eq.Kind == JsonKind.Number) ? eq.AsNumber : 0.0;
+                list.Add(new PassCondition { Uniform = u.AsString, EqualsValue = equals });
+            }
+            return list.Count > 0 ? list : null;
         }
 
         private static double ParseDouble(string s)

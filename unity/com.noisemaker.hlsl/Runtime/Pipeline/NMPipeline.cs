@@ -319,13 +319,56 @@ namespace Noisemaker.Hlsl
             return end;
         }
 
-        // shouldSkipPass — reference §10.3. The C# graph model carries conditions
-        // only implicitly (not in the normalized Pass yet). TODO(scope): when the
-        // normalizer emits conditions, evaluate skipIf/runIf here against
-        // _globalUniforms ?? pass.uniforms with strict typed equality.
+        // shouldSkipPass — reference §10.3 Pipeline.shouldSkipPass. A pass with no
+        // conditions never skips. skipIf: skip if ANY predicate matches. runIf: skip
+        // unless ALL predicates match. Each predicate resolves its uniform from the
+        // live globals first, then the pass uniforms (same chain as resolveRepeatCount),
+        // and compares numerically against `equals` (the JS `=== condition.equals`;
+        // condition.equals is always a number here, e.g. blendMode 0/1).
         private bool ShouldSkipPass(Pass pass)
         {
+            PassConditions c = pass.Conditions;
+            if (c == null) return false;
+
+            // skipIf: skip if ANY condition matches.
+            if (c.SkipIf != null)
+            {
+                for (int i = 0; i < c.SkipIf.Count; i++)
+                {
+                    PassCondition cond = c.SkipIf[i];
+                    double? v = ResolveConditionValue(pass, cond.Uniform);
+                    if (v.HasValue && v.Value == cond.EqualsValue) return true;
+                }
+            }
+
+            // runIf: skip if ANY condition does NOT match (run only when all match).
+            if (c.RunIf != null)
+            {
+                for (int i = 0; i < c.RunIf.Count; i++)
+                {
+                    PassCondition cond = c.RunIf[i];
+                    double? v = ResolveConditionValue(pass, cond.Uniform);
+                    if (!v.HasValue || v.Value != cond.EqualsValue) return true;
+                }
+            }
+
             return false;
+        }
+
+        // Resolve a condition's uniform value: live globals (_globalUniforms) take
+        // precedence, then the pass's own numeric uniform literal. Returns null when
+        // unresolved (treated as "not equal" by the runIf/skipIf logic, mirroring the
+        // reference's `undefined !== equals`).
+        private double? ResolveConditionValue(Pass pass, string uniform)
+        {
+            if (string.IsNullOrEmpty(uniform)) return null;
+            double? gu = UniformLookup(uniform);
+            if (gu.HasValue) return gu;
+            UniformValue uv;
+            if (pass.Uniforms.TryGetValue(uniform, out uv) &&
+                uv.Kind == UniformValueKind.Number)
+                return uv.Number;
+            return null;
         }
 
         // resolveRepeatCount — reference §10.5.

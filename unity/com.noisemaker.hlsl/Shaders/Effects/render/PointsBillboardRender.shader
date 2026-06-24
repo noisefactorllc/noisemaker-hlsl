@@ -80,7 +80,29 @@ Shader "Noisemaker/render/pointsBillboardRender"
             ENDHLSL
         }
 
-        // progName "blend" (passes[3]) — composite trail over scaled input.
+        // progName "deposit" / blendMode==1 (passes[3], JSON name "deposit_alpha") —
+        // SAME billboard scatter geometry/fragment as the additive deposit, but
+        // premultiplied OVER blend (Blend One OneMinusSrcAlpha). The runtime routes the
+        // alpha-mode deposit here (NMShaderRegistry.ShaderProgForPass appends "_alpha"
+        // when the pass blend is [ONE, ONE_MINUS_SRC_ALPHA]); the two deposit passes are
+        // mutually exclusive per frame via the JSON runIf conditions on blendMode, so
+        // exactly one runs. Blend state is fixed-function in the .shader in this port, so
+        // the only difference vs the "deposit" pass is the Blend statement.
+        Pass
+        {
+            Name "deposit_alpha"
+            Blend One OneMinusSrcAlpha
+            Cull Off
+            HLSLPROGRAM
+            #pragma vertex vert_deposit
+            #pragma fragment frag_deposit
+            #pragma target 4.5
+            #pragma exclude_renderers gles
+            #include "PointsBillboardRender.hlsl"
+            ENDHLSL
+        }
+
+        // progName "blend" (passes[4]) — composite trail over scaled input.
         Pass
         {
             Name "blend"

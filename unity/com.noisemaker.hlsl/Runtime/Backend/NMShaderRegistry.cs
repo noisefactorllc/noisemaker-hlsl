@@ -45,6 +45,37 @@ namespace Noisemaker.Hlsl
         private readonly Dictionary<string, Material> _materials =
             new Dictionary<string, Material>();
 
+        // The shader-pass selector (program basename) for a graph Pass. Normally
+        // pass.ProgName, but blend state is fixed-function/baked in the .shader in this
+        // port (the runtime never sets GPU blend), so a per-pass premultiplied-OVER
+        // blend (src=ONE, dst=ONE_MINUS_SRC_ALPHA — the alpha-mode deposit) must route
+        // to a DISTINCT shader pass that declares `Blend One OneMinusSrcAlpha`. By
+        // convention that pass is named "<progName>_alpha". Additive blends
+        // (bool true, or ["one","one"]) keep the plain progName (Blend One One pass).
+        public static string ShaderProgForPass(Pass pass)
+        {
+            string prog = pass.ProgName;
+            if (string.IsNullOrEmpty(prog)) return prog;
+            if (IsPremultipliedOverBlend(pass.BlendFactors))
+                return prog + "_alpha";
+            return prog;
+        }
+
+        // True for the [ONE, ONE_MINUS_SRC_ALPHA] factor pair (case-insensitive;
+        // accepts "ONE_MINUS_SRC_ALPHA"/"one_minus_src_alpha"/"oneMinusSrcAlpha").
+        private static bool IsPremultipliedOverBlend(string[] factors)
+        {
+            if (factors == null || factors.Length != 2) return false;
+            string src = factors[0];
+            string dst = factors[1];
+            if (string.IsNullOrEmpty(src) || string.IsNullOrEmpty(dst)) return false;
+            bool srcOne = string.Equals(src, "ONE", System.StringComparison.OrdinalIgnoreCase);
+            string dstNorm = dst.Replace("_", "").Replace("-", "");
+            bool dstOMSA = string.Equals(dstNorm, "ONEMINUSSRCALPHA",
+                System.StringComparison.OrdinalIgnoreCase);
+            return srcOne && dstOMSA;
+        }
+
         // Shader name for a pass. Blit passes share the single blit shader.
         public static string ShaderNameForPass(Pass pass)
         {
@@ -91,7 +122,7 @@ namespace Noisemaker.Hlsl
         // CommandBuffer.DrawProcedural / Blit take an int shaderPass.
         public int ResolvePassIndex(Pass pass)
         {
-            string prog = pass.ProgName;
+            string prog = ShaderProgForPass(pass);
             if (string.IsNullOrEmpty(prog)) return 0;
             Material mat = ResolveMaterial(pass);
             if (mat == null) return 0;

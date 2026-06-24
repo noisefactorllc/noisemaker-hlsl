@@ -16,6 +16,27 @@ namespace Noisemaker.Hlsl.Compiler.Graph
 {
     public enum PassType { Effect, Blit }
 
+    // Pass run/skip gating (reference/04 §10.3 Pipeline.shouldSkipPass). A pass with
+    // conditions runs only when its runIf/skipIf predicates resolve true against the
+    // live uniform values. Used by pointsBillboardRender's two deposit passes (one
+    // additive, one premultiplied-alpha) so only the one matching blendMode executes.
+    // Each predicate compares a uniform's resolved value against a numeric `equals`.
+    public sealed class PassCondition
+    {
+        public string Uniform { get; set; }
+        // The value the uniform must equal (named EqualsValue to avoid hiding
+        // object.Equals). Serialized as the JSON key "equals".
+        public double EqualsValue { get; set; }
+    }
+
+    public sealed class PassConditions
+    {
+        // skip the pass if ANY skipIf predicate matches (uniform == equals).
+        public System.Collections.Generic.List<PassCondition> SkipIf { get; set; }
+        // run the pass only if ALL runIf predicates match; skip otherwise.
+        public System.Collections.Generic.List<PassCondition> RunIf { get; set; }
+    }
+
     // Repeat: int or uniform-name string ("run pass N times/frame"). reference/03
     // §2.1, reference/04 §10.5. Exactly one of IsCount / IsUniformName holds.
     public sealed class Repeat
@@ -75,6 +96,13 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         public string CountUniform { get; set; }  // dynamic count from a uniform
         public int? DrawBuffers { get; set; }     // MRT attachment count
         public bool Blend { get; set; }           // additive deposit -> Blend One One
+        // Explicit two-factor blend [src, dst] (reference webgl2 array form), e.g.
+        // ["ONE","ONE_MINUS_SRC_ALPHA"] for premultiplied OVER, or ["one","one"] for
+        // additive. null when blend is absent or the plain bool `true` (== additive
+        // ONE/ONE). Blend stays truthy whenever BlendFactors is non-null. The Unity
+        // backend bakes blend state in the .shader, so a premultiplied-OVER factor pair
+        // routes the draw to a distinct `<progName>_alpha` shader pass (NMShaderRegistry).
+        public string[] BlendFactors { get; set; }
         public Repeat Repeat { get; set; }        // run pass N times/frame; null = once
         public JsonValue Clear { get; set; }      // backend-interpreted; null when absent
 
@@ -104,5 +132,9 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         // "not in a loop" — preserves linear/multi-statement behavior unchanged.
         public int LoopGroupId { get; set; }       // 0 = none
         public int LoopIterations { get; set; }    // >1 only when LoopGroupId != 0
+
+        // --- run/skip gating (reference/04 §10.3) ---
+        // Per-pass runIf/skipIf predicates; null when the pass has no conditions.
+        public PassConditions Conditions { get; set; }
     }
 }

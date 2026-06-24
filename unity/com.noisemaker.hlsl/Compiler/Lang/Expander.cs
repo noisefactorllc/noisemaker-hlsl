@@ -648,8 +648,16 @@ namespace Noisemaker.Hlsl.Compiler
                     pass.Count = (int)countVal.AsNumber;
                 else if (countVal != null && countVal.Kind == JsonKind.String)
                     pass.CountMode = countVal.AsString;
+                // blend: bool true OR a two-factor array (["one","one"] additive,
+                // ["ONE","ONE_MINUS_SRC_ALPHA"] premultiplied OVER). Mirror GraphLoader's
+                // truthiness so the live-DSL graph matches the golden graph.json (the
+                // earlier bool-only parse dropped the array form, leaving Blend=false for
+                // dla and the alpha deposit).
                 JsonValue blend = passDef.Get("blend");
-                pass.Blend = blend != null && blend.Kind == JsonKind.Bool && blend.AsBool;
+                pass.Blend = GraphLoader.IsTruthyBlend(blend);
+                pass.BlendFactors = GraphLoader.ParseBlendFactors(blend);
+                // conditions: runIf/skipIf pass gating (reference/04 §10.3).
+                pass.Conditions = GraphLoader.ParseConditions(passDef.Get("conditions"));
                 JsonValue repeat = passDef.Get("repeat");
                 if (repeat != null && repeat.Kind == JsonKind.Number) pass.Repeat = Repeat.FromCount((int)repeat.AsNumber);
                 else if (repeat != null && repeat.Kind == JsonKind.String) pass.Repeat = Repeat.FromUniform(repeat.AsString);
