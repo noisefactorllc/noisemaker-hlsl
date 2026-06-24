@@ -18,7 +18,7 @@
 //   DepthSource   : depthSource   (0=sourceA, 1=sourceB), default 1
 //   FocalDistance : focalDistance (1..100),               default 50
 //   Aperture      : aperture      (1..10),                default 4
-//   SampleBias    : sampleBias    (2..20),                default 10
+//   SampleBias    : sampleBias    (2..64),                default 12
 //   InputTex      : inputTex (Source A)
 //   Tex           : tex      (Source B)
 //   SS            : sampler state (bilinear, clamp, linear/non-sRGB)

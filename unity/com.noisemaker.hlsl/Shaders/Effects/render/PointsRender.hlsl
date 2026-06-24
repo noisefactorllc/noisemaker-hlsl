@@ -106,8 +106,10 @@ float4 frag_diffuse(NMVaryings i) : SV_Target
     float4 trailColor = trailTex.Sample(sampler_trailTex, uv);
 
     // Apply intensity decay (persistence). intensity=100 → no decay, 0 → instant fade.
+    // Clamp to [0,1] each frame to bound unbounded HDR accumulation via additive
+    // deposit blending (reference a0d8ea14).
     float decay = clamp(intensity / 100.0, 0.0, 1.0);
-    return trailColor * decay;
+    return clamp(trailColor * decay, 0.0, 1.0);
 }
 
 // =============================================================================
@@ -288,7 +290,10 @@ float4 frag_blend(NMVaryings i) : SV_Target
     // Alpha: where trail exists, full opacity; elsewhere, matte opacity.
     float alpha = max(trailPresence, matteAlpha);
 
-    return float4(rgb, alpha);
+    // Clamp to [0,1]: deposit can push trail alpha > 1 within a frame; an alpha > 1
+    // written here drives a negative GL_ONE_MINUS_SRC_ALPHA factor downstream (black
+    // dots in dense regions). Reference 77e45a5e.
+    return clamp(float4(rgb, alpha), 0.0, 1.0);
 }
 
 #endif // NM_EFFECT_POINTSRENDER_INCLUDED

@@ -29,7 +29,7 @@
 int   depthSource;    // globals.depthSource.uniform "depthSource", default 1
 float focalDistance;  // globals.focalDistance.uniform "focalDistance", default 50
 float aperture;       // globals.aperture.uniform "aperture", default 4
-float sampleBias;     // globals.sampleBias.uniform "sampleBias", default 10
+float sampleBias;     // globals.sampleBias.uniform "sampleBias", default 12 (max CoC radius in px)
 
 // -----------------------------------------------------------------------------
 // getLuminosity — ported VERBATIM from focusBlur.wgsl
@@ -57,7 +57,7 @@ float computeBlurFactor(float depth)
 // -----------------------------------------------------------------------------
 // applyFocusBlurAB — ported VERBATIM from focusBlur.wgsl
 // depthSource==0: use inputTex (A) as depth map, blur tex (B)
-// WGSL lines 28-55.
+// 64-sample golden-angle spiral disk; flat (un-weighted) CoC averaging.
 // -----------------------------------------------------------------------------
 float4 applyFocusBlurAB(float2 uv, float2 resolutionDims,
     Texture2D inputTex_, SamplerState sampler_inputTex_,
@@ -66,33 +66,26 @@ float4 applyFocusBlurAB(float2 uv, float2 resolutionDims,
     float4 depthSample = inputTex_.Sample(sampler_inputTex_, uv);
     float depth = getLuminosity(depthSample.rgb);
 
-    float blurFactor = computeBlurFactor(depth) * 10.0;
+    float blurRadius = computeBlurFactor(depth) * sampleBias;
 
     float4 color = float4(0.0, 0.0, 0.0, 0.0);
-    float totalWeight = 0.0;
+    const float GOLDEN = 2.399963;
 
-    for (int x = -4; x <= 4; x = x + 1)
+    for (int i = 0; i < 64; i = i + 1)
     {
-        for (int y = -4; y <= 4; y = y + 1)
-        {
-            float2 offset = float2((float)x, (float)y) * sampleBias / resolutionDims;
-
-            float dist2 = (float)(x * x + y * y);
-            float sigma2 = 2.0 * blurFactor * blurFactor;
-            float weight = exp(-dist2 / max(sigma2, 0.001));
-
-            color = color + tex_.Sample(sampler_tex_, uv + offset) * weight;
-            totalWeight = totalWeight + weight;
-        }
+        float r = sqrt((float)i / 64.0);
+        float theta = (float)i * GOLDEN;
+        float2 offset = float2(cos(theta), sin(theta)) * r * blurRadius / resolutionDims;
+        color = color + tex_.Sample(sampler_tex_, uv + offset);
     }
 
-    return color / totalWeight;
+    return color / 64.0;
 }
 
 // -----------------------------------------------------------------------------
 // applyFocusBlurBA — ported VERBATIM from focusBlur.wgsl
 // depthSource==1: use tex (B) as depth map, blur inputTex (A)
-// WGSL lines 58-85.
+// 64-sample golden-angle spiral disk; flat (un-weighted) CoC averaging.
 // -----------------------------------------------------------------------------
 float4 applyFocusBlurBA(float2 uv, float2 resolutionDims,
     Texture2D inputTex_, SamplerState sampler_inputTex_,
@@ -101,27 +94,20 @@ float4 applyFocusBlurBA(float2 uv, float2 resolutionDims,
     float4 depthSample = tex_.Sample(sampler_tex_, uv);
     float depth = getLuminosity(depthSample.rgb);
 
-    float blurFactor = computeBlurFactor(depth) * 10.0;
+    float blurRadius = computeBlurFactor(depth) * sampleBias;
 
     float4 color = float4(0.0, 0.0, 0.0, 0.0);
-    float totalWeight = 0.0;
+    const float GOLDEN = 2.399963;
 
-    for (int x = -4; x <= 4; x = x + 1)
+    for (int i = 0; i < 64; i = i + 1)
     {
-        for (int y = -4; y <= 4; y = y + 1)
-        {
-            float2 offset = float2((float)x, (float)y) * sampleBias / resolutionDims;
-
-            float dist2 = (float)(x * x + y * y);
-            float sigma2 = 2.0 * blurFactor * blurFactor;
-            float weight = exp(-dist2 / max(sigma2, 0.001));
-
-            color = color + inputTex_.Sample(sampler_inputTex_, uv + offset) * weight;
-            totalWeight = totalWeight + weight;
-        }
+        float r = sqrt((float)i / 64.0);
+        float theta = (float)i * GOLDEN;
+        float2 offset = float2(cos(theta), sin(theta)) * r * blurRadius / resolutionDims;
+        color = color + inputTex_.Sample(sampler_inputTex_, uv + offset);
     }
 
-    return color / totalWeight;
+    return color / 64.0;
 }
 
 // -----------------------------------------------------------------------------
