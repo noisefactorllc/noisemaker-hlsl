@@ -323,8 +323,16 @@ namespace Noisemaker.Hlsl
         // conditions never skips. skipIf: skip if ANY predicate matches. runIf: skip
         // unless ALL predicates match. Each predicate resolves its uniform from the
         // live globals first, then the pass uniforms (same chain as resolveRepeatCount),
-        // and compares numerically against `equals` (the JS `=== condition.equals`;
-        // condition.equals is always a number here, e.g. blendMode 0/1).
+        // and compares numerically against `equals` (the JS `=== condition.equals`).
+        //
+        // NOTE (reference dead-code parity): the port never attaches Pass.Conditions
+        // (the reference expander omits conditions from compiled passes — see Pass.cs),
+        // so c is always null here and this method always returns false. In particular
+        // pointsBillboardRender's two deposit passes (additive + premultiplied-alpha)
+        // BOTH run every frame, exactly as in the reference; the blendMode switch is
+        // effected by the blend-pass shader branch, not by skipping a deposit. The method
+        // is kept as the faithful mirror of Pipeline.shouldSkipPass (and to honor an
+        // explicit host-set condition if one is ever introduced).
         private bool ShouldSkipPass(Pass pass)
         {
             PassConditions c = pass.Conditions;

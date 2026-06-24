@@ -80,14 +80,17 @@ Shader "Noisemaker/render/pointsBillboardRender"
             ENDHLSL
         }
 
-        // progName "deposit" / blendMode==1 (passes[3], JSON name "deposit_alpha") —
-        // SAME billboard scatter geometry/fragment as the additive deposit, but
-        // premultiplied OVER blend (Blend One OneMinusSrcAlpha). The runtime routes the
-        // alpha-mode deposit here (NMShaderRegistry.ShaderProgForPass appends "_alpha"
-        // when the pass blend is [ONE, ONE_MINUS_SRC_ALPHA]); the two deposit passes are
-        // mutually exclusive per frame via the JSON runIf conditions on blendMode, so
-        // exactly one runs. Blend state is fixed-function in the .shader in this port, so
-        // the only difference vs the "deposit" pass is the Blend statement.
+        // progName "deposit" (passes[3], JSON name "deposit_alpha") — SAME billboard
+        // scatter geometry/fragment as the additive deposit, but premultiplied OVER blend
+        // (Blend One OneMinusSrcAlpha). The runtime routes the alpha-mode deposit here
+        // (NMShaderRegistry.ShaderProgForPass appends "_alpha" when the pass blend is
+        // [ONE, ONE_MINUS_SRC_ALPHA]). NOTE: BOTH deposit passes run EVERY frame — the JSON
+        // runIf conditions on blendMode are DEAD CODE in the reference (the expander drops
+        // pass.conditions, so Pipeline.shouldSkipPass never skips either), and this port
+        // mirrors that (it never attaches conditions). The blendMode switch is effected
+        // purely by the blend pass shader branch, not by gating these deposits. Blend state
+        // is fixed-function in the .shader here, so the only difference vs the "deposit"
+        // pass is the Blend statement.
         Pass
         {
             Name "deposit_alpha"

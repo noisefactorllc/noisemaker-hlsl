@@ -70,14 +70,6 @@ async function bootstrapReference () {
   // defines[DEFINE_NAME].
   const defineMap = {}
 
-  // Map "<namespace>.<func>" -> the effect's authored passes array. The reference
-  // expander DROPS per-pass `conditions` (runIf/skipIf) when building the compiled
-  // graph (expander.js never copies pass.conditions), but the runtime
-  // Pipeline.shouldSkipPass reads them. The Unity runtime needs them too (to gate
-  // the two pointsBillboardRender deposit passes on blendMode), so normalizePass()
-  // re-attaches `conditions` from the authored definition by pass index.
-  const defPassMap = {}
-
   const namespaces = readdirSync(EFFECTS_DIR, { withFileTypes: true })
     .filter(d => d.isDirectory())
     .map(d => d.name)
@@ -167,17 +159,13 @@ async function bootstrapReference () {
         if (spec && spec.define) defs[key] = spec.define
       }
       if (Object.keys(defs).length) defineMap[`${namespace}.${func}`] = defs
-
-      // Record authored passes so normalizePass() can re-attach per-pass conditions
-      // (dropped by the expander) for the Unity runtime's pass gating.
-      if (instance.passes) defPassMap[`${namespace}.${func}`] = instance.passes
     }
   }
 
   // Register all collected effect choices as enum members (one async merge).
   if (mergeIntoEnums && Object.keys(allChoices).length) await mergeIntoEnums(allChoices)
 
-  return { compileGraph, defineMap, defPassMap }
+  return { compileGraph, defineMap }
 }
 
 // ---------------------------------------------------------------------------
@@ -223,22 +211,7 @@ function definesForPass (pass, programs) {
   return out
 }
 
-// Re-attach per-pass `conditions` (runIf/skipIf) from the authored effect definition.
-// The expander drops them; the runtime needs them. pass.id is `node_<n>_pass_<i>`
-// where <i> indexes the authored effectDef.passes 1:1. Returns undefined when none.
-function deriveConditions (pass, defPassMap) {
-  if (!defPassMap) return undefined
-  const key = `${pass.effectNamespace}.${pass.effectFunc}`
-  const authored = defPassMap[key]
-  if (!authored) return undefined
-  const m = /_pass_(\d+)$/.exec(pass.id || '')
-  if (!m) return undefined
-  const idx = Number(m[1])
-  const ap = authored[idx]
-  return ap && ap.conditions !== undefined ? ap.conditions : undefined
-}
-
-function normalizePass (pass, programs, defineMap, defPassMap) {
+function normalizePass (pass, programs, defineMap) {
   const isBlit = pass.type === 'blit' || pass.program === 'blit' ||
     (pass.effectFunc === 'blit')
   const out = {
@@ -278,13 +251,13 @@ function normalizePass (pass, programs, defineMap, defPassMap) {
   if (pass.blend !== undefined) out.blend = pass.blend
   if (pass.repeat !== undefined) out.repeat = pass.repeat
   if (pass.clear !== undefined) out.clear = pass.clear
-  // Pass run/skip gating (reference Pipeline.shouldSkipPass). The expander DROPS
-  // pass.conditions, so re-attach from the authored effect definition by pass index
-  // (pass.id == `node_<n>_pass_<i>`; the authored passes array is 1:1 with the
-  // expander's). The Unity runtime reads these to gate the two pointsBillboardRender
-  // deposit passes (additive vs premultiplied-alpha) on blendMode. Only emit when present.
-  const conditions = isBlit ? undefined : deriveConditions(pass, defPassMap)
-  if (conditions !== undefined) out.conditions = conditions
+  // Pass run/skip gating (reference Pipeline.shouldSkipPass) is NOT emitted. The
+  // reference expander.js builds each compiled pass from an explicit field list that
+  // omits `conditions`, so compileGraph() never carries pass.conditions and
+  // shouldSkipPass always returns false — both pointsBillboardRender deposit passes
+  // (additive + premultiplied-alpha) always run, with the blendMode switch handled by
+  // the blend-pass shader branch. This exporter is the GOLDEN oracle, so it must mirror
+  // the reference exactly: do NOT re-attach conditions from the authored definition.
 
   // Metadata.
   out.effectKey = pass.effectKey ?? null
@@ -309,13 +282,13 @@ function normalizePrograms (programs) {
   return out
 }
 
-export function normalizeGraph (graph, defineMap, defPassMap) {
+export function normalizeGraph (graph, defineMap) {
   const programs = graph.programs || {}
   return {
     id: graph.id,
     source: graph.source,
     renderSurface: graph.renderSurface ?? null,
-    passes: (graph.passes || []).map(p => normalizePass(p, programs, defineMap, defPassMap)),
+    passes: (graph.passes || []).map(p => normalizePass(p, programs, defineMap)),
     allocations: mapToObject(graph.allocations),
     textures: mapToObject(graph.textures),
     programs: normalizePrograms(programs)
@@ -323,9 +296,9 @@ export function normalizeGraph (graph, defineMap, defPassMap) {
 }
 
 export async function exportGraph (dsl) {
-  const { compileGraph, defineMap, defPassMap } = await bootstrapReference()
+  const { compileGraph, defineMap } = await bootstrapReference()
   const graph = compileGraph(dsl)
-  return normalizeGraph(graph, defineMap, defPassMap)
+  return normalizeGraph(graph, defineMap)
 }
 
 // ---------------------------------------------------------------------------

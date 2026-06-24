@@ -17,10 +17,19 @@ namespace Noisemaker.Hlsl.Compiler.Graph
     public enum PassType { Effect, Blit }
 
     // Pass run/skip gating (reference/04 §10.3 Pipeline.shouldSkipPass). A pass with
-    // conditions runs only when its runIf/skipIf predicates resolve true against the
-    // live uniform values. Used by pointsBillboardRender's two deposit passes (one
-    // additive, one premultiplied-alpha) so only the one matching blendMode executes.
-    // Each predicate compares a uniform's resolved value against a numeric `equals`.
+    // conditions would run only when its runIf/skipIf predicates resolve true against the
+    // live uniform values; each predicate compares a uniform's resolved value against a
+    // numeric `equals`.
+    //
+    // DEAD-CODE PARITY: in the reference engine this gating NEVER FIRES. The expander
+    // (expander.js) builds each compiled pass from an explicit field list that omits
+    // `conditions`, so pass.conditions is always undefined and Pipeline.shouldSkipPass
+    // always returns false. pointsBillboardRender's two deposit passes (additive +
+    // premultiplied-alpha) BOTH run every frame; the blendMode switch is effected solely
+    // by the blend-pass shader branch. The C# graph-build/load/export paths therefore
+    // NEVER set Pass.Conditions (it stays null) — these types exist only to mirror the
+    // reference's (dormant) shouldSkipPass shape, and remain available for an explicit
+    // host-set condition should the reference one day actually wire conditions through.
     public sealed class PassCondition
     {
         public string Uniform { get; set; }
@@ -134,7 +143,10 @@ namespace Noisemaker.Hlsl.Compiler.Graph
         public int LoopIterations { get; set; }    // >1 only when LoopGroupId != 0
 
         // --- run/skip gating (reference/04 §10.3) ---
-        // Per-pass runIf/skipIf predicates; null when the pass has no conditions.
+        // Per-pass runIf/skipIf predicates; ALWAYS null on every graph the port builds,
+        // loads, or exports — the reference expander drops conditions (dead code), so the
+        // port mirrors that and never attaches them (see PassConditions above). The field
+        // is retained so NMPipeline.ShouldSkipPass mirrors Pipeline.shouldSkipPass exactly.
         public PassConditions Conditions { get; set; }
     }
 }

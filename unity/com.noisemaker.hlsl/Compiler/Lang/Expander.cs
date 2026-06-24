@@ -656,8 +656,13 @@ namespace Noisemaker.Hlsl.Compiler
                 JsonValue blend = passDef.Get("blend");
                 pass.Blend = GraphLoader.IsTruthyBlend(blend);
                 pass.BlendFactors = GraphLoader.ParseBlendFactors(blend);
-                // conditions: runIf/skipIf pass gating (reference/04 §10.3).
-                pass.Conditions = GraphLoader.ParseConditions(passDef.Get("conditions"));
+                // conditions (runIf/skipIf): the reference expander.js builds each graph
+                // pass from an EXPLICIT field list that does NOT include `conditions`, so
+                // pass.conditions is undefined at runtime and Pipeline.shouldSkipPass always
+                // returns false — BOTH pointsBillboardRender deposit passes (additive +
+                // premultiplied-alpha) always run, and the blendMode switch is effected
+                // solely by the blend-pass shader branch. Mirror that here: do NOT copy
+                // conditions onto the pass (NMPipeline.ShouldSkipPass therefore never gates).
                 JsonValue repeat = passDef.Get("repeat");
                 if (repeat != null && repeat.Kind == JsonKind.Number) pass.Repeat = Repeat.FromCount((int)repeat.AsNumber);
                 else if (repeat != null && repeat.Kind == JsonKind.String) pass.Repeat = Repeat.FromUniform(repeat.AsString);

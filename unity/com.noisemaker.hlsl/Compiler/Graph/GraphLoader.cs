@@ -147,8 +147,12 @@ namespace Noisemaker.Hlsl.Compiler.Graph
             // Capture an explicit two-factor array ["src","dst"] (e.g. ["ONE",
             // "ONE_MINUS_SRC_ALPHA"] for the alpha deposit; ["one","one"] is additive).
             pass.BlendFactors = ParseBlendFactors(blendVal);
-            // conditions: { runIf:[{uniform,equals}], skipIf:[...] } (reference/04 §10.3).
-            pass.Conditions = ParseConditions(p.Get("conditions"));
+            // conditions (runIf/skipIf): NOT parsed. The reference expander.js never copies
+            // pass.conditions into the compiled graph (its pass object is an explicit field
+            // list that omits `conditions`), so the normalized graph the runtime consumes
+            // carries no conditions and Pipeline.shouldSkipPass always returns false — BOTH
+            // pointsBillboardRender deposit passes always run (the blendMode switch lives in
+            // the blend-pass shader). Leaving pass.Conditions null here mirrors that exactly.
             pass.Repeat = ParseRepeat(p.Get("repeat"));
             JsonValue clear = p.Get("clear");
             pass.Clear = (clear != null && clear.Kind != JsonKind.Null) ? clear : null;
@@ -427,33 +431,6 @@ namespace Noisemaker.Hlsl.Compiler.Graph
             if (arr.Count != 2) return null;
             if (arr[0].Kind != JsonKind.String || arr[1].Kind != JsonKind.String) return null;
             return new[] { arr[0].AsString, arr[1].AsString };
-        }
-
-        // Parse pass conditions { runIf:[{uniform,equals}], skipIf:[...] }
-        // (reference/04 §10.3 Pipeline.shouldSkipPass). null when absent / not an object.
-        public static PassConditions ParseConditions(JsonValue v)
-        {
-            if (v == null || v.Kind != JsonKind.Object) return null;
-            var runIf = ParseConditionList(v.Get("runIf"));
-            var skipIf = ParseConditionList(v.Get("skipIf"));
-            if (runIf == null && skipIf == null) return null;
-            return new PassConditions { RunIf = runIf, SkipIf = skipIf };
-        }
-
-        private static System.Collections.Generic.List<PassCondition> ParseConditionList(JsonValue v)
-        {
-            if (v == null || v.Kind != JsonKind.Array || v.AsArray.Count == 0) return null;
-            var list = new System.Collections.Generic.List<PassCondition>();
-            foreach (JsonValue el in v.AsArray)
-            {
-                if (el == null || el.Kind != JsonKind.Object) continue;
-                JsonValue u = el.Get("uniform");
-                JsonValue eq = el.Get("equals");
-                if (u == null || u.Kind != JsonKind.String) continue;
-                double equals = (eq != null && eq.Kind == JsonKind.Number) ? eq.AsNumber : 0.0;
-                list.Add(new PassCondition { Uniform = u.AsString, EqualsValue = equals });
-            }
-            return list.Count > 0 ? list : null;
         }
 
         private static double ParseDouble(string s)
