@@ -407,7 +407,8 @@ float4 frag_deposit(PBRDepositVaryings i) : SV_Target
 //                               deposited with ONE/ONE_MINUS_SRC_ALPHA). Use the
 //                               premultiplied OVER operator, then un-premultiply.
 //     blendMode==0 (additive) : trail stores additive sums (deposited ONE/ONE).
-//                               Treat as pseudo-non-premultiplied (legacy formula).
+//                               Clamp to [0,1] then screen-blend over the input
+//                               (reference v1.0.79 a27bf823).
 //   size = max(resolution, vec2(1.0)).
 // =============================================================================
 float4 frag_blend(NMVaryings i) : SV_Target
