@@ -120,14 +120,15 @@ struct DepositVaryings
 {
     float4 positionCS : SV_POSITION;
     float  pointSize  : PSIZE;       // D3D points topology requires a PSIZE output;
-                                     // reference deposit.vert sets gl_PointSize = 2.0.
+                                     // reference deposit.vert sets gl_PointSize = 1.0
+                                     // (v1.0.79 a27bf823, was 2.0).
     float  amount     : TEXCOORD0;
 };
 
 DepositVaryings vert_deposit(uint vertexIndex : SV_VertexID)
 {
     DepositVaryings o;
-    o.pointSize = 2.0;   // reference gl_PointSize = 2.0 ("slightly larger deposit").
+    o.pointSize = 1.0;   // reference gl_PointSize = 1.0 (v1.0.79 a27bf823, was 2.0).
 
     // Get state size from xyz texture dimensions (matches WGSL textureDimensions).
     uint tw, th;

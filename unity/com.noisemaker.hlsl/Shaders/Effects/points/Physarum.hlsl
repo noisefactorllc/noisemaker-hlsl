@@ -114,7 +114,9 @@ float phys_hash(uint seed)
 
 float phys_hash_f(float n)
 {
-    return frac(sin(n) * 43758.5453123);
+    // Reference v1.0.79 (a27bf823): portable PCG integer hash, replacing the old
+    // fract(sin(n)*43758) which diverged across GPUs. GLSL floatBitsToUint -> asuint.
+    return (float)phys_hash_uint(asuint(n)) / 4294967295.0;
 }
 
 // Wrap position to [0,1].  WGSL: fract(pos + vec2f(1.0)).

@@ -249,7 +249,9 @@ DlaAgentOutputs frag_agent(NMVaryings i)
     uint agentId = (uint)(coord.x + coord.y * (int)stateDims.x);
     if (seed <= 0.0)
     {
-        seed = dla_hash(agentId + 12345u) + 0.001;
+        // Reference v1.0.79 (a27bf823): seed = hash(agentId) + 0.001 (no offset; the
+        // earlier port used agentId+12345u). Frame/time dependence was already removed.
+        seed = dla_hash(agentId) + 0.001;
     }
     // Mix in agentId and previous seed to ensure a different direction each frame.
     uint frameSeed = dla_hash_uint(agentId * 31u + asuint(seed));

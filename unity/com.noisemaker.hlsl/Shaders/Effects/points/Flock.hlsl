@@ -110,7 +110,9 @@ float2 flock_hash2(uint seed)
 
 float flock_hashFloat(float n)
 {
-    return frac(sin(n) * 43758.5453123);
+    // Reference v1.0.79 (a27bf823): portable PCG integer hash, replacing the old
+    // fract(sin(n)*43758) which diverged across GPUs. GLSL floatBitsToUint -> asuint.
+    return (float)flock_hash_uint(asuint(n)) / 4294967295.0;
 }
 
 float flock_noise2D(float2 p)
