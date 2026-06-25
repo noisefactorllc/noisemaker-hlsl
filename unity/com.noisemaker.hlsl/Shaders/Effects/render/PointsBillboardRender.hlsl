@@ -56,9 +56,9 @@
 //  * fract→frac, mix→lerp, clamp/cos/sin/length/dot/smoothstep/exp/sign map 1:1.
 //    nm_mod / fmod NOT used. Integer particle id math uses HLSL int '%' and '/'
 //    (truncation toward 0), matching WGSL i32 %  / on non-negative ids exactly.
-//  * hash() is this effect's OWN sin-hash (NOT NMCore) — ported verbatim. WGSL
-//    casts u.seed (i32) → f32 explicitly; we keep seed as a float uniform and add
-//    it directly (the runtime injects the integer value as a float; identical).
+//  * pbr_hash() is this effect's OWN PCG integer hash (NOT NMCore) — reference
+//    v1.0.79 replaced the old fract(sin) hash. GLSL floatBitsToUint -> HLSL asuint;
+//    seed is a float uniform (runtime injects the int value as a float; identical).
 //  * Quad clip transform & per-particle size/rotation reproduced exactly from
 //    deposit.wgsl (top-left clip, no Y flip; off-screen cull writes (2,2,0,1)).
 //  * The 2D/3D viewMode branch (rotateX/Y/Z, is2DSystem detection, ortho scale)
@@ -145,11 +145,20 @@ struct PBRDepositVaryings
     float2 spriteUV   : TEXCOORD1;
 };
 
-// Deterministic noise function for per-particle variation (this effect's OWN).
-// WGSL: fract(sin(n + f32(u.seed)) * 43758.5453123).
+// Deterministic per-particle PCG hash (this effect's OWN). Reference a27bf823 /
+// v1.0.79 replaced the old fract(sin(n+seed)*43758) transcendental hash — which
+// diverges across GPUs (fast-math sin) — with a portable integer PCG hash.
+// GLSL floatBitsToUint -> HLSL asuint; the uint ops map 1:1. `seed` is a float
+// uniform (typed int, injected as float), matching GLSL `uniform float seed`.
+uint pbr_hash_uint(uint s)
+{
+    uint state = s * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
 float pbr_hash(float n)
 {
-    return frac(sin(n + seed) * 43758.5453123);
+    return (float)pbr_hash_uint(asuint(n + seed)) / 4294967295.0;
 }
 
 PBRDepositVaryings vert_deposit(uint vertexID : SV_VertexID)
@@ -426,11 +435,14 @@ float4 frag_blend(NMVaryings i) : SV_Target
     }
     else
     {
-        // Additive mode: trail stores additive sums; treat as pseudo-non-premultiplied.
-        outAlpha = trailColor.a + scaledInput.a * (1.0 - trailColor.a);
-        outRGB = outAlpha > 0.0
-            ? (trailColor.rgb * trailColor.a + scaledInput.rgb * scaledInput.a * (1.0 - trailColor.a)) / outAlpha
-            : float3(0.0, 0.0, 0.0);
+        // Additive mode (reference a27bf823 / v1.0.79 "fix additive mode billboard
+        // renderer"): clamp the trail to [0,1] then screen-blend with the input
+        // (trail OVER input via screen = trail + input*(1-trail)) to avoid the
+        // overflow/dimming of the old pseudo-non-premultiplied composite.
+        float3 trail = clamp(trailColor.rgb, 0.0, 1.0);
+        float trailPresence = max(max(trail.r, trail.g), trail.b);
+        outRGB = trail + scaledInput.rgb * (1.0 - trail);
+        outAlpha = max(trailPresence, scaledInput.a);
     }
 
     // Clamp to [0,1] (reference 77e45a5e): deposit can push alpha > 1 within a frame.
