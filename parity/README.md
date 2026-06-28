@@ -18,18 +18,15 @@ correct-by-construction and is not pixel-verified until this harness runs (see
 ## Prerequisites
 
 - **Node** (for `tools/` and `parity/*.mjs`). No `npm install` needed — the
-  scripts import the sibling reference engine (`../../shaders`, `../../demo`) as
-  plain ESM and the PNG encoder uses Node's built-in `zlib`.
+  scripts import the sibling reference engine (`../../noisemaker/shaders`,
+  `../../noisemaker/demo`) as plain ESM and the PNG encoder uses Node's built-in `zlib`.
 - **Playwright + a system Chrome.** `export-and-render.mjs` launches Chromium via
   the vendored `shade-mcp` harness (`../../vendor/shade-mcp/harness`). On macOS it
   uses ANGLE/Metal; headless by default (`SHADE_HEADLESS=1`).
 - **Python 3** with `numpy` + `pillow` (for `compare.py`) — same deps as
   `../../scripts/image_regression.py`.
 - **A Unity project** (2021.3+, **Linear color space**) that includes the package
-  `com.noisemaker.hlsl`. The runtime executor (`NMPipeline`) must be present and
-  the scripting define `NM_RUNTIME_PIPELINE_READY` set; until then
-  `NMParityRunner` writes a placeholder grey frame (compare.py will report a large
-  divergence, confirming the pipe is wired but the executor is staged).
+  `com.noisemaker.hlsl`.
 
 All scripts honor `NM_REFERENCE_ROOT` to relocate the reference repo root
 (default: two levels above `tools/`).

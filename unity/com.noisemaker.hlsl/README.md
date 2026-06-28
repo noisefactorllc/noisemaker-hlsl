@@ -130,9 +130,9 @@ you ship. `GraphJson` takes precedence over `Dsl` when both are set.
 | `int LoadMesh(string,TextAsset)` | Upload an OBJ TextAsset into a mesh surface (build-safe). |
 
 The lower-level `NMPipeline` (via `r.Pipeline`) additionally exposes `GetOutput(surfaceName)`,
-`PresentTo(RenderTexture)`, and `RenderCubemap(faceSize, surface, time)` → a `TextureCube`
-(the caller must `Release()` the returned RT; note its per-face `flipU/flipV` D3D-orientation
-defaults).
+`PresentTo(RenderTexture)`, and `RenderCubemap(faceSize, surface, time[, flipU, flipV])` → a
+cube-dimension `RenderTexture` (`RenderTextureFormat.ARGBHalf`, `TextureDimension.Cube`); the
+caller owns it and must `Release()` it.
 
 ## Shader Graph Custom Function nodes (single-pass effects)
 
@@ -141,6 +141,8 @@ exposing e.g. `void NM_Noise_float(float2 UV, float2 Resolution, /*params*/, out
 Add a **Custom Function** node (File mode), point it at the include, and set the function
 **name without the precision suffix** (`NM_Noise`, not `NM_Noise_float`) — Shader Graph picks
 `_float`/`_half` itself; including the suffix silently fails to bind. Wire the named inputs.
+(Some wrapper-file header comments still show the suffixed name, e.g. `NM_Noise_float`; that is
+stale and will be corrected — follow this README, not the comment, for the node **Name**.)
 
 Not every effect has a node: multi-pass, agent, 3D, and a few single-pass effects
 (`mashup`, `remap`, `media`) are runtime-only — use the renderer path for those.

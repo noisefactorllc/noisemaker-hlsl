@@ -1,6 +1,7 @@
 # noisemaker-hlsl
 
-A parallel port of the [Noisemaker shader engine](../shaders) to **Unity / HLSL**.
+A parallel port of the Noisemaker shader engine — a separate reference engine, not bundled
+with this package — to **Unity / HLSL**.
 It renders **live procedural textures from the Polymorphic DSL**, aiming to be
 **pixel-identical** to the JS/WebGPU reference engine, and exposes effects both as a
 standalone renderer and as **Shader Graph (material) nodes**.
@@ -40,6 +41,11 @@ renderSurface`). That is the seam. noisemaker-hlsl produces the same graph two w
 
 - **Golden / offline** — `tools/export-graph.mjs` runs the *unchanged reference*
   `compileGraph` and serialises the graph to JSON (zero graph-construction parity risk).
+  Producing your own `graph.json` this way (and regenerating effect JSON with
+  `tools/convert-definitions.mjs`) requires a checkout of the separate Noisemaker reference
+  engine — point `NM_REFERENCE_ROOT` at its root; it is **not** included in this package. To
+  render immediately with no external dependency, import the bundled **Quick Start** sample
+  (it ships a ready `graph.json`) — see *Quick start* below.
 - **Live / in-Unity** — the C# `Compiler/` port compiles DSL at runtime; it is *intended*
   to be validated by diffing its graph JSON against the golden path, but is still early and
   unverified — prefer the golden `graph.json` for anything you rely on.
@@ -56,10 +62,17 @@ on the shaders and the executor — see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 1. Add the package: *Package Manager → Add package from disk →*
    `noisemaker-hlsl/unity/com.noisemaker.hlsl/package.json`.
-2. Add an `NMRenderer` component and assign a source: a `GraphJson` TextAsset (exported via
-   `tools/export-graph.mjs`; recommended/verified) **or** a `Dsl` string plus the
+2. **Fastest first render (no reference-engine or Node dependency):** in *Package Manager →
+   Noisemaker HLSL → Samples* tab, **Import "Quick Start"**. Then, per the sample's README:
+   set *Color Space = Linear*, create a *Quad* with an *Unlit/Texture* material, add the
+   `NMQuickStartExample` component, and assign **Graph Json** = `NoiseGraph.json` and
+   **Target** = the Quad's `Renderer`; press **Play**. This renders the bundled
+   `noise → blur` graph.
+3. **Your own content:** add an `NMRenderer` component and assign a source — a `GraphJson`
+   TextAsset (recommended/verified; produce one with `tools/export-graph.mjs`, which needs the
+   separate reference engine — see *The core idea* above) **or** a `Dsl` string plus the
    `EffectDefinitions` TextAssets (live compiler; early/unverified). Then call `Rebuild()`.
-3. Read `NMRenderer.Output` (an `ARGBHalf` `RenderTexture`, valid after the first frame)
+4. Read `NMRenderer.Output` (an `ARGBHalf` `RenderTexture`, valid after the first frame)
    into any material, or drop a Noisemaker **Custom Function node** into a Shader Graph.
 
 ## Status
